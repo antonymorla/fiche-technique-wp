@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche Technique — Abri Cerisier</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;color:#1a1a2e}
+#app{display:flex;min-height:100vh}
+#sidebar{width:330px;min-width:290px;background:#fff;box-shadow:2px 0 8px rgba(0,0,0,.1);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
+#sidebar-header{background:#1a1a2e;color:#fff;padding:14px 18px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#sidebar-content{padding:14px;overflow-y:auto;flex:1}
+.fs{margin-bottom:16px}
+.fs h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:9px}
+.fr{margin-bottom:8px}
+.fr label{display:block;font-size:11px;color:#555;margin-bottom:2px;font-weight:600}
+.fr select,.fr input[type=number],.fr input[type=text]{width:100%;padding:5px 7px;border:1px solid #ddd;border-radius:4px;font-size:12px;background:#fafafa}
+.fr select:focus,.fr input:focus{outline:none;border-color:#e74c3c}
+.hint{font-size:10px;color:#bbb;margin-top:1px}
+.row2{display:flex;gap:7px}.row2 .fr{flex:1}
+#type-tabs{display:flex;gap:5px;margin-bottom:14px}
+.tab-btn{flex:1;padding:7px 3px;border:2px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;font-weight:700;text-align:center;color:#aaa;transition:all .15s}
+.tab-btn.active{border-color:#e74c3c;background:#fff5f5;color:#e74c3c}
+.mitem{background:#f8f9fa;border:1px solid #eee;border-radius:5px;padding:8px;margin-bottom:7px;position:relative}
+.mitem .x{position:absolute;top:5px;right:8px;cursor:pointer;color:#e74c3c;font-size:18px;font-weight:700;background:none;border:none;line-height:1}
+.add-btn{width:100%;padding:6px;border:2px dashed #ddd;border-radius:5px;background:none;cursor:pointer;color:#bbb;font-size:12px}
+.add-btn:hover{border-color:#e74c3c;color:#e74c3c}
+#price-box{background:#1a1a2e;color:#fff;padding:12px 16px;flex-shrink:0;border-top:3px solid #e74c3c}
+#price-box .pl{font-size:10px;opacity:.6;text-transform:uppercase;letter-spacing:.5px}
+#price-box .pv{font-size:20px;font-weight:700;color:#e74c3c}
+#print-btn{width:100%;margin-top:8px;padding:9px;background:#e74c3c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:700}
+#print-btn:hover{background:#c0392b}
+#preview{flex:1;padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.07);padding:14px 16px}
+.card h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card svg{background:#f8f9fb;border-radius:3px;border:1px solid #eee}
+#cfg-tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{background:#f0f2f5;border-radius:3px;padding:2px 7px;font-size:11px;color:#555}
+#dim-tbl{width:100%;border-collapse:collapse;font-size:12px}
+#dim-tbl td{padding:4px 7px;border-bottom:1px solid #f2f2f2}
+#dim-tbl td:first-child{color:#888;font-weight:600}
+#dim-tbl td:last-child{font-weight:700;text-align:right}
+/* ===== PRINT ===== */
+@media print{
+  body{background:#fff}
+  #app{display:none}
+  #ps{display:block!important}
+  @page{size:A4 landscape;margin:8mm}
+}
+#ps{display:none;font-family:Arial,sans-serif;font-size:10px;color:#000;padding:0}
+.ps-hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a1a2e;padding-bottom:6px;margin-bottom:8px}
+.ps-co{font-size:16px;font-weight:900;color:#1a1a2e}
+.ps-co small{font-size:9px;font-weight:400;color:#666;display:block}
+.ps-ttl{font-size:14px;font-weight:700;text-align:center}
+.ps-ttl small{font-size:9px;font-weight:400;display:block}
+.ps-ref{font-size:9px;color:#888;text-align:right}
+.ps-body{display:grid;grid-template-columns:3fr 1fr;gap:10px}
+.ps-drawings{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
+.ps-elevs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.ps-box{border:1px solid #ddd;border-radius:3px;padding:7px}
+.ps-box h5{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#999;border-bottom:1px solid #eee;padding-bottom:3px;margin-bottom:5px}
+.ps-dt{width:100%;border-collapse:collapse;font-size:9px}
+.ps-dt td{padding:2px 4px;border-bottom:1px solid #f5f5f5}
+.ps-dt td:last-child{font-weight:700;text-align:right}
+.ps-cfg li{font-size:9px;list-style:none;padding:1px 0}
+.ps-cfg li::before{content:'• ';color:#e74c3c}
+.ps-price{background:#1a1a2e;color:#fff;border-radius:3px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;margin-top:auto}
+.ps-price .l{font-size:8px;opacity:.7;text-transform:uppercase}
+.ps-price .v{font-size:18px;font-weight:900;color:#e74c3c}
+.ps-ftr{border-top:1px solid #ddd;margin-top:7px;padding-top:5px;font-size:8px;color:#bbb;display:flex;justify-content:space-between}
+/* ===== PRINT PAGE 2 — OPTIONS ===== */
+#ps2{display:none;font-family:Arial,sans-serif;font-size:10px;color:#000;padding:0;page-break-before:always}
+.opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.opt-card{border:1px solid #ddd;border-radius:4px;padding:8px;display:flex;gap:8px;align-items:flex-start;break-inside:avoid}
+.opt-card img{width:70px;height:55px;object-fit:cover;border-radius:3px;flex-shrink:0;border:1px solid #eee}
+.opt-card .oc-body .oc-title{font-weight:700;font-size:9px;margin-bottom:2px;color:#1a1a2e}
+.opt-card .oc-body .oc-desc{font-size:8px;color:#555;line-height:1.3}
+@media print{#ps2{display:block!important}}
+</style>
+</head>
+<body>
+<div id="app">
+<!-- ===== SIDEBAR ===== -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <span>🏗</span>
+    <div><div>Configurateur Technique</div><div style="font-size:10px;opacity:.5;font-weight:400">Abri Cerisier</div></div>
+  </div>
+  <div id="sidebar-content">
+    <div id="type-tabs">
+      <button class="tab-btn active" onclick="setType('abri')">Abri<br>Jardin</button>
+      <button class="tab-btn" onclick="setType('carport')">Carport</button>
+      <button class="tab-btn" onclick="setType('garage')">Garage</button>
+    </div>
+
+    <div class="fs">
+      <h3>Dimensions</h3>
+      <div class="row2">
+        <div class="fr"><label>Largeur (m)</label>
+          <select id="f-lar" onchange="upd()">
+            <option>1.5</option><option>2</option><option>2.5</option><option>3</option><option>3.5</option>
+            <option>4</option><option>4.5</option><option selected>5</option><option>5.5</option><option>6</option>
+            <option>6.5</option><option>7</option><option>7.5</option><option>8</option><option>9</option><option>10</option>
+          </select>
+        </div>
+        <div class="fr"><label>Profondeur (m)</label>
+          <select id="f-pro" onchange="upd()">
+            <option>2</option><option>2.5</option><option>3</option><option>3.5</option>
+            <option selected>4</option><option>4.5</option><option>5</option><option>5.5</option><option>6</option><option>6.5</option><option>7</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr">
+        <label>Rehausses × 13 cm</label>
+        <input type="number" id="f-reh" value="0" min="0" max="10" onchange="upd()">
+        <div class="hint">Hauteur int. de base : 2,08 m</div>
+      </div>
+    </div>
+
+    <div class="fs" id="s-toit">
+      <h3>Toiture</h3>
+      <div class="fr"><label>Type</label>
+        <select id="f-toit" onchange="upd()">
+          <option value="2PANS" selected>2 Pans</option>
+          <option value="1PAN">1 Pan</option>
+          <option value="TOIT_PLAT">Toit plat (bac acier)</option>
+          <option value="QUADRO">QUADRO (toit plat EPDM — cube)</option>
+        </select>
+      </div>
+      <div class="fr" id="r-pente"><label>Pente</label>
+        <select id="f-pente" onchange="upd()">
+          <option value="14">14°</option><option value="18" selected>18°</option><option value="25">25°</option><option value="35">35°</option>
+        </select>
+      </div>
+      <div class="fr" id="r-orient"><label>Orientation du pan</label>
+        <select id="f-orient" onchange="upd()">
+          <option value="droite">Vers la droite (faîte à gauche)</option>
+          <option value="gauche">Vers la gauche (faîte à droite)</option>
+          <option value="fond">Vers le fond (faîte côté façade)</option>
+          <option value="face">Vers la façade (faîte côté fond)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fs" id="s-sys">
+      <h3>Construction</h3>
+      <div class="fr"><label>Système</label>
+        <select id="f-sys" onchange="upd()">
+          <option value="madrier28" selected>Madrier 28 mm</option>
+          <option value="madrier45">Madrier 45 mm</option>
+          <option value="ossature">Ossature bois</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fs" id="s-carport" style="display:none">
+      <h3>Carport</h3>
+      <div class="fr"><label>Section poteaux</label>
+        <select id="f-pot" onchange="upd()">
+          <option value="0.12">12×12 cm pin sylvestre</option>
+          <option value="0.14">14×14 cm pin sylvestre</option>
+          <option value="0.19">19×19 cm pin sylvestre</option>
+          <option value="0.15">15×15 cm ALU</option>
+        </select>
+      </div>
+      <div class="fr"><label>Espacement max. poteaux</label>
+        <select id="f-esp" onchange="upd()">
+          <option value="4">Max. 4 m</option>
+          <option value="6">Max. 6 m (lamellé-collé)</option>
+        </select>
+      </div>
+      <div class="fr"><label>Fermetures</label>
+        <select id="f-clos" onchange="upd()">
+          <option value="aucune">Aucune (carport ouvert)</option>
+          <option value="gauche">Côté gauche</option>
+          <option value="droite">Côté droit</option>
+          <option value="fond">Fond</option>
+          <option value="gd">Gauche + Droite</option>
+          <option value="gdf">Gauche + Droite + Fond</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fs" id="s-gdoor" style="display:none">
+      <h3>Porte de garage</h3>
+      <div class="fr"><label>Type</label>
+        <select id="f-pgtype" onchange="upd()">
+          <option value="basculante_metal">Basculante métal</option>
+          <option value="basculante_bois">Basculante bois autoclave</option>
+          <option value="basculante_ayous">Basculante Ayous</option>
+          <option value="sectionnelle">Sectionnelle</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="fr"><label>Largeur (cm)</label><input type="number" id="f-pglw" value="237" min="200" max="350" onchange="upd()"></div>
+        <div class="fr"><label>Hauteur (cm)</label><input type="number" id="f-pglh" value="200" min="180" max="280" onchange="upd()"></div>
+      </div>
+    </div>
+
+    <div class="fs">
+      <h3>Débords toiture supplémentaires (cm)</h3>
+      <div class="hint" style="margin-bottom:6px">Débord standard inclus : 30 cm (toits inclinés) / 10 cm (plat)</div>
+      <div class="row2">
+        <div class="fr"><label>Face (avant)</label><input type="number" id="f-df" value="0" min="0" max="300" step="5" onchange="upd()"></div>
+        <div class="fr"><label>Fond (arrière)</label><input type="number" id="f-db" value="0" min="0" max="300" step="5" onchange="upd()"></div>
+      </div>
+      <div class="row2">
+        <div class="fr"><label>Gauche</label><input type="number" id="f-dl" value="0" min="0" max="300" step="5" onchange="upd()"></div>
+        <div class="fr"><label>Droite</label><input type="number" id="f-dr" value="0" min="0" max="300" step="5" onchange="upd()"></div>
+      </div>
+      <div class="hint" style="margin-top:4px;color:#e67e22">⚠ Débord total &gt; 50 cm → poteau de soutien</div>
+    </div>
+
+    <div class="fs">
+      <h3>Options</h3>
+      <div class="fr"><label>Plancher</label>
+        <select id="f-plan" onchange="upd()">
+          <option value="non">Non</option>
+          <option value="epicea15">Épicéa traité 15 mm</option>
+          <option value="pin21">Pin traité 21 mm</option>
+          <option value="epicea21iso">Épicéa 21 mm + isolation LR</option>
+        </select>
+      </div>
+      <div class="fr" id="r-iso"><label>Isolation murs</label>
+        <select id="f-iso" onchange="upd()">
+          <option value="non">Non</option>
+          <option value="lr60">Laine de roche 60 mm</option>
+          <option value="lr60osb">LR 60 mm + OSB 12 mm</option>
+          <option value="lr60cp">LR 60 mm + contreplaqué 8 mm</option>
+        </select>
+      </div>
+      <div class="fr"><label>Gouttière</label>
+        <select id="f-gout" onchange="upd()">
+          <option value="non">Non</option><option value="oui">Oui</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fs">
+      <h3>Menuiseries</h3>
+      <div id="mlist"></div>
+      <button class="add-btn" onclick="addM()">+ Ajouter une menuiserie</button>
+    </div>
+
+    <div class="fs">
+      <h3>Client</h3>
+      <div class="fr"><label>Nom</label><input type="text" id="f-nom" placeholder="Nom Prénom" oninput="upd()"></div>
+      <div class="fr"><label>Référence</label><input type="text" id="f-ref" placeholder="REF-2026-001" oninput="upd()"></div>
+    </div>
+  </div>
+
+  <div id="price-box">
+    <div class="pl">Prix indicatif HT (hors pose &amp; livraison)</div>
+    <div class="pv" id="pdisp">—</div>
+    <button id="print-btn" onclick="printIt()">🖨 Générer la fiche PDF</button>
+  </div>
+</div>
+
+<!-- ===== PREVIEW ===== -->
+<div id="preview">
+  <div class="card">
+    <h4>Configuration</h4>
+    <div id="cfg-tags"></div>
+  </div>
+  <div class="g2">
+    <div class="card"><h4>Plan de masse — Vue du dessus</h4>
+      <svg id="sv-plan" width="100%" viewBox="0 0 480 340"></svg></div>
+    <div class="card"><h4>Dimensions</h4>
+      <table id="dim-tbl"></table></div>
+  </div>
+  <div class="g4">
+    <div class="card"><h4>Façade — Pignon avant</h4>
+      <svg id="sv-face" width="100%" viewBox="0 0 380 280"></svg></div>
+    <div class="card"><h4>Vue gauche</h4>
+      <svg id="sv-gau" width="100%" viewBox="0 0 380 280"></svg></div>
+    <div class="card"><h4>Vue droite</h4>
+      <svg id="sv-dro" width="100%" viewBox="0 0 380 280"></svg></div>
+    <div class="card"><h4>Vue fond — Pignon arrière</h4>
+      <svg id="sv-fond" width="100%" viewBox="0 0 380 280"></svg></div>
+  </div>
+</div>
+</div>
+
+<!-- ===== PRINT ===== -->
+<div id="ps">
+  <div class="ps-hdr">
+    <div class="ps-co">Abri Cerisier<small>abri-cerisier.fr — Fabricant structures bois sur mesure</small></div>
+    <div class="ps-ttl">FICHE TECHNIQUE<small id="ps-typelbl">Abri de Jardin</small></div>
+    <div class="ps-ref"><div id="ps-nom" style="font-weight:700;font-size:11px"></div><div id="ps-refno"></div><div id="ps-date"></div></div>
+  </div>
+  <div class="ps-body">
+    <div>
+      <div class="ps-drawings">
+        <div class="ps-box"><h5>Plan de masse</h5><svg id="ps-plan" width="100%" viewBox="0 0 340 250"></svg></div>
+        <div class="ps-box"><h5>Façade — Pignon avant</h5><svg id="ps-face" width="100%" viewBox="0 0 340 250"></svg></div>
+      </div>
+      <div class="ps-elevs">
+        <div class="ps-box"><h5>Vue gauche</h5><svg id="ps-gau" width="100%" viewBox="0 0 300 230"></svg></div>
+        <div class="ps-box"><h5>Vue droite</h5><svg id="ps-dro" width="100%" viewBox="0 0 300 230"></svg></div>
+        <div class="ps-box"><h5>Vue fond — Pignon arrière</h5><svg id="ps-fond" width="100%" viewBox="0 0 300 230"></svg></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div class="ps-box"><h5>Dimensions</h5><table class="ps-dt" id="ps-dt"></table></div>
+      <div class="ps-box"><h5>Configuration</h5><ul class="ps-cfg" id="ps-cfg"></ul></div>
+      <div class="ps-price"><div><div class="l">Prix indicatif HT</div><div class="l" style="font-size:7px">hors livraison &amp; pose</div></div><div class="v" id="ps-price">—</div></div>
+    </div>
+  </div>
+  <div class="ps-ftr">
+    <div>Document non contractuel — Abri Cerisier</div>
+    <div id="ps-fref"></div><div id="ps-fdate"></div>
+  </div>
+</div>
+
+<!-- ===== PRINT PAGE 2 — OPTIONS & MENUISERIES ===== -->
+<div id="ps2">
+  <div class="ps-hdr">
+    <div class="ps-co">Abri Cerisier<small>abri-cerisier.fr — Fabricant structures bois sur mesure</small></div>
+    <div class="ps-ttl">OPTIONS SÉLECTIONNÉES<small id="ps2-typelbl"></small></div>
+    <div class="ps-ref"><div id="ps2-nom" style="font-weight:700;font-size:11px"></div><div id="ps2-refno"></div></div>
+  </div>
+  <div id="ps2-opts" class="opt-grid"></div>
+  <div class="ps-ftr" style="margin-top:12px">
+    <div>Document non contractuel — Abri Cerisier</div>
+    <div id="ps2-fref"></div><div id="ps2-fdate"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let TYPE='abri', MENUS=[], MCNT=0;
+const WALL_T={madrier28:0.028,madrier45:0.045,ossature:0.135};
+const STD_OVHG_PITCH=0.30, STD_OVHG_FLAT=0.10;
+
+// ════════════════════════════════════════════════════════
+// TYPE SWITCH
+// ════════════════════════════════════════════════════════
+function setType(t){
+  TYPE=t;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['abri','carport','garage'][i]===t));
+  document.getElementById('s-sys').style.display    =t==='carport'?'none':'';
+  document.getElementById('s-carport').style.display=t==='carport'?'':'none';
+  document.getElementById('s-gdoor').style.display  =t==='garage'?'':'none';
+  document.getElementById('r-iso').style.display    =t==='carport'?'none':'';
+  upd();
+}
+
+// ════════════════════════════════════════════════════════
+// CALC DIMS
+// ════════════════════════════════════════════════════════
+function calcDims(){
+  const L  =parseFloat(document.getElementById('f-lar').value);
+  const P  =parseFloat(document.getElementById('f-pro').value);
+  const reh=parseInt(document.getElementById('f-reh').value)||0;
+  const sys=document.getElementById('f-sys').value;
+  const toit=document.getElementById('f-toit').value;
+  const pente=parseInt(document.getElementById('f-pente').value)||18;
+  const orient=document.getElementById('f-orient').value;
+
+  const uf=(parseFloat(document.getElementById('f-df').value)||0)/100;
+  const ub=(parseFloat(document.getElementById('f-db').value)||0)/100;
+  const ul=(parseFloat(document.getElementById('f-dl').value)||0)/100;
+  const ur=(parseFloat(document.getElementById('f-dr').value)||0)/100;
+
+  const isFlat=toit==='TOIT_PLAT'||toit==='QUADRO';
+  const stdOvhg=isFlat?STD_OVHG_FLAT:STD_OVHG_PITCH;
+
+  // total overhang per side = standard + user extra
+  const ovF=stdOvhg+uf, ovB=stdOvhg+ub, ovL=stdOvhg+ul, ovR=stdOvhg+ur;
+
+  let wt=0;
+  if(TYPE==='carport'){wt=parseFloat(document.getElementById('f-pot').value)||0.12;}
+  else{wt=WALL_T[sys]||0.028;}
+
+  const hInt=2.08+reh*0.13;
+  const hExt=hInt+(TYPE==='carport'?0:wt*0.5); // structural plate height
+
+  const penteRad=pente*Math.PI/180;
+  let rH=0;
+  if(toit==='2PANS')      rH=(L/2)*Math.tan(penteRad);
+  else if(toit==='1PAN'){
+    if(orient==='droite'||orient==='gauche') rH=L*Math.tan(penteRad);
+    else rH=P*Math.tan(penteRad);
+  }
+
+  const htL=L+ovL+ovR, htP=P+ovF+ovB;
+  const intL=Math.round((L-wt*2)*100)/100;
+  const intP=Math.round((P-wt*2)*100)/100;
+
+  let nPosts=0;
+  if(TYPE==='carport'){
+    const esp=parseInt(document.getElementById('f-esp').value)||4;
+    nPosts=Math.ceil(L/esp)+1;
+  }
+
+  return {L,P,reh,sys,toit,pente,orient,wt,hInt,hExt,rH,
+          ovF,ovB,ovL,ovR,stdOvhg,uf,ub,ul,ur,
+          htL,htP,intL,intP,nPosts,penteRad,isFlat};
+}
+
+// ════════════════════════════════════════════════════════
+// SVG HELPERS
+// ════════════════════════════════════════════════════════
+const NS='http://www.w3.org/2000/svg';
+function svgEl(tag,attrs){const e=document.createElementNS(NS,tag);Object.entries(attrs||{}).forEach(([k,v])=>e.setAttribute(k,v));return e;}
+function clr(svg){while(svg.firstChild)svg.removeChild(svg.firstChild);}
+
+function sRect(p,x,y,w,h,fill,stroke,sw,dash){
+  const r=svgEl('rect',{x,y,width:w,height:h,fill:fill||'none',stroke:stroke||'none','stroke-width':sw||1});
+  if(dash)r.setAttribute('stroke-dasharray',dash);p.appendChild(r);return r;
+}
+function sLine(p,x1,y1,x2,y2,stroke,sw,dash){
+  const l=svgEl('line',{x1,y1,x2,y2,stroke:stroke||'#000','stroke-width':sw||1});
+  if(dash)l.setAttribute('stroke-dasharray',dash);p.appendChild(l);
+}
+function sPoly(p,pts,fill,stroke,sw,dash){
+  const e=svgEl('polygon',{points:pts.map(([x,y])=>`${x},${y}`).join(' '),fill:fill||'none',stroke:stroke||'#000','stroke-width':sw||1});
+  if(dash)e.setAttribute('stroke-dasharray',dash);p.appendChild(e);
+}
+function sPath(p,d,stroke,sw,fill,dash){
+  const e=svgEl('path',{d,stroke:stroke||'#000','stroke-width':sw||1,fill:fill||'none'});
+  if(dash)e.setAttribute('stroke-dasharray',dash);p.appendChild(e);
+}
+function sTxt(p,x,y,s,sz=10,fill='#333',anchor='middle',weight=''){
+  const t=svgEl('text',{x,y,'font-family':'Arial,sans-serif','font-size':sz,fill,
+    'text-anchor':anchor,'dominant-baseline':'central'});
+  if(weight)t.setAttribute('font-weight',weight);t.textContent=s;p.appendChild(t);
+}
+function sTxtBg(p,x,y,s,sz=10,fill='#333'){
+  const w=s.length*sz*0.55+6;
+  sRect(p,x-w/2,y-sz*0.65,w,sz*1.3,'white','none',0);
+  sTxt(p,x,y,s,sz,fill);
+}
+
+function sArrow(p,x1,y1,x2,y2,col='#c0392b',sz=5){
+  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+  if(len<1)return;
+  const ux=dx/len,uy=dy/len;
+  const ax=x1+ux*sz,ay=y1+uy*sz;
+  sPoly(p,[[x1,y1],[ax-uy*sz*.35,ay+ux*sz*.35],[ax+uy*sz*.35,ay-ux*sz*.35]],col,'none',0);
+}
+
+/* dimension line: from (x1,y1) to (x2,y2), offset perpendicular by `off` px */
+function dimL(p,x1,y1,x2,y2,label,off=28,col='#c0392b'){
+  const dx=x2-x1,dy=y2-y1,isH=Math.abs(dx)>Math.abs(dy);
+  const ox=isH?0:off, oy=isH?off:0;
+  const lx1=x1+ox,ly1=y1+oy,lx2=x2+ox,ly2=y2+oy;
+  const mx=(lx1+lx2)/2,my=(ly1+ly2)/2;
+  // extension lines
+  sLine(p,x1,y1,lx1,ly1,col,.6,'3 2');
+  sLine(p,x2,y2,lx2,ly2,col,.6,'3 2');
+  // main line
+  sLine(p,lx1,ly1,lx2,ly2,col,1.2);
+  sArrow(p,lx1,ly1,lx2,ly2,col,5);
+  sArrow(p,lx2,ly2,lx1,ly1,col,5);
+  // label with background
+  const lx=isH?mx:mx+(ox>0?4:-4);
+  const ly=isH?my-(Math.abs(oy)*.3+6):my;
+  sTxtBg(p,lx,ly,label,9,col);
+}
+
+// ════════════════════════════════════════════════════════
+// PLAN DE MASSE
+// ════════════════════════════════════════════════════════
+function drawPlan(svg,d,vw=480,vh=340){
+  clr(svg);
+  const PAD=70;
+  const avW=vw-PAD*2, avH=vh-PAD*2;
+  const sc=Math.min(avW/d.htL, avH/d.htP);
+
+  const htW=d.htL*sc, htP=d.htP*sc;
+  const cx=vw/2, cy=vh/2;
+  const ox=cx-htW/2, oy=cy-htP/2; // top-left of hors-tout
+  const wx=ox+d.ovL*sc, wy=oy+d.ovF*sc; // top-left of wall exterior
+  const drawW=d.L*sc, drawP=d.P*sc, wt=d.wt*sc;
+
+  // Hors tout boundary (dashed)
+  sRect(svg,ox,oy,htW,htP,'none','#bbb',.8,'5 3');
+
+  if(TYPE==='carport'){
+    drawPlanCarport(svg,d,wx,wy,drawW,drawP,wt,sc);
+  } else {
+    // Wall exterior
+    sRect(svg,wx,wy,drawW,drawP,'#e8eef5','#1a1a2e',2);
+    // Wall interior
+    sRect(svg,wx+wt,wy+wt,drawW-wt*2,drawP-wt*2,'#f5f8fc','#7f8c8d',.7);
+    // Madrier corner joints (10cm protrusions)
+    if(d.sys!=='ossature'){
+      const cj=0.10*sc;
+      [[wx,wy],[wx+drawW,wy],[wx,wy+drawP],[wx+drawW,wy+drawP]].forEach(([cx2,cy2])=>{
+        const sx=cx2===wx?-cj:0, sy=cy2===wy?-cj:0;
+        const ex=cx2===wx?wt:drawW-wt, ey=cy2===wy?wt:drawP-wt;
+        // horizontal joint
+        sRect(svg,cx2+sx,cy2+sy,cj+wt*(cx2===wx?1:-1),cj,'#d0dae8','#1a1a2e',1);
+        // vertical joint
+        sRect(svg,cx2+sx,cy2+sy,cj,cj+wt*(cy2===wy?1:-1),'#d0dae8','#1a1a2e',1);
+      });
+      // Madrier log lines (horizontal)
+      const logH=(d.sys==='madrier28'?0.028:0.045)*sc;
+      let ly=wy+drawP-logH;
+      while(ly>wy){sLine(svg,wx+1,ly,wx+drawW-1,ly,'#c8d6e5',.4);ly-=logH;}
+    }
+  }
+
+  // Support posts for overhangs > 50cm
+  [{side:'face',ov:d.ovF,get px(){return wx+drawW/2;},get py(){return wy+drawP+d.ovF*sc-0.12*sc;}},
+   {side:'fond', ov:d.ovB,get px(){return wx+drawW/2;},get py(){return wy-d.ovB*sc;}},
+   {side:'gauche',ov:d.ovL,get px(){return wx-d.ovL*sc;},get py(){return wy+drawP/2;}},
+   {side:'droite',ov:d.ovR,get px(){return wx+drawW+d.ovR*sc-0.12*sc;},get py(){return wy+drawP/2;}}
+  ].forEach(({ov,px,py})=>{
+    if(ov>0.5){
+      const ps=0.12*sc;
+      sRect(svg,px-ps/2,py-ps/2,ps,ps,'#f0b429','#856404',1.2);
+    }
+  });
+
+  // Menuiseries
+  MENUS.forEach(m=>{
+    const mW=(m.lw/100)*sc;
+    let mx2,my2,mww,mhh;
+    if(m.wall==='face')  {mx2=wx+(m.pos/100)*drawW-mW/2;my2=wy+drawP-3;mww=mW;mhh=6;}
+    else if(m.wall==='fond') {mx2=wx+(m.pos/100)*drawW-mW/2;my2=wy-3;mww=mW;mhh=6;}
+    else if(m.wall==='gauche'){mx2=wx-3;my2=wy+(m.pos/100)*drawP-mW/2;mww=6;mhh=mW;}
+    else{mx2=wx+drawW-3;my2=wy+(m.pos/100)*drawP-mW/2;mww=6;mhh=mW;}
+    const c=m.type==='fenetre'?'#3498db':'#27ae60';
+    sRect(svg,mx2,my2,mww,mhh,m.type==='fenetre'?'#d6eaf8':'#d5f5e3',c,1.5);
+  });
+
+  // Dimension lines
+  dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L} m`,30);        // largeur bas
+  dimL(svg,wx+drawW,wy,wx+drawW,wy+drawP,`${d.P} m`,-32);       // profondeur droite
+  dimL(svg,ox,oy,ox+htW,oy,`HT ${d.htL.toFixed(2)} m`,-25);    // hors tout largeur
+  dimL(svg,ox,oy,ox,oy+htP,`HT ${d.htP.toFixed(2)} m`,30);     // hors tout profondeur
+
+  // Interior dims
+  if(TYPE!=='carport'){
+    sTxt(svg,wx+wt+drawW/2-wt,wy+wt+12,`↔ int. ${d.intL.toFixed(2)} m`,9,'#3498db');
+    sTxt(svg,wx+wt+12,wy+wt+drawP/2-wt,`↕ int. ${d.intP.toFixed(2)} m`,9,'#3498db');
+  }
+
+  // North arrow
+  const nx=ox+18,ny=oy+20;
+  sLine(svg,nx,ny+12,nx,ny,'#888',1.5);sArrow(svg,nx,ny+12,nx,ny,'#888',5);
+  sTxt(svg,nx,ny-8,'N',9,'#888','middle');
+
+  // Labels
+  sTxt(svg,ox+3,oy+htP-6,'FACE →',8,'#888','start');
+  sTxt(svg,ox+3,oy+8,'← FOND',8,'#888','start');
+
+  // Overhang dimension (face)
+  if(d.ovF!==d.stdOvhg||d.ovB!==d.stdOvhg){
+    dimL(svg,wx,oy,wx,wy,`débord face ${(d.ovF*100).toFixed(0)} cm`,28,'#e67e22');
+  }
+  if(d.ovL!==d.stdOvhg||d.ovR!==d.stdOvhg){
+    dimL(svg,ox,wy,wx,wy,`débord ${(d.ovL*100).toFixed(0)} cm`,-22,'#e67e22');
+  }
+}
+
+function drawPlanCarport(svg,d,wx,wy,drawW,drawP,wt,sc){
+  const ps=parseFloat(document.getElementById('f-pot').value)*sc||0.12*sc;
+  const np=d.nPosts;
+  // Beam outlines (light fill)
+  sRect(svg,wx,wy,drawW,ps,'#ecf0f1','#555',.8);
+  sRect(svg,wx,wy+drawP-ps,drawW,ps,'#ecf0f1','#555',.8);
+  // Side beams
+  sRect(svg,wx,wy,ps,drawP,'#ecf0f1','#555',.5);
+  sRect(svg,wx+drawW-ps,wy,ps,drawP,'#ecf0f1','#555',.5);
+  // Posts
+  for(let row=0;row<2;row++){
+    const py=row===0?wy:wy+drawP-ps;
+    for(let i=0;i<np;i++){
+      const px=wx+(drawW/(np>1?np-1:1))*i-ps/2;
+      sRect(svg,px,py,ps,ps,'#bdc3c7','#2c3e50',1.5);
+    }
+  }
+  // Intermediate posts for long depth
+  if(d.P>d.nPosts*parseFloat(document.getElementById('f-esp').value)/2){
+    const midY=wy+drawP/2-ps/2;
+    sRect(svg,wx-ps/2,midY,ps,ps,'#bdc3c7','#2c3e50',1.5);
+    sRect(svg,wx+drawW-ps/2,midY,ps,ps,'#bdc3c7','#2c3e50',1.5);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// ELEVATION GEOMETRY
+//
+// Convention for gauche/droite views:
+//   gauche (looking from left toward right):  left=FACE, right=FOND
+//   droite (looking from right toward left):  left=FOND, right=FACE
+//
+// Convention for face/fond views:
+//   both look at LARGEUR:  left=GAUCHE, right=DROITE
+// ════════════════════════════════════════════════════════
+function getElevGeom(d,side){
+  const {L,P,hExt,rH,toit,orient,ovF,ovB,ovL,ovR}=d;
+
+  if(side==='face'||side==='fond'){
+    const w=L;
+    const ovhgL=ovL,ovhgR=ovR;         // left=gauche, right=droite
+    const ovhgTop=side==='face'?ovF:ovB;
+    if(toit==='2PANS')
+      return{w,wallH:hExt,roofT:'triangle',rH,ovhgL,ovhgR,ovhgTop};
+    if(toit==='1PAN'){
+      if(orient==='droite') return{w,wallH:hExt,roofT:'trapL',rH,ovhgL,ovhgR,ovhgTop}; // high-L low-R
+      if(orient==='gauche') return{w,wallH:hExt,roofT:'trapR',rH,ovhgL,ovhgR,ovhgTop}; // high-R low-L
+      // fond/face orient: pignon not visible from face/fond
+      const isHigh=(orient==='fond'&&side==='face')||(orient==='face'&&side==='fond');
+      return{w,wallH:isHigh?hExt+rH:hExt,roofT:'flat',rH:0,ovhgL,ovhgR,ovhgTop};
+    }
+    return{w,wallH:hExt,roofT:'flat',rH:0,ovhgL,ovhgR,ovhgTop};
+  }
+
+  if(side==='gauche'||side==='droite'){
+    const w=P;
+    const isG=side==='gauche';
+    // gauche: left=FACE, right=FOND
+    // droite: left=FOND, right=FACE  (mirrored!)
+    const ovhgL=isG?ovF:ovB;
+    const ovhgR=isG?ovB:ovF;
+    const ovhgTop=isG?ovL:ovR;
+
+    if(toit==='2PANS')
+      return{w,wallH:hExt,roofT:'slope2',rH,ovhgL,ovhgR,ovhgTop};
+
+    if(toit==='1PAN'){
+      if(orient==='droite'){
+        // slope goes to building's RIGHT: GAUCHE=high wall, DROITE=low/gutter wall
+        if(isG) return{w,wallH:hExt+rH,roofT:'flat',rH:0,ovhgL,ovhgR,ovhgTop}; // high side: flat acrotère wall
+        else    return{w,wallH:hExt,roofT:'slope1',rH,ovhgL,ovhgR,ovhgTop};     // gutter side: shows slope profile with acrotère behind
+      }
+      if(orient==='gauche'){
+        // slope goes to building's LEFT: DROITE=high wall, GAUCHE=low/gutter wall
+        if(isG) return{w,wallH:hExt,roofT:'slope1',rH,ovhgL,ovhgR,ovhgTop};    // gutter side: shows slope profile with acrotère behind
+        else    return{w,wallH:hExt+rH,roofT:'flat',rH:0,ovhgL,ovhgR,ovhgTop}; // high side: flat acrotère wall
+      }
+      if(orient==='fond'){
+        // high=FACE, low=FOND
+        // gauche: left=FACE(high), right=FOND(low) → trapL
+        // droite: left=FOND(low), right=FACE(high) → trapR (mirrored)
+        return{w,wallH:hExt,roofT:isG?'trapL':'trapR',rH,ovhgL,ovhgR,ovhgTop};
+      }
+      if(orient==='face'){
+        // high=FOND, low=FACE
+        return{w,wallH:hExt,roofT:isG?'trapR':'trapL',rH,ovhgL,ovhgR,ovhgTop};
+      }
+    }
+    return{w,wallH:hExt,roofT:'flat',rH:0,ovhgL,ovhgR,ovhgTop};
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// DRAW ELEVATION
+// ════════════════════════════════════════════════════════
+function drawElev(svg,d,side,vw=320,vh=260){
+  clr(svg);
+  if(TYPE==='carport'){drawCarportElev(svg,d,side,vw,vh);return;}
+
+  const g=getElevGeom(d,side);
+  const PAD={t:25,b:45,l:65,r:50};
+  const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
+
+  const maxH=g.wallH+(g.roofT==='flat'?0.12:g.rH);
+  const totW=g.w+g.ovhgL+g.ovhgR;
+  const sc=Math.min(avW/totW,(avH-8)/maxH);
+
+  const gndY=vh-PAD.b;
+  const wallHpx=g.wallH*sc;
+  const oL=g.ovhgL*sc,oR=g.ovhgR*sc;
+  const drawW=g.w*sc;
+  const baseX=PAD.l+(avW-totW*sc)/2+oL;
+  const baseY=gndY-wallHpx;
+  const wt=d.wt*sc;
+
+  // Ground + hatch
+  sLine(svg,PAD.l/2,gndY,vw-PAD.r/2,gndY,'#888',2);
+  for(let i=0;i<18;i++) sLine(svg,PAD.l/2+i*14,gndY,PAD.l/2+i*14-10,gndY+12,'#ddd',.5);
+
+  // Wall
+  sRect(svg,baseX,baseY,drawW,wallHpx,'#e8eef5','#1a1a2e',2);
+
+  // Wall thickness dashes
+  sLine(svg,baseX+wt,baseY,baseX+wt,gndY,'#b0bec5',.7,'4 3');
+  sLine(svg,baseX+drawW-wt,baseY,baseX+drawW-wt,gndY,'#b0bec5',.7,'4 3');
+
+  // Madrier log lines
+  if(d.sys!=='ossature'){
+    const lh=(d.sys==='madrier28'?0.028:0.045)*sc;
+    let ly=gndY-lh;
+    while(ly>baseY+2){sLine(svg,baseX+2,ly,baseX+drawW-2,ly,'#c8d6e5',.5);ly-=lh;}
+  }
+
+  // Roof
+  drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
+
+  // Gouttière
+  if(document.getElementById('f-gout').value==='oui'){
+    sRect(svg,baseX-3,baseY-4,8,5,'#7f8c8d','#555',1);
+    sRect(svg,baseX+drawW-5,baseY-4,8,5,'#7f8c8d','#555',1);
+  }
+
+  // Menuiseries
+  MENUS.filter(m=>m.wall===side).forEach(m=>{
+    const mW=(m.lw/100)*sc, mH=(m.lh/100)*sc;
+    const mx=baseX+(m.pos/100)*drawW-mW/2;
+    const my=gndY-mH-0.1*sc;
+    const c=m.type==='fenetre'?'#3498db':'#27ae60';
+    sRect(svg,mx,my,mW,mH,m.type==='fenetre'?'#d6eaf8':'#d5f5e3',c,1.5);
+    if(m.type==='fenetre'){
+      sLine(svg,mx+mW/2,my,mx+mW/2,my+mH,c,.7);
+      sLine(svg,mx,my+mH/2,mx+mW,my+mH/2,c,.7);
+    } else {
+      sLine(svg,mx+mW/2,my,mx+mW/2,my+mH,c,.7);
+    }
+    sTxtBg(svg,mx+mW/2,my-6,m.label.split(' ')[0],6,'#555');
+  });
+
+  // Garage door (only facade)
+  if(TYPE==='garage'&&side==='face'){
+    const gW=(parseFloat(document.getElementById('f-pglw').value)||237)/100*sc;
+    const gH=(parseFloat(document.getElementById('f-pglh').value)||200)/100*sc;
+    const gx=baseX+drawW/2-gW/2, gy=gndY-gH;
+    sRect(svg,gx,gy,gW,gH,'#ecf0f1','#2c3e50',2);
+    for(let i=1;i<4;i++) sLine(svg,gx,gy+(gH/4)*i,gx+gW,gy+(gH/4)*i,'#aaa',.5);
+    sTxt(svg,gx+gW/2,gy+gH/2,'Porte garage',7,'#555');
+  }
+
+  // ── DIMENSION LINES ──────────────────────────────────
+  // Width
+  dimL(svg,baseX,gndY,baseX+drawW,gndY,`${g.w} m`,28);
+  // Total height on right side
+  const roofTopY=baseY-(g.roofT==='flat'?0.12*sc:g.rH*sc);
+  const hTot=g.wallH+(g.roofT==='flat'?0.12:g.rH);
+  const dimRx=baseX+drawW+(oR>2?oR+8:PAD.r-12);
+  dimL(svg,dimRx,roofTopY,dimRx,gndY,`H ${hTot.toFixed(2)} m`,-5);
+  // Wall height on left side only
+  const dimLx=PAD.l*0.55;
+  dimL(svg,dimLx,baseY,dimLx,gndY,`H mur ${d.hInt.toFixed(2)} m`,-5);
+  // Faîte rise — on left side, further in
+  if(g.rH>0&&g.roofT!=='flat'&&g.roofT!=='slope1'){
+    const dimLx2=PAD.l*0.55+18;
+    dimL(svg,dimLx2,roofTopY,dimLx2,baseY,`+${g.rH.toFixed(2)} m`,-5,'#e67e22');
+  }
+  // Overhangs shown on width
+  if(g.ovhgL>d.stdOvhg||g.ovhgR>d.stdOvhg){
+    dimL(svg,baseX-oL,gndY,baseX+drawW+oR,gndY,`HT ${(g.w+g.ovhgL+g.ovhgR).toFixed(2)} m`,44,'#e67e22');
+  }
+  // Wall thickness dashes on bottom (subtle)
+  sLine(svg,baseX,gndY-3,baseX+wt,gndY-3,'#b0bec5',.7);
+  sLine(svg,baseX+drawW-wt,gndY-3,baseX+drawW,gndY-3,'#b0bec5',.7);
+
+  // Interior dim
+  sTxtBg(svg,baseX+drawW/2,gndY-d.hInt*sc/2,`int. ${d.hInt.toFixed(2)} m`,8,'#3498db');
+}
+
+// ════════════════════════════════════════════════════════
+// DRAW CARPORT ELEVATION
+// Posts only — no walls
+// ════════════════════════════════════════════════════════
+function drawCarportElev(svg,d,side,vw,vh){
+  const PAD={t:25,b:45,l:65,r:50};
+  const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
+
+  // Determine visible dimension & posts
+  const isFace=side==='face'||side==='fond';
+  const viewW=isFace?d.L:d.P;
+  const ovhgL=isFace?d.ovL:(side==='gauche'?d.ovF:d.ovB);
+  const ovhgR=isFace?d.ovR:(side==='gauche'?d.ovB:d.ovF);
+  const ovhgTop=isFace?(side==='face'?d.ovF:d.ovB):(side==='gauche'?d.ovL:d.ovR);
+
+  const maxH=d.hExt+d.rH+ovhgTop;
+  const totW=viewW+ovhgL+ovhgR;
+  const sc=Math.min(avW/totW,(avH-8)/maxH);
+  const gndY=vh-PAD.b;
+  const hpx=d.hExt*sc;
+  const baseX=PAD.l+(avW-totW*sc)/2+ovhgL*sc;
+  const drawWpx=viewW*sc;
+  const ps=parseFloat(document.getElementById('f-pot').value)*sc||0.12*sc;
+
+  // Ground
+  sLine(svg,PAD.l/2,gndY,vw-PAD.r/2,gndY,'#888',2);
+  for(let i=0;i<18;i++) sLine(svg,PAD.l/2+i*14,gndY,PAD.l/2+i*14-10,gndY+12,'#ddd',.5);
+
+  // Post array
+  const np=isFace?d.nPosts:2;
+  const spacing=isFace?(np>1?drawWpx/(np-1):drawWpx):drawWpx;
+
+  // Posts
+  for(let i=0;i<np;i++){
+    const px=baseX+(isFace?spacing*i:i*drawWpx)-ps/2;
+    sRect(svg,px,gndY-hpx,ps,hpx,'#bdc3c7','#2c3e50',1.5);
+    // post base plate
+    sRect(svg,px-3,gndY-4,ps+6,4,'#95a5a6','#555',1);
+  }
+
+  // Horizontal beam on top of posts
+  const beamH=Math.max(4,0.20*sc);
+  sRect(svg,baseX-ovhgL*sc,gndY-hpx-beamH,drawWpx+ovhgL*sc+ovhgR*sc,beamH,'#d5cba0','#5d4037',1.5);
+
+  // Rafters (visible from side views)
+  if(!isFace){
+    const nRaft=Math.max(3,Math.round(viewW/0.6));
+    for(let i=0;i<=nRaft;i++){
+      const rx=baseX-ovhgL*sc+((drawWpx+ovhgL*sc+ovhgR*sc)/nRaft)*i;
+      sLine(svg,rx,gndY-hpx-beamH,rx,gndY-hpx-beamH-5,'#8d6e63',.8);
+    }
+  }
+
+  // Roof
+  const g={w:viewW,wallH:d.hExt,roofT:'triangle',rH:d.rH,ovhgL,ovhgR,ovhgTop};
+  if(d.toit==='2PANS') g.roofT='triangle';
+  else if(d.toit==='1PAN'){
+    const orient=document.getElementById('f-orient').value;
+    if(isFace){
+      g.roofT=orient==='droite'?'trapL':orient==='gauche'?'trapR':'flat';
+    } else {
+      const isG=side==='gauche';
+      if(orient==='droite'){
+        if(isG){g.wallH=d.hExt+d.rH;g.roofT='flat';g.rH=0;}           // GAUCHE=high side
+        else   {g.wallH=d.hExt;g.roofT='slope1';g.rH=d.rH;}            // DROITE=gutter side
+      } else if(orient==='gauche'){
+        if(isG){g.wallH=d.hExt;g.roofT='slope1';g.rH=d.rH;}            // GAUCHE=gutter side
+        else   {g.wallH=d.hExt+d.rH;g.roofT='flat';g.rH=0;}            // DROITE=high side
+      }
+      else if(orient==='fond') g.roofT=isG?'trapL':'trapR';
+      else g.roofT=isG?'trapR':'trapL';
+    }
+  } else {
+    g.roofT='flat';
+  }
+
+  // Closures (filled walls on selected sides)
+  const clos=document.getElementById('f-clos').value;
+  const showClosure=(isFace&&(clos==='fond'))||(side==='gauche'&&clos.includes('gauche'))||(side==='droite'&&clos.includes('droite'))||(side==='fond'&&clos.includes('fond'));
+  if(showClosure){
+    sRect(svg,baseX,gndY-hpx,drawWpx,hpx,'rgba(200,210,220,0.5)','#7f8c8d',1,'4 3');
+    sTxt(svg,baseX+drawWpx/2,gndY-hpx/2,'Fermeture',8,'#888');
+  }
+
+  // Roof drawn using same helper
+  const baseY2=gndY-g.wallH*sc;
+  drawRoof(svg,d,g,baseX,baseY2,drawWpx,ovhgL*sc,ovhgR*sc,sc,vw);
+
+  // Dimension lines
+  dimL(svg,baseX,gndY,baseX+drawWpx,gndY,`${viewW} m`,28);
+  dimL(svg,baseX-PAD.l+8,gndY-hpx,baseX-PAD.l+8,gndY,`H ${d.hExt.toFixed(2)} m`,-5);
+  if(np>1) sTxtBg(svg,baseX+drawWpx/2,gndY-hpx/2,`espacement ${(viewW/(np-1)).toFixed(2)} m`,8,'#555');
+  sTxt(svg,baseX-ovhgL*sc+(drawWpx+ovhgL*sc+ovhgR*sc)/2,gndY-hpx-beamH-9,'Poutre / sablière',8,'#8d6e63');
+  if(isFace) sTxt(svg,baseX+drawWpx/2,gndY-hpx-beamH-22,`${d.nPosts} poteaux`,8,'#555');
+}
+
+// ════════════════════════════════════════════════════════
+// DRAW ROOF (shared between abri and carport)
+// ════════════════════════════════════════════════════════
+function drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw){
+  const rx=baseX-oL, rw=drawW+oL+oR;
+  const roofH=g.rH*sc;
+
+  if(g.roofT==='flat'){
+    const slabH=Math.max(5,0.15*sc);
+    sRect(svg,rx,baseY-slabH,rw,slabH,'#95a5a6','#555',1.5);
+    if(d.toit==='QUADRO'){
+      sRect(svg,rx+2,baseY-slabH+1,rw-4,2,'#5d6d7e','none',0);
+      sTxt(svg,rx+rw/2,baseY-slabH-6,'EPDM',7,'#666');
+    }
+    return;
+  }
+
+  if(g.roofT==='triangle'){
+    const ty=baseY-roofH;
+    sPoly(svg,[[rx,baseY],[rx+rw/2,ty],[rx+rw,baseY]],'#d5d8dc','#555',1.5);
+    sLine(svg,rx+rw/2-4,ty,rx+rw/2+4,ty,'#555',2); // ridge
+    // slope angle markers
+    sTxt(svg,rx+(rw*0.3),baseY-roofH*0.35,`${d.pente}°`,9,'#888');
+    sTxt(svg,rx+(rw*0.7),baseY-roofH*0.35,`${d.pente}°`,9,'#888');
+    return;
+  }
+
+  if(g.roofT==='trapL'){
+    // high left, low right
+    const ty=baseY-roofH;
+    sPoly(svg,[[rx,ty],[rx+rw,baseY],[rx+rw,baseY],[rx,ty]],'none','none');
+    sPoly(svg,[[rx,ty],[rx+rw,baseY],[rx+rw,baseY-2],[rx,ty-2]],'#d5d8dc','none');
+    // actual visible face: triangle (high left corner to low right = 1-pan pignon)
+    sPoly(svg,[[rx,baseY],[rx,ty],[rx+rw,baseY]],'#d5d8dc','#555',1.5);
+    sTxt(svg,rx+rw*0.3,baseY-roofH*0.3,`${d.pente}°`,9,'#888');
+    // faîte indicator
+    sLine(svg,rx-4,ty,rx+8,ty,'#555',1.5);
+    sTxt(svg,rx-5,ty,'faîte',8,'#888','end');
+    return;
+  }
+
+  if(g.roofT==='trapR'){
+    // high right, low left
+    const ty=baseY-roofH;
+    sPoly(svg,[[rx,baseY],[rx+rw,baseY],[rx+rw,ty]],'#d5d8dc','#555',1.5);
+    sTxt(svg,rx+rw*0.7,baseY-roofH*0.3,`${d.pente}°`,9,'#888');
+    sLine(svg,rx+rw-8,ty,rx+rw+4,ty,'#555',1.5);
+    sTxt(svg,rx+rw+5,ty,'faîte',8,'#888','start');
+    return;
+  }
+
+  if(g.roofT==='slope2'){
+    // 2-PANS from the side: near slope visible as a filled panel
+    const ty=baseY-roofH;
+    // Near slope face (appears as rectangle from the side, slope goes into page)
+    sRect(svg,rx,ty,rw,roofH,'#d5d8dc','#555',1.5);
+    // Diagonal hatch lines to indicate slope
+    const step=12;
+    for(let x=rx;x<rx+rw+roofH;x+=step){
+      const x1=Math.max(rx,x-roofH), y1=x1===rx?ty+(x-rx)*roofH/(rw):ty;
+      const x2=Math.min(rx+rw,x),    y2=x2===rx+rw?ty+(x-(rx+rw)+roofH)*roofH/roofH:ty+roofH;
+      // simple: diagonal from top-left sweep
+      const lx1=x,lx2=x-roofH*0.7;
+      const ly1=ty,ly2=Math.min(baseY,ty+roofH*0.7);
+      sLine(svg,Math.max(rx,lx2),Math.min(baseY,ly2),Math.min(rx+rw,lx1),Math.max(ty,ly1),'#aaa',.5);
+    }
+    // Eave line (eave = front or back visible edge)
+    sLine(svg,rx,baseY,rx+rw,baseY,'#555',1);
+    // Ridge line at top (hidden behind, shown dashed)
+    sLine(svg,rx,ty,rx+rw,ty,'#555',1.5);
+    sTxt(svg,rx+rw/2,ty-8,'faîte',8,'#555');
+    sTxt(svg,rx+rw/2,ty+roofH/2,`pente ${d.pente}°`,9,'#888');
+    return;
+  }
+
+  if(g.roofT==='slope1'){
+    // 1-PAN from the GUTTER/LOW side — slope goes into the page (away from viewer)
+    // Near eave at baseY (wallH=hExt), far acrotère/faîte at baseY-roofH
+    // Visible profile: rectangle spanning full height (near wall + slope body + far acrotère)
+    const ty=baseY-roofH;
+    const slabH=Math.max(5,0.12*sc);
+    // Roof body (slope visible as filled rectangle, slope goes into page)
+    sRect(svg,rx,ty-slabH,rw,roofH+slabH,'#d5d8dc','#555',1.5);
+    // Diagonal hatch indicating slope goes away-and-upward into page
+    const step=12;
+    for(let x=rx;x<rx+rw+roofH;x+=step){
+      const lx1=Math.min(rx+rw,x), ly1=Math.max(ty-slabH,ty+(x-(rx+rw))*0.6);
+      const lx2=Math.max(rx,x-roofH*0.9), ly2=Math.min(baseY,ly1+roofH*0.9);
+      if(lx1>rx-1&&lx2<rx+rw+1) sLine(svg,lx2,ly2,lx1,Math.max(ty-slabH,ly1),'#aaa',.5);
+    }
+    // Near eave line (gouttière side — near edge of roof)
+    sLine(svg,rx,baseY,rx+rw,baseY,'#555',1.5);
+    // Far acrotère line drawn by sRect border above
+    // Labels
+    sTxt(svg,rx+rw/2,ty-slabH-8,'Acrotère / faîte',8,'#555');
+    sTxt(svg,rx+2,baseY-6,'Gouttière',7,'#888','start');
+    sTxt(svg,rx+rw/2,ty+roofH/2,`pente ${d.pente}°`,9,'#888');
+    return;
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// DIMS TABLE
+// ════════════════════════════════════════════════════════
+function renderDims(d,tbl){
+  const rows=[
+    ['Largeur ext.', `${d.L} m`],
+    ['Profondeur ext.', `${d.P} m`],
+    TYPE!=='carport'?['Largeur int.', `${d.intL.toFixed(2)} m`]:null,
+    TYPE!=='carport'?['Profondeur int.', `${d.intP.toFixed(2)} m`]:null,
+    ['Hauteur intérieure', `${d.hInt.toFixed(2)} m`],
+    d.rH>0?['Hauteur faîte', `${(d.hExt+d.rH).toFixed(2)} m`]:null,
+    ['Largeur hors tout', `${d.htL.toFixed(2)} m`],
+    ['Profondeur hors tout', `${d.htP.toFixed(2)} m`],
+    ['Surface ext.', `${(d.L*d.P).toFixed(2)} m²`],
+    TYPE!=='carport'?['Surface int.', `${(d.intL*d.intP).toFixed(2)} m²`]:null,
+    ['Débord std.', `${(d.stdOvhg*100).toFixed(0)} cm`],
+    d.uf>0?['+ Débord face', `${(d.uf*100).toFixed(0)} cm`]:null,
+    d.ub>0?['+ Débord fond', `${(d.ub*100).toFixed(0)} cm`]:null,
+    d.ul>0?['+ Débord gauche', `${(d.ul*100).toFixed(0)} cm`]:null,
+    d.ur>0?['+ Débord droite', `${(d.ur*100).toFixed(0)} cm`]:null,
+    TYPE!=='carport'?['Épaisseur murs', `${(d.wt*100).toFixed(0)} cm`]:null,
+    TYPE==='carport'?['Section poteaux', `${(d.wt*100).toFixed(0)}×${(d.wt*100).toFixed(0)} cm`]:null,
+    TYPE==='carport'?['Nb. poteaux côté', `${d.nPosts}`]:null,
+  ].filter(Boolean);
+  tbl.innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// MENUISERIES
+// ════════════════════════════════════════════════════════
+const MPRESETS=[
+  // ── PORTES CLASSIQUES BOIS ──
+  {id:'pz80',       cat:'Porte classique bois',    label:'Porte Z simple 80×186',              type:'porte',  lw:80,  lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.01.png'},
+  {id:'pz140',      cat:'Porte classique bois',    label:'Porte Z double 140×186',             type:'porte',  lw:140, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.15.png'},
+  {id:'pmort80',    cat:'Porte classique bois',    label:'Porte mortaisée simple semi-vitrée 80×186', type:'porte', lw:80, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.29.png'},
+  {id:'pmort140',   cat:'Porte classique bois',    label:'Porte mortaisée double semi-vitrée 140×186', type:'porte', lw:140, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.40.png'},
+  {id:'ppfdv80',    cat:'Porte classique bois',    label:'Porte-fenêtre double vitrage 80×205', type:'porte', lw:80, lh:205, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-09-24-a-15.02.22.png'},
+  // ── PORTES CONTEMPORAINES BOIS ──
+  {id:'pcont1v',    cat:'Porte contemporaine bois',label:'Porte battante simple vitrée 80×210', type:'porte', lw:80, lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.49.png'},
+  {id:'pcont2v',    cat:'Porte contemporaine bois',label:'Porte battante double vitrée 140×210',type:'porte', lw:140,lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.51.png'},
+  {id:'pcont1p',    cat:'Porte contemporaine bois',label:'Porte battante simple pleine 80×210', type:'porte', lw:80, lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.28.png'},
+  {id:'pcont2p',    cat:'Porte contemporaine bois',label:'Porte battante double pleine 140×210',type:'porte', lw:140,lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.25.png'},
+  {id:'pcont1dv',   cat:'Porte contemporaine bois',label:'Porte battante simple 2/4 vitrée 80×210',type:'porte',lw:80,lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.03.png'},
+  // ── PORTES COULISSANTES BOIS ──
+  {id:'pcoul90v',   cat:'Porte coulissante bois',  label:'Coulissante vitrée 90×186 (autoclave vert)',  type:'porte', lw:90, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.56.png'},
+  {id:'pcoul140v',  cat:'Porte coulissante bois',  label:'Coulissante double vitrée 140×186 (autoclave vert)',type:'porte',lw:140,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.24.png'},
+  // ── PORTES COULISSANTES OSSATURE ──
+  {id:'pcoul110av', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (autoclave vert)',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.45.02.png'},
+  {id:'pcoul110ay', cat:'Porte coulissante ossature',label:'Coulissante acidifié Ayous 110×186',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.51.png'},
+  {id:'pcoul110ag', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (autoclave gris)',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.38.png'},
+  {id:'pcoul110al', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (capotage ALU)',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.45.18.png'},
+  // ── PORTES ALU / PVC ──
+  {id:'palu80',     cat:'Porte ALU/PVC',           label:'Porte-fenêtre ALU 80×215 (RAL 7016)',type:'porte', lw:80, lh:215, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.33.png'},
+  {id:'ppvc90',     cat:'Porte ALU/PVC',           label:'Porte battante PVC 90×217 (RAL 7016/Blanc)',type:'porte',lw:90,lh:217,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.33.png'},
+  // ── BAIES COULISSANTES ALU ──
+  {id:'baie180',    cat:'Baie coulissante ALU',    label:'Baie vitrée coulissante ALU 180×217', type:'porte', lw:180,lh:217, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.39.22.png'},
+  {id:'baie240',    cat:'Baie coulissante ALU',    label:'Baie coulissante DV 4/16/4 — 240×195 (RAL 7016)', type:'porte',lw:240,lh:195,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.39.50.png'},
+  // ── FENÊTRES CLASSIQUES BOIS ──
+  {id:'f49fix',     cat:'Fenêtre classique bois',  label:'Fenêtre fixe 49×93',                type:'fenetre',lw:49, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.40.png'},
+  {id:'f80fix',     cat:'Fenêtre classique bois',  label:'Fenêtre fixe 80×93',                type:'fenetre',lw:80, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.44.png'},
+  {id:'f49ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 49×93',            type:'fenetre',lw:49, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.40.png'},
+  {id:'f80ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 80×93',            type:'fenetre',lw:80, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.44.png'},
+  {id:'fdv75',      cat:'Fenêtre classique bois',  label:'Fenêtre double vitrage 75×60',      type:'fenetre',lw:75, lh:60, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.17.48.png'},
+  // ── FENÊTRES CONTEMPORAINES ──
+  {id:'fhublot',    cat:'Fenêtre contemporaine',   label:'Hublot 91 cm',                     type:'fenetre',lw:91, lh:91, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.48.52.png'},
+  {id:'fc9353',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 93×53.5 cm',          type:'fenetre',lw:93, lh:53.5,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.49.08.png'},
+  {id:'fc5393',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 53.5×93 cm',          type:'fenetre',lw:53.5,lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.32.png'},
+  {id:'fc20054',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 200×54 cm',           type:'fenetre',lw:200,lh:54,  img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.25.png'},
+  {id:'fc54200',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 54×200 cm',           type:'fenetre',lw:54, lh:200, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.48.png'},
+  // ── FENÊTRES ALU / PVC ──
+  {id:'falu60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU 60×95 (RAL 7016)',     type:'fenetre',lw:60, lh:95, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
+  {id:'fpano120',   cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU panoramique 120×95 (RAL 7016)',type:'fenetre',lw:120,lh:95,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
+  {id:'fpvc60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC 60×95 (RAL 7016/Blanc)',type:'fenetre',lw:60, lh:95, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
+  {id:'fpvc120',    cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC panoramique 120×95 (RAL 7016/Blanc)',type:'fenetre',lw:120,lh:95,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
+];
+function addM(){
+  const id=++MCNT,p=MPRESETS[0];
+  MENUS.push({id,preset:p.id,label:p.label,type:p.type,lw:p.lw,lh:p.lh,pos:50,wall:'face',seuil:0.1,img:p.img||''});
+  renderMenus();upd();
+}
+function removeM(id){MENUS=MENUS.filter(m=>m.id!==id);renderMenus();upd();}
+function onMC(id){
+  const m=MENUS.find(x=>x.id===id);if(!m)return;
+  const p=MPRESETS.find(x=>x.id===document.getElementById(`mp-${id}`).value);
+  if(p){m.preset=p.id;m.label=p.label;m.type=p.type;m.lw=p.lw;m.lh=p.lh;m.img=p.img||'';}
+  m.pos=parseInt(document.getElementById(`mpos-${id}`).value)||50;
+  m.wall=document.getElementById(`mwall-${id}`).value;
+  upd();
+}
+function buildMSelect(selectedId){
+  const cats=[...new Set(MPRESETS.map(p=>p.cat))];
+  return cats.map(cat=>{
+    const opts=MPRESETS.filter(p=>p.cat===cat)
+      .map(p=>`<option value="${p.id}"${p.id===selectedId?' selected':''}>${p.label}</option>`).join('');
+    return `<optgroup label="${cat}">${opts}</optgroup>`;
+  }).join('');
+}
+function renderMenus(){
+  document.getElementById('mlist').innerHTML=MENUS.map(m=>`
+    <div class="mitem">
+      <button class="x" onclick="removeM(${m.id})">×</button>
+      <div class="fr" style="margin-bottom:5px"><label>Type</label>
+        <select id="mp-${m.id}" onchange="onMC(${m.id})" style="font-size:11px">
+          ${buildMSelect(m.preset)}
+        </select></div>
+      <div class="row2">
+        <div class="fr"><label>Paroi</label>
+          <select id="mwall-${m.id}" onchange="onMC(${m.id})">
+            ${['face','fond','gauche','droite'].map(w=>`<option value="${w}"${w===m.wall?' selected':''}>${w[0].toUpperCase()+w.slice(1)}</option>`).join('')}
+          </select></div>
+        <div class="fr"><label>Position (%)</label>
+          <input type="number" id="mpos-${m.id}" value="${m.pos}" min="5" max="95" onchange="onMC(${m.id})">
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// CONFIG TAGS
+// ════════════════════════════════════════════════════════
+function buildTags(d){
+  const T={abri:'Abri de Jardin',carport:'Carport',garage:'Garage'};
+  const tags=[T[TYPE],`${d.L}×${d.P} m`];
+  if(d.reh>0) tags.push(`${d.reh} rehausse${d.reh>1?'s':''} (+${d.reh*13} cm)`);
+  const tL={TOIT_PLAT:'Toit plat bac acier','2PANS':'2 Pans','1PAN':'1 Pan','QUADRO':'QUADRO cube EPDM'};
+  tags.push(tL[d.toit]);
+  if(d.toit==='1PAN') tags.push(document.getElementById('f-orient').options[document.getElementById('f-orient').selectedIndex].text);
+  if(!d.isFlat) tags.push(`Pente ${d.pente}°`);
+  if(TYPE!=='carport'){const sL={madrier28:'Madrier 28mm',madrier45:'Madrier 45mm',ossature:'Ossature bois'};tags.push(sL[d.sys]);}
+  if(TYPE==='carport'){
+    tags.push(document.getElementById('f-pot').options[document.getElementById('f-pot').selectedIndex].text);
+    tags.push(`Espacement max. ${document.getElementById('f-esp').value} m`);
+    tags.push(`${d.nPosts} poteaux par rangée`);
+  }
+  const p=document.getElementById('f-plan').value;if(p!=='non')tags.push('Plancher');
+  const iso=document.getElementById('f-iso').value;if(iso!=='non')tags.push('Isolation '+iso);
+  if(document.getElementById('f-gout').value==='oui')tags.push('Gouttière');
+  if(d.uf>0||d.ub>0||d.ul>0||d.ur>0) tags.push(`Débords ext. : F+${(d.uf*100).toFixed(0)} B+${(d.ub*100).toFixed(0)} G+${(d.ul*100).toFixed(0)} D+${(d.ur*100).toFixed(0)} cm`);
+  MENUS.forEach(m=>tags.push(`${m.type==='fenetre'?'🪟':'🚪'} ${m.label} (${m.wall})`));
+  return tags;
+}
+
+// ════════════════════════════════════════════════════════
+// UPDATE
+// ════════════════════════════════════════════════════════
+function upd(){
+  const d=calcDims();
+  document.getElementById('r-pente').style.display=d.isFlat?'none':'';
+  document.getElementById('r-orient').style.display=d.toit==='1PAN'?'':'none';
+
+  drawPlan(document.getElementById('sv-plan'),d,480,340);
+  drawElev(document.getElementById('sv-face'),d,'face',380,280);
+  drawElev(document.getElementById('sv-gau'),d,'gauche',380,280);
+  drawElev(document.getElementById('sv-dro'),d,'droite',380,280);
+  drawElev(document.getElementById('sv-fond'),d,'fond',380,280);
+
+  renderDims(d,document.getElementById('dim-tbl'));
+  document.getElementById('cfg-tags').innerHTML=buildTags(d).map(t=>`<span class="tag">${t}</span>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// PRINT
+// ════════════════════════════════════════════════════════
+function printIt(){
+  const d=calcDims(),tags=buildTags(d);
+  const tL={abri:'Abri de Jardin',carport:'Carport',garage:'Garage'};
+  document.getElementById('ps-typelbl').textContent=tL[TYPE];
+  document.getElementById('ps-nom').textContent=document.getElementById('f-nom').value||'';
+  document.getElementById('ps-refno').textContent=document.getElementById('f-ref').value||'';
+  const ds=new Date().toLocaleDateString('fr-FR');
+  document.getElementById('ps-date').textContent=`Le ${ds}`;
+  document.getElementById('ps-fdate').textContent=ds;
+  document.getElementById('ps-fref').textContent=document.getElementById('f-ref').value||'';
+
+  drawPlan(document.getElementById('ps-plan'),d,340,250);
+  drawElev(document.getElementById('ps-face'),d,'face',340,250);
+  drawElev(document.getElementById('ps-gau'),d,'gauche',300,230);
+  drawElev(document.getElementById('ps-dro'),d,'droite',300,230);
+  drawElev(document.getElementById('ps-fond'),d,'fond',300,230);
+
+  renderDims(d,document.getElementById('ps-dt'));
+  document.getElementById('ps-cfg').innerHTML=tags.map(t=>`<li>${t}</li>`).join('');
+
+  // ── Build option page 2 ──
+  document.getElementById('ps2-typelbl').textContent=tL[TYPE];
+  document.getElementById('ps2-nom').textContent=document.getElementById('f-nom').value||'';
+  document.getElementById('ps2-refno').textContent=document.getElementById('f-ref').value||'';
+  document.getElementById('ps2-fref').textContent=document.getElementById('f-ref').value||'';
+  document.getElementById('ps2-fdate').textContent=new Date().toLocaleDateString('fr-FR');
+
+  const optCards=[];
+  // Plancher
+  const planV=document.getElementById('f-plan').value;
+  if(planV!=='non'&&OPTION_DATA[planV]){
+    const o=OPTION_DATA[planV];
+    optCards.push(`<div class="opt-card"><img src="${o.img}" alt="${o.label}" onerror="this.style.display='none'"><div class="oc-body"><div class="oc-title">${o.label}</div><div class="oc-desc">${o.desc}</div></div></div>`);
+  }
+  // Isolation
+  const isoV=document.getElementById('f-iso').value;
+  if(isoV!=='non'&&OPTION_DATA[isoV]){
+    const o=OPTION_DATA[isoV];
+    optCards.push(`<div class="opt-card"><img src="${o.img}" alt="${o.label}" onerror="this.style.display='none'"><div class="oc-body"><div class="oc-title">${o.label}</div><div class="oc-desc">${o.desc}</div></div></div>`);
+  }
+  // Gouttière
+  if(document.getElementById('f-gout').value==='oui'){
+    optCards.push(`<div class="opt-card"><img src="https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-07-a-18.58.22.png" alt="Gouttière" onerror="this.style.display='none'"><div class="oc-body"><div class="oc-title">Gouttière</div><div class="oc-desc">Gouttière zinc avec descente d\'eau pluviale. Protège les fondations et la façade. Disponible en 3 et 4 m.</div></div></div>`);
+  }
+  // Menuiseries
+  MENUS.forEach(m=>{
+    const icon=m.type==='fenetre'?'🪟':'🚪';
+    const paroi=m.wall.charAt(0).toUpperCase()+m.wall.slice(1);
+    optCards.push(`<div class="opt-card">${m.img?`<img src="${m.img}" alt="${m.label}" onerror="this.style.display='none'">`:''}<div class="oc-body"><div class="oc-title">${icon} ${m.label}</div><div class="oc-desc">Paroi : ${paroi} — Dimensions : ${m.lw}×${m.lh} cm</div></div></div>`);
+  });
+
+  const ps2el=document.getElementById('ps2-opts');
+  if(optCards.length>0){
+    ps2el.innerHTML=optCards.join('');
+    document.getElementById('ps2').style.setProperty('display','block','important');
+  } else {
+    document.getElementById('ps2').style.display='none';
+  }
+
+  window.print();
+}
+
+// ════════════════════════════════════════════════════════
+// OPTION IMAGE MAP (for print page 2)
+// ════════════════════════════════════════════════════════
+const OPTION_DATA={
+  // Plancher
+  epicea15:{label:'Plancher épicéa traité 15 mm',
+    desc:'Lames épicéa traité autoclave, structure pin 27mm. Solution économique adaptée aux abris non chauffés.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-10.53.22.png'},
+  pin21:{label:'Plancher pin traité 21 mm',
+    desc:'Lames pin traité autoclave 21mm, structure 27mm. Plus résistant que l\'épicéa, idéal pour un usage intensif.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-10.53.10.png'},
+  epicea21iso:{label:'Plancher épicéa 21 mm + isolation LR',
+    desc:'Lames épicéa 21mm + isolation laine de roche + structure pin 45×145mm. Pour abris chauffés ou vivables.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-10.53.01.png'},
+  // Isolation murs
+  lr60:{label:'Isolation murs — Laine de roche 60 mm',
+    desc:'Panneau laine de roche 60mm entre montants ossature. Confort thermique et phonique amélioré.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-06-a-10.43.21.png'},
+  lr60osb:{label:'Isolation LR 60 mm + OSB 12 mm intérieur',
+    desc:'Laine de roche 60mm + finition intérieure OSB 12mm. Surface intérieure prête à peindre ou couvrir.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-06-a-10.43.05.png'},
+  lr60cp:{label:'Isolation LR 60 mm + contreplaqué 8 mm',
+    desc:'Laine de roche 60mm + finition contreplaqué peuplier 8mm. Esthétique naturelle en intérieur.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-06-a-10.42.51.png'},
+};
+
+upd();
+</script>
+</body>
+</html>
