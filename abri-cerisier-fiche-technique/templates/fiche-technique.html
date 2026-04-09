@@ -605,12 +605,12 @@ function drawPlan(svg,d,vw=480,vh=340){
     dimL(svg,wx+drawW*0.7,oy,wx+drawW*0.7,wy,`${(d.ovB*100).toFixed(0)} cm`,-30,'#e67e22');
   }
 
-  // Légende
-  const legX=ox+4, legY=oy+htP-18;
-  sRect(svg,legX,legY,8,8,'#f0f3ea','#515136',.5,'3 2');
-  sTxt(svg,legX+11,legY+4,'Extension toiture (débord)',6,'#888','start');
-  sRect(svg,legX,legY+11,8,8,'#e8eef5','#1a1a2e',1);
-  sTxt(svg,legX+11,legY+15,'Murs extérieurs',6,'#888','start');
+  // Légende (en bas du SVG, sous le dessin)
+  const legX=8, legY=vh-14;
+  sRect(svg,legX,legY,6,6,'#f0f3ea','#515136',.5,'3 2');
+  sTxt(svg,legX+9,legY+3,'Extension toiture',5,'#888','start');
+  sRect(svg,legX+90,legY,6,6,'#e8eef5','#1a1a2e',1);
+  sTxt(svg,legX+99,legY+3,'Murs ext.',5,'#888','start');
 }
 
 function drawPlanCarport(svg,d,wx,wy,drawW,drawP,wt,sc){
@@ -758,15 +758,26 @@ function drawElev(svg,d,side,vw=320,vh=260){
   // Roof
   drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
 
-  // Poteaux de soutien (débord > 50 cm)
+  // Poteaux de soutien (débord > 50 cm, portée max 3m)
   const postW=0.12*sc, postCol='#f0b429', postStroke='#856404';
+  const isFaceOrFond=side==='face'||side==='fond';
+  const wallLen=isFaceOrFond?d.L:d.P; // longueur du mur visible
   if(g.ovhgL>0.50){
-    const px=baseX-oL+postW/2;
-    sRect(svg,px-postW/2,baseY,postW,gndY-baseY,postCol,postStroke,1);
+    // Poteau aux deux extrémités
+    sRect(svg,baseX-oL,baseY,postW,gndY-baseY,postCol,postStroke,1);
+    sRect(svg,baseX-oL+oL-postW-2,baseY,postW,gndY-baseY,postCol,postStroke,1);
+    // Poteaux intermédiaires si portée > 3m
+    if(wallLen>3){
+      const nInt=Math.ceil(wallLen/3)-1;
+      for(let i=1;i<=nInt;i++){
+        const px=baseX-oL+oL-postW/2+(drawW/(nInt+1))*i*0;
+        // Actually, intermediate posts are along the wall length, visible on plan not elevation side view
+      }
+    }
   }
   if(g.ovhgR>0.50){
-    const px=baseX+drawW+oR-postW*1.5;
-    sRect(svg,px,baseY,postW,gndY-baseY,postCol,postStroke,1);
+    sRect(svg,baseX+drawW+oR-postW,baseY,postW,gndY-baseY,postCol,postStroke,1);
+    sRect(svg,baseX+drawW+2,baseY,postW,gndY-baseY,postCol,postStroke,1);
   }
 
   // Gouttière
@@ -862,17 +873,16 @@ function drawElev(svg,d,side,vw=320,vh=260){
     dimL(svg,baseX-oL,gndY,baseX+drawW+oR,gndY,`HT ${htW_elev.toFixed(2)} m`,row3Y-gndY,'#e67e22');
   }
 
-  // ── LEFT SIDE: wall height only (no stacking) ──
-  const dimLx=Math.max(12,PAD.l*0.45);
-  dimL(svg,dimLx,baseY,dimLx,gndY,`H mur ${d.hInt.toFixed(2)} m`,-5);
+  // ── LEFT SIDE: wall height (offset LEFT = negative) ──
+  const dimLx=Math.max(12,PAD.l*0.5);
+  dimL(svg,dimLx,baseY,dimLx,gndY,`H mur ${d.hInt.toFixed(2)} m`,-8);
 
-  // ── RIGHT SIDE: total height + faîte bracket ──
-  const dimRx=baseX+drawW+Math.max(oR+8,14);
-  dimL(svg,dimRx,roofTopY,dimRx,gndY,`H ${hTot.toFixed(2)} m`,-5);
-  // Faîte sub-bracket on right (offset further right to avoid overlap)
+  // ── RIGHT SIDE: total height + faîte bracket (offset RIGHT = positive) ──
+  const dimRx=baseX+drawW+Math.max(oR+6,10);
+  dimL(svg,dimRx,roofTopY,dimRx,gndY,`H ${hTot.toFixed(2)} m`,8);
   if(hasRise){
-    const dimRx2=dimRx+22;
-    dimL(svg,dimRx2,roofTopY,dimRx2,baseY,`+${g.rH.toFixed(2)} m`,-5,'#e67e22');
+    const dimRx2=dimRx+20;
+    dimL(svg,dimRx2,roofTopY,dimRx2,baseY,`+${g.rH.toFixed(2)} m`,8,'#e67e22');
   }
 
   // ── WALL THICKNESS (subtle bottom dashes) ──
@@ -1014,11 +1024,21 @@ function drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw){
 
   if(g.roofT==='triangle'){
     const ty=baseY-roofH;
-    sPoly(svg,[[rx,baseY],[rx+rw/2,ty],[rx+rw,baseY]],'#d5d8dc','#555',1.5);
-    sLine(svg,rx+rw/2-4,ty,rx+rw/2+4,ty,'#555',2); // ridge
-    // slope angle markers
-    sTxt(svg,rx+(rw*0.3),baseY-roofH*0.35,`${d.pente}°`,9,'#888');
-    sTxt(svg,rx+(rw*0.7),baseY-roofH*0.35,`${d.pente}°`,9,'#888');
+    // Gable triangle stays within WALL bounds (not overhang)
+    sPoly(svg,[[baseX,baseY],[baseX+drawW/2,ty],[baseX+drawW,baseY]],'#d5d8dc','#555',1.5);
+    sLine(svg,baseX+drawW/2-4,ty,baseX+drawW/2+4,ty,'#555',2); // ridge
+    sTxt(svg,baseX+(drawW*0.3),baseY-roofH*0.35,`${d.pente}°`,9,'#888');
+    sTxt(svg,baseX+(drawW*0.7),baseY-roofH*0.35,`${d.pente}°`,9,'#888');
+    // OVERHANG: slope lines continue beyond walls (just lines)
+    const slopeRate=roofH/(drawW/2||1); // px rise per px horizontal
+    if(oL>1){
+      const extL=slopeRate*oL;
+      sLine(svg,baseX,baseY,rx,baseY+extL,'#555',1.5); // left slope continues down
+    }
+    if(oR>1){
+      const extR=slopeRate*oR;
+      sLine(svg,baseX+drawW,baseY,rx+rw,baseY+extR,'#555',1.5); // right slope continues down
+    }
     return;
   }
 
@@ -1064,26 +1084,26 @@ function drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw){
   }
 
   if(g.roofT==='slope2'){
-    // 2-PANS from the side: near slope visible as a filled panel
+    // 2-PANS from the side: near slope visible as a filled panel (WALL BOUNDS only)
     const ty=baseY-roofH;
-    // Near slope face (appears as rectangle from the side, slope goes into page)
-    sRect(svg,rx,ty,rw,roofH,'#d5d8dc','#555',1.5);
-    // Diagonal hatch lines to indicate slope
+    // Roof body within wall bounds
+    sRect(svg,baseX,ty,drawW,roofH,'#d5d8dc','#555',1.5);
+    // Diagonal hatch lines inside wall bounds
     const step=12;
-    for(let x=rx;x<rx+rw+roofH;x+=step){
-      const x1=Math.max(rx,x-roofH), y1=x1===rx?ty+(x-rx)*roofH/(rw):ty;
-      const x2=Math.min(rx+rw,x),    y2=x2===rx+rw?ty+(x-(rx+rw)+roofH)*roofH/roofH:ty+roofH;
-      // simple: diagonal from top-left sweep
+    for(let x=baseX;x<baseX+drawW+roofH;x+=step){
       const lx1=x,lx2=x-roofH*0.7;
       const ly1=ty,ly2=Math.min(baseY,ty+roofH*0.7);
-      sLine(svg,Math.max(rx,lx2),Math.min(baseY,ly2),Math.min(rx+rw,lx1),Math.max(ty,ly1),'#aaa',.5);
+      sLine(svg,Math.max(baseX,lx2),Math.min(baseY,ly2),Math.min(baseX+drawW,lx1),Math.max(ty,ly1),'#aaa',.5);
     }
-    // Eave line (eave = front or back visible edge)
-    sLine(svg,rx,baseY,rx+rw,baseY,'#555',1);
-    // Ridge line at top (hidden behind, shown dashed)
-    sLine(svg,rx,ty,rx+rw,ty,'#555',1.5);
-    sTxt(svg,rx+rw/2,ty-8,'faîte',8,'#555');
-    sTxt(svg,rx+rw/2,ty+roofH/2,`pente ${d.pente}°`,9,'#888');
+    sLine(svg,baseX,baseY,baseX+drawW,baseY,'#555',1);
+    sLine(svg,baseX,ty,baseX+drawW,ty,'#555',1.5);
+    sTxt(svg,baseX+drawW/2,ty-8,'faîte',8,'#555');
+    sTxt(svg,baseX+drawW/2,ty+roofH/2,`pente ${d.pente}°`,9,'#888');
+    // OVERHANG: roof extends as lines beyond walls
+    if(oL>1) sLine(svg,baseX,ty,rx,ty,'#555',1,'4 3'); // roof line extends left (at ridge level)
+    if(oR>1) sLine(svg,baseX+drawW,ty,rx+rw,ty,'#555',1,'4 3'); // extends right
+    if(oL>1) sLine(svg,baseX,baseY,rx,baseY,'#555',1,'4 3'); // eave extends left
+    if(oR>1) sLine(svg,baseX+drawW,baseY,rx+rw,baseY,'#555',1,'4 3'); // eave extends right
     return;
   }
 
