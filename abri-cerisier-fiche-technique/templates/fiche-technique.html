@@ -50,11 +50,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
   @page{size:A4 landscape;margin:8mm}
 }
 #ps{display:none;font-family:Arial,sans-serif;font-size:10px;color:#000;padding:0}
-.ps-hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a1a2e;padding-bottom:6px;margin-bottom:8px}
-.ps-co{font-size:16px;font-weight:900;color:#1a1a2e}
-.ps-co small{font-size:9px;font-weight:400;color:#666;display:block}
-.ps-ttl{font-size:14px;font-weight:700;text-align:center}
-.ps-ttl small{font-size:9px;font-weight:400;display:block}
+.ps-hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #c0392b;padding-bottom:8px;margin-bottom:8px}
+.ps-co{display:flex;align-items:center;gap:10px}
+.ps-logo{height:40px;width:auto;object-fit:contain}
+.ps-co-text{font-size:13px;font-weight:900;color:#1a1a2e;line-height:1.2}
+.ps-co-text small{font-size:7.5px;font-weight:400;color:#666;display:block;line-height:1.3;max-width:170px}
+.ps-ttl{font-size:14px;font-weight:800;text-align:center;color:#1a1a2e;background:#f0f2f5;padding:5px 18px;border-radius:3px;border:1px solid #ddd}
+.ps-ttl small{font-size:9px;font-weight:400;display:block;color:#666;margin-top:2px}
 .ps-ref{font-size:9px;color:#888;text-align:right}
 .ps-body{display:grid;grid-template-columns:3fr 1fr;gap:10px}
 .ps-drawings{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
@@ -286,7 +288,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 <!-- ===== PRINT ===== -->
 <div id="ps">
   <div class="ps-hdr">
-    <div class="ps-co">Abri Cerisier<small>abri-cerisier.fr — Fabricant structures bois sur mesure</small></div>
+    <div class="ps-co"><img class="ps-logo" src="https://abri-cerisier.fr/wp-content/uploads/2021/05/Logo-abri-cerisier-retina.png" alt="Abri Cerisier" onerror="this.style.display='none'"><div class="ps-co-text">Abri Cerisier<small>Fabricant français de structures bois sur mesure depuis 1978. Abris de jardin, garages, carports et studios.</small></div></div>
     <div class="ps-ttl">FICHE TECHNIQUE<small id="ps-typelbl">Abri de Jardin</small></div>
     <div class="ps-ref"><div id="ps-nom" style="font-weight:700;font-size:11px"></div><div id="ps-refno"></div><div id="ps-date"></div></div>
   </div>
@@ -309,7 +311,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
     </div>
   </div>
   <div class="ps-ftr">
-    <div>Document non contractuel — Abri Cerisier</div>
+    <div>Document non contractuel — Abri Cerisier — www.abri-cerisier.fr — 03 27 28 82 30</div>
     <div id="ps-fref"></div><div id="ps-fdate"></div>
   </div>
 </div>
@@ -317,13 +319,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 <!-- ===== PRINT PAGE 2 — OPTIONS & MENUISERIES ===== -->
 <div id="ps2">
   <div class="ps-hdr">
-    <div class="ps-co">Abri Cerisier<small>abri-cerisier.fr — Fabricant structures bois sur mesure</small></div>
+    <div class="ps-co"><img class="ps-logo" src="https://abri-cerisier.fr/wp-content/uploads/2021/05/Logo-abri-cerisier-retina.png" alt="Abri Cerisier" onerror="this.style.display='none'"><div class="ps-co-text">Abri Cerisier<small>Fabricant français de structures bois sur mesure depuis 1978. Abris de jardin, garages, carports et studios.</small></div></div>
     <div class="ps-ttl">OPTIONS SÉLECTIONNÉES<small id="ps2-typelbl"></small></div>
     <div class="ps-ref"><div id="ps2-nom" style="font-weight:700;font-size:11px"></div><div id="ps2-refno"></div></div>
   </div>
   <div id="ps2-opts" class="opt-grid"></div>
   <div class="ps-ftr" style="margin-top:12px">
-    <div>Document non contractuel — Abri Cerisier</div>
+    <div>Document non contractuel — Abri Cerisier — www.abri-cerisier.fr — 03 27 28 82 30</div>
     <div id="ps2-fref"></div><div id="ps2-fdate"></div>
   </div>
 </div>
@@ -457,10 +459,21 @@ function dimL(p,x1,y1,x2,y2,label,off=28,col='#c0392b'){
   sLine(p,lx1,ly1,lx2,ly2,col,1.2);
   sArrow(p,lx1,ly1,lx2,ly2,col,5);
   sArrow(p,lx2,ly2,lx1,ly1,col,5);
-  // label with background
-  const lx=isH?mx:mx+(ox>0?4:-4);
-  const ly=isH?my-(Math.abs(oy)*.3+6):my;
-  sTxtBg(p,lx,ly,label,9,col);
+  // label
+  if(isH){
+    // Horizontal dim: label above, no rotation
+    sTxtBg(p,mx,my-(Math.abs(oy)*.3+6),label,9,col);
+  } else {
+    // Vertical dim: label rotated 90° alongside the line
+    const lx=mx+(ox>0?7:-7);
+    const sz=8;
+    const w=label.length*sz*0.55+6;
+    sRect(p,lx-sz*0.7,my-w/2,sz*1.4,w,'white','none',0);
+    const t=svgEl('text',{x:lx,y:my,'font-family':'Arial,sans-serif','font-size':sz,fill:col,
+      'text-anchor':'middle','dominant-baseline':'central',
+      transform:`rotate(${ox>0?90:-90},${lx},${my})`});
+    t.textContent=label; p.appendChild(t);
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -530,33 +543,42 @@ function drawPlan(svg,d,vw=480,vh=340){
     sRect(svg,mx2,my2,mww,mhh,m.type==='fenetre'?'#d6eaf8':'#d5f5e3',c,1.5);
   });
 
-  // Dimension lines
-  dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L} m`,30);        // largeur bas
-  dimL(svg,wx+drawW,wy,wx+drawW,wy+drawP,`${d.P} m`,-32);       // profondeur droite
-  dimL(svg,ox,oy,ox+htW,oy,`HT ${d.htL.toFixed(2)} m`,-25);    // hors tout largeur
-  dimL(svg,ox,oy,ox,oy+htP,`HT ${d.htP.toFixed(2)} m`,30);     // hors tout profondeur
+  // ── DIMENSION LINES ──────────────────────────────────
+  // Exterior largeur (bottom, main)
+  dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L} m`,24);
+  // Exterior profondeur (right, main)
+  dimL(svg,wx+drawW,wy,wx+drawW,wy+drawP,`${d.P} m`,24);
+  // Hors tout largeur (top, offset above plan)
+  if(d.htL!==d.L)
+    dimL(svg,ox,oy,ox+htW,oy,`HT ${d.htL.toFixed(2)} m`,-18,'#e67e22');
+  // Hors tout profondeur (left, offset left of plan)
+  if(d.htP!==d.P)
+    dimL(svg,ox,oy,ox,oy+htP,`HT ${d.htP.toFixed(2)} m`,-18,'#e67e22');
 
-  // Interior dims
+  // Interior dims — centered, small, with white bg
   if(TYPE!=='carport'){
-    sTxt(svg,wx+wt+drawW/2-wt,wy+wt+12,`↔ int. ${d.intL.toFixed(2)} m`,9,'#3498db');
-    sTxt(svg,wx+wt+12,wy+wt+drawP/2-wt,`↕ int. ${d.intP.toFixed(2)} m`,9,'#3498db');
+    const icx=wx+drawW/2, icy=wy+drawP/2;
+    sTxtBg(svg,icx,icy-10,`↔ int. ${d.intL.toFixed(2)} m`,8,'#3498db');
+    sTxtBg(svg,icx,icy+10,`↕ int. ${d.intP.toFixed(2)} m`,8,'#3498db');
   }
 
-  // North arrow
-  const nx=ox+18,ny=oy+20;
+  // North arrow (top-right of plan)
+  const nx=ox+htW-16,ny=oy+16;
   sLine(svg,nx,ny+12,nx,ny,'#888',1.5);sArrow(svg,nx,ny+12,nx,ny,'#888',5);
-  sTxt(svg,nx,ny-8,'N',9,'#888','middle');
+  sTxt(svg,nx,ny-6,'N',8,'#888','middle');
 
-  // Labels
-  sTxt(svg,ox+3,oy+htP-6,'FACE →',8,'#888','start');
-  sTxt(svg,ox+3,oy+8,'← FOND',8,'#888','start');
+  // Labels FACE/FOND (inside plan, near edges)
+  sTxt(svg,wx+drawW/2,wy+drawP-6,'FACE',7,'#aaa','middle');
+  sTxt(svg,wx+drawW/2,wy+8,'FOND',7,'#aaa','middle');
+  sTxt(svg,wx+6,wy+drawP/2,'G',7,'#aaa','middle');
+  sTxt(svg,wx+drawW-6,wy+drawP/2,'D',7,'#aaa','middle');
 
-  // Overhang dimension (face)
-  if(d.ovF!==d.stdOvhg||d.ovB!==d.stdOvhg){
-    dimL(svg,wx,oy,wx,wy,`débord face ${(d.ovF*100).toFixed(0)} cm`,28,'#e67e22');
+  // Overhang dims (only when non-standard)
+  if(d.ovF>d.stdOvhg+0.01){
+    dimL(svg,wx+drawW*0.3,wy+drawP,wx+drawW*0.3,oy+htP,`${(d.ovF*100).toFixed(0)} cm`,30,'#e67e22');
   }
-  if(d.ovL!==d.stdOvhg||d.ovR!==d.stdOvhg){
-    dimL(svg,ox,wy,wx,wy,`débord ${(d.ovL*100).toFixed(0)} cm`,-22,'#e67e22');
+  if(d.ovB>d.stdOvhg+0.01){
+    dimL(svg,wx+drawW*0.7,oy,wx+drawW*0.7,wy,`${(d.ovB*100).toFixed(0)} cm`,-30,'#e67e22');
   }
 }
 
@@ -705,8 +727,9 @@ function drawElev(svg,d,side,vw=320,vh=260){
   // Menuiseries
   MENUS.filter(m=>m.wall===side).forEach(m=>{
     const mW=(m.lw/100)*sc, mH=(m.lh/100)*sc;
+    const seuilPx=(m.seuil||0)/100*sc;
     const mx=baseX+(m.pos/100)*drawW-mW/2;
-    const my=gndY-mH-0.1*sc;
+    const my=gndY-mH-seuilPx;
     const c=m.type==='fenetre'?'#3498db':'#27ae60';
     sRect(svg,mx,my,mW,mH,m.type==='fenetre'?'#d6eaf8':'#d5f5e3',c,1.5);
     if(m.type==='fenetre'){
@@ -715,7 +738,13 @@ function drawElev(svg,d,side,vw=320,vh=260){
     } else {
       sLine(svg,mx+mW/2,my,mx+mW/2,my+mH,c,.7);
     }
-    sTxtBg(svg,mx+mW/2,my-6,m.label.split(' ')[0],6,'#555');
+    // Dimensions label on menuiserie
+    sTxtBg(svg,mx+mW/2,my+mH/2,`${m.lw}×${m.lh}`,6,'#555');
+    // Allège dim (if window with seuil > 0)
+    if(m.seuil>5&&seuilPx>4){
+      sLine(svg,mx+mW+2,my+mH,mx+mW+2,gndY,'#999',.5,'2 2');
+      sTxt(svg,mx+mW+5,my+mH+(gndY-my-mH)/2,`${m.seuil}`,6,'#999','start');
+    }
   });
 
   // Garage door (only facade)
@@ -729,31 +758,70 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
 
   // ── DIMENSION LINES ──────────────────────────────────
-  // Width
-  dimL(svg,baseX,gndY,baseX+drawW,gndY,`${g.w} m`,28);
-  // Total height on right side
   const roofTopY=baseY-(g.roofT==='flat'?0.12*sc:g.rH*sc);
   const hTot=g.wallH+(g.roofT==='flat'?0.12:g.rH);
-  const dimRx=baseX+drawW+(oR>2?oR+8:PAD.r-12);
-  dimL(svg,dimRx,roofTopY,dimRx,gndY,`H ${hTot.toFixed(2)} m`,-5);
-  // Wall height on left side only
-  const dimLx=PAD.l*0.55;
+  const hasRise=g.rH>0&&g.roofT!=='flat'&&g.roofT!=='slope1';
+
+  // ── WIDTH (bottom) ──
+  dimL(svg,baseX,gndY,baseX+drawW,gndY,`${g.w} m`,28);
+  // HT width (always show — includes overhangs)
+  const htW_elev=g.w+g.ovhgL+g.ovhgR;
+  if(htW_elev>g.w+0.01){
+    dimL(svg,baseX-oL,gndY,baseX+drawW+oR,gndY,`HT ${htW_elev.toFixed(2)} m`,44,'#e67e22');
+  }
+
+  // ── LEFT SIDE: wall height only (no stacking) ──
+  const dimLx=Math.max(12,PAD.l*0.45);
   dimL(svg,dimLx,baseY,dimLx,gndY,`H mur ${d.hInt.toFixed(2)} m`,-5);
-  // Faîte rise — on left side, further in
-  if(g.rH>0&&g.roofT!=='flat'&&g.roofT!=='slope1'){
-    const dimLx2=PAD.l*0.55+18;
-    dimL(svg,dimLx2,roofTopY,dimLx2,baseY,`+${g.rH.toFixed(2)} m`,-5,'#e67e22');
+
+  // ── RIGHT SIDE: total height + faîte bracket ──
+  const dimRx=baseX+drawW+Math.max(oR+8,14);
+  dimL(svg,dimRx,roofTopY,dimRx,gndY,`H ${hTot.toFixed(2)} m`,-5);
+  // Faîte sub-bracket on right (offset further right to avoid overlap)
+  if(hasRise){
+    const dimRx2=dimRx+22;
+    dimL(svg,dimRx2,roofTopY,dimRx2,baseY,`+${g.rH.toFixed(2)} m`,-5,'#e67e22');
   }
-  // Overhangs shown on width
-  if(g.ovhgL>d.stdOvhg||g.ovhgR>d.stdOvhg){
-    dimL(svg,baseX-oL,gndY,baseX+drawW+oR,gndY,`HT ${(g.w+g.ovhgL+g.ovhgR).toFixed(2)} m`,44,'#e67e22');
-  }
-  // Wall thickness dashes on bottom (subtle)
+
+  // ── WALL THICKNESS (subtle bottom dashes) ──
   sLine(svg,baseX,gndY-3,baseX+wt,gndY-3,'#b0bec5',.7);
   sLine(svg,baseX+drawW-wt,gndY-3,baseX+drawW,gndY-3,'#b0bec5',.7);
 
-  // Interior dim
-  sTxtBg(svg,baseX+drawW/2,gndY-d.hInt*sc/2,`int. ${d.hInt.toFixed(2)} m`,8,'#3498db');
+  // ── INTERIOR HEIGHT (centered in wall, smaller) ──
+  sTxtBg(svg,baseX+drawW/2,gndY-wallHpx*0.45,`int. ${d.hInt.toFixed(2)} m`,7,'#3498db');
+
+  // ── MENUISERIE DIMENSION CHAIN ──────────────────────
+  const wallMenus=MENUS.filter(m=>m.wall===side).sort((a,b)=>a.pos-b.pos);
+  if(wallMenus.length>0){
+    const chainY=gndY+16; // just below wall width dim line
+    const chainCol='#8e44ad';
+    // Build edge points: [leftWall, ...menuiserie edges..., rightWall]
+    const edges=[0]; // left wall = 0%
+    wallMenus.forEach(m=>{
+      const halfW=(m.lw/100)/g.w*100/2; // half-width as % of wall
+      edges.push(m.pos-halfW); // left edge of menuiserie
+      edges.push(m.pos+halfW); // right edge of menuiserie
+    });
+    edges.push(100); // right wall = 100%
+
+    // Draw chain segments: wallEdge→menuL, menuR→menuL (gap), menuR→wallEdge
+    for(let i=0;i<edges.length-1;i+=2){
+      const x1=baseX+(edges[i]/100)*drawW;
+      const x2=baseX+(edges[i+1]/100)*drawW;
+      const dist=((edges[i+1]-edges[i])/100*g.w*100).toFixed(0); // cm
+      if(edges[i+1]-edges[i]>2){ // skip tiny gaps
+        // Small dim line
+        sLine(svg,x1,chainY-2,x1,chainY+2,chainCol,.6);
+        sLine(svg,x2,chainY-2,x2,chainY+2,chainCol,.6);
+        sLine(svg,x1,chainY,x2,chainY,chainCol,.8);
+        sArrow(svg,x1,chainY,x2,chainY,chainCol,3);
+        sArrow(svg,x2,chainY,x1,chainY,chainCol,3);
+        if(x2-x1>18){
+          sTxtBg(svg,(x1+x2)/2,chainY-5,`${dist}`,6,chainCol);
+        }
+      }
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -1030,16 +1098,23 @@ const MPRESETS=[
 ];
 function addM(){
   const id=++MCNT,p=MPRESETS[0];
-  MENUS.push({id,preset:p.id,label:p.label,type:p.type,lw:p.lw,lh:p.lh,pos:50,wall:'face',seuil:0.1,img:p.img||''});
+  const defSeuil=p.type==='fenetre'?100:0; // fenêtres à 100cm, portes au sol
+  MENUS.push({id,preset:p.id,label:p.label,type:p.type,lw:p.lw,lh:p.lh,pos:50,wall:'face',seuil:defSeuil,img:p.img||''});
   renderMenus();upd();
 }
 function removeM(id){MENUS=MENUS.filter(m=>m.id!==id);renderMenus();upd();}
 function onMC(id){
   const m=MENUS.find(x=>x.id===id);if(!m)return;
   const p=MPRESETS.find(x=>x.id===document.getElementById(`mp-${id}`).value);
-  if(p){m.preset=p.id;m.label=p.label;m.type=p.type;m.lw=p.lw;m.lh=p.lh;m.img=p.img||'';}
+  if(p){
+    const wasType=m.type;
+    m.preset=p.id;m.label=p.label;m.type=p.type;m.lw=p.lw;m.lh=p.lh;m.img=p.img||'';
+    // Auto-set seuil when changing type
+    if(wasType!==m.type) m.seuil=m.type==='fenetre'?100:0;
+  }
   m.pos=parseInt(document.getElementById(`mpos-${id}`).value)||50;
   m.wall=document.getElementById(`mwall-${id}`).value;
+  m.seuil=parseInt(document.getElementById(`mseuil-${id}`).value)||0;
   upd();
 }
 function buildMSelect(selectedId){
@@ -1065,6 +1140,14 @@ function renderMenus(){
           </select></div>
         <div class="fr"><label>Position (%)</label>
           <input type="number" id="mpos-${m.id}" value="${m.pos}" min="5" max="95" onchange="onMC(${m.id})">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="fr"><label>Allège (cm)</label>
+          <input type="number" id="mseuil-${m.id}" value="${m.seuil||0}" min="0" max="200" step="5" onchange="onMC(${m.id})">
+          <span class="hint">${m.type==='fenetre'?'Distance sol → bas fenêtre':'0 = au sol'}</span></div>
+        <div class="fr"><label>Dim.</label>
+          <span style="font-size:10px;color:#888">${m.lw}×${m.lh} cm</span>
         </div>
       </div>
     </div>`).join('');
