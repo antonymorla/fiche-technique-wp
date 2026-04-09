@@ -1541,16 +1541,34 @@ function printIt(){
   document.getElementById('ps2-fdate').textContent=ds;
 
   const sysLabels={madrier28:'Madrier épicéa 28 mm',madrier45:'Madrier épicéa 45 mm',ossature:'Ossature bois 45×145 mm'};
-  const sysImgs={
-    madrier28:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.32.51.png',
-    madrier45:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.33.02.png',
-    ossature:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.23.26.png'};
+  const SYS_IMGS={
+    abri:{madrier28:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.27.20.png',
+      madrier45:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.27.20.png',
+      ossature:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.23.26.png'},
+    garage:{madrier28:'https://abri-cerisier.fr/wp-content/uploads/2026/03/garage-madrier-2-pans.png',
+      madrier45:'https://abri-cerisier.fr/wp-content/uploads/2026/03/garage-madrier-2-pans.png',
+      ossature:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Garage-2-pans.png'},
+    carport:{madrier28:'https://abri-cerisier.fr/wp-content/uploads/2024/05/Capture-decran-2024-05-21-a-17.23.59.png',
+      madrier45:'https://abri-cerisier.fr/wp-content/uploads/2024/05/Capture-decran-2024-05-21-a-17.23.59.png',
+      ossature:'https://abri-cerisier.fr/wp-content/uploads/2024/05/Capture-decran-2024-05-21-a-17.23.59.png'}
+  };
+  const sysImgs=SYS_IMGS[TYPE]||SYS_IMGS.abri;
   const toitLabels={TOIT_PLAT:'Toit plat — bac acier','2PANS':'Toiture 2 pans','1PAN':'Toiture 1 pan','QUADRO':'QUADRO — toit plat cube'};
-  const toitImgs={
-    '1PAN':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.10.20.png',
-    '2PANS':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.10.09.png',
-    'TOIT_PLAT':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.09.40.png',
-    'QUADRO':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.09.52.png'};
+  const TOIT_IMGS={
+    abri:{'1PAN':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.10.20.png',
+      '2PANS':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.10.09.png',
+      'TOIT_PLAT':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.09.40.png',
+      'QUADRO':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.09.52.png'},
+    garage:{'1PAN':'https://abri-cerisier.fr/wp-content/uploads/2026/03/garage-madrier-1-pan.png',
+      '2PANS':'https://abri-cerisier.fr/wp-content/uploads/2026/03/garage-madrier-2-pans.png',
+      'TOIT_PLAT':'https://abri-cerisier.fr/wp-content/uploads/2026/03/garage-madrier-toit-plat.png',
+      'QUADRO':'https://abri-cerisier.fr/wp-content/uploads/2026/03/garage-quadro.png'},
+    carport:{'1PAN':'https://abri-cerisier.fr/wp-content/uploads/2024/05/Capture-decran-2024-05-21-a-17.23.04.png',
+      '2PANS':'https://abri-cerisier.fr/wp-content/uploads/2024/05/Capture-decran-2024-05-21-a-17.23.59.png',
+      'TOIT_PLAT':'https://abri-cerisier.fr/wp-content/uploads/2024/05/Capture-decran-2024-05-21-a-17.23.27.png',
+      'QUADRO':'https://abri-cerisier.fr/wp-content/uploads/2024/05/caport-quadro.png'}
+  };
+  const toitImgs=TOIT_IMGS[TYPE]||TOIT_IMGS.abri;
 
   function dvCard(title,desc,img,active){
     return `<div class="dv-card${active?' active':''}">
