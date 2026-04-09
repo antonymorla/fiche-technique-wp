@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           1.5.2
+ * Version:           1.5.3
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '1.5.2' );
+define( 'ACFT_VERSION',  '1.5.3' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -264,25 +264,42 @@ function acft_update_check( $transient ) {
     if ( ! $release ) return $transient;
 
     $latest  = ltrim( $release->tag_name ?? '', 'v' );
+    $package = acft_get_release_zip_url( $release );
+
+    $plugin_data = (object) [
+        'id'            => ACFT_GITHUB,
+        'slug'          => ACFT_SLUG,
+        'plugin'        => ACFT_PLUGIN,
+        'new_version'   => $latest,
+        'url'           => $release->html_url ?? '',
+        'package'       => $package,
+        'icons'         => [],
+        'banners'       => [],
+        'banners_rtl'   => [],
+        'tested'        => '6.7',
+        'requires_php'  => '7.4',
+        'compatibility' => new stdClass(),
+    ];
+
     if ( version_compare( ACFT_VERSION, $latest, '<' ) ) {
-        // Préférer l'asset ZIP uploadé (structure de dossier correcte) au zipball source
-        $package = acft_get_release_zip_url( $release );
-        $transient->response[ ACFT_PLUGIN ] = (object) [
-            'id'          => ACFT_GITHUB,
-            'slug'        => ACFT_SLUG,
-            'plugin'      => ACFT_PLUGIN,
-            'new_version' => $latest,
-            'url'         => $release->html_url,
-            'package'     => $package,
-            'icons'       => [],
-            'banners'     => [],
-            'banners_rtl' => [],
-            'tested'      => '6.5',
-            'requires_php'=> '7.4',
-            'compatibility'=> new stdClass(),
-        ];
+        // Mise à jour disponible
+        $transient->response[ ACFT_PLUGIN ] = $plugin_data;
+        unset( $transient->no_update[ ACFT_PLUGIN ] );
+    } else {
+        // À jour — enregistrer dans no_update pour que WP affiche "Activer les MAJ auto"
+        $transient->no_update[ ACFT_PLUGIN ] = $plugin_data;
+        unset( $transient->response[ ACFT_PLUGIN ] );
     }
     return $transient;
+}
+
+// Permettre les mises à jour automatiques pour ce plugin
+add_filter( 'auto_update_plugin', 'acft_auto_update', 10, 2 );
+function acft_auto_update( $update, $item ) {
+    if ( isset( $item->plugin ) && $item->plugin === ACFT_PLUGIN ) {
+        return true; // Activer auto-update par défaut
+    }
+    return $update;
 }
 
 add_filter( 'plugins_api', 'acft_plugins_api_info', 10, 3 );
@@ -302,7 +319,7 @@ function acft_plugins_api_info( $res, $action, $args ) {
         'sections'      => [
             'changelog' => $release->body ?? '',
         ],
-        'download_link' => $release->zipball_url,
+        'download_link' => acft_get_release_zip_url( $release ),
         'last_updated'  => $release->published_at ?? '',
         'requires'      => '5.9',
         'tested'        => '6.5',
