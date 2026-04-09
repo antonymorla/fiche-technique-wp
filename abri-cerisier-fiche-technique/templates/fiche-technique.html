@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Fiche Technique — Abri Cerisier</title>
+<title>Devis Technique — Abri Cerisier</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;color:#1a1a2e}
@@ -46,40 +46,45 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 @media print{
   body{background:#fff}
   #app{display:none}
-  #ps{display:block!important}
+  .print-page{display:block!important}
   @page{size:A4 landscape;margin:8mm}
 }
-#ps{display:none;font-family:Arial,sans-serif;font-size:10px;color:#000;padding:0}
-.ps-hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #515136;padding-bottom:8px;margin-bottom:8px}
+.print-page{display:none;font-family:'Segoe UI',Arial,sans-serif;font-size:10px;color:#222;padding:0}
+.print-page+.print-page{page-break-before:always}
+/* Header */
+.ps-hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #515136;padding-bottom:8px;margin-bottom:10px}
 .ps-co{display:flex;align-items:center;gap:10px}
-.ps-logo{height:40px;width:auto;object-fit:contain}
-.ps-co-text{font-size:13px;font-weight:900;color:#1a1a2e;line-height:1.2}
-.ps-co-text small{font-size:7.5px;font-weight:400;color:#666;display:block;line-height:1.3;max-width:170px}
-.ps-ttl{font-size:14px;font-weight:800;text-align:center;color:#1a1a2e;background:#f0f2f5;padding:5px 18px;border-radius:3px;border:1px solid #ddd}
-.ps-ttl small{font-size:9px;font-weight:400;display:block;color:#666;margin-top:2px}
-.ps-ref{font-size:9px;color:#888;text-align:right}
+.ps-logo{height:36px;width:auto;object-fit:contain}
+.ps-co-text{font-size:12px;font-weight:800;color:#515136;line-height:1.2}
+.ps-co-text small{font-size:7px;font-weight:400;color:#888;display:block;line-height:1.3;max-width:180px}
+.ps-ttl{font-size:13px;font-weight:800;text-align:center;color:#fff;background:#515136;padding:6px 22px;border-radius:4px}
+.ps-ttl small{font-size:8px;font-weight:400;display:block;opacity:.8;margin-top:2px}
+.ps-ref{font-size:8px;color:#888;text-align:right;line-height:1.4}
+/* Page 1 body */
 .ps-body{display:grid;grid-template-columns:3fr 1fr;gap:10px}
 .ps-drawings{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
 .ps-elevs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
-.ps-box{border:1px solid #ddd;border-radius:3px;padding:7px}
-.ps-box h5{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#999;border-bottom:1px solid #eee;padding-bottom:3px;margin-bottom:5px}
-.ps-dt{width:100%;border-collapse:collapse;font-size:9px}
-.ps-dt td{padding:2px 4px;border-bottom:1px solid #f5f5f5}
+.ps-box{border:1px solid #e0e0e0;border-radius:4px;padding:7px}
+.ps-box h5{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#999;border-bottom:1px solid #eee;padding-bottom:3px;margin-bottom:5px}
+.ps-dt{width:100%;border-collapse:collapse;font-size:8px}
+.ps-dt td{padding:2px 4px;border-bottom:1px solid #f2f2f2}
 .ps-dt td:last-child{font-weight:700;text-align:right}
-.ps-cfg li{font-size:9px;list-style:none;padding:1px 0}
-.ps-cfg li::before{content:'• ';color:#515136}
-.ps-price{background:#1a1a2e;color:#fff;border-radius:3px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;margin-top:auto}
-.ps-price .l{font-size:8px;opacity:.7;text-transform:uppercase}
-.ps-price .v{font-size:18px;font-weight:900;color:#515136}
-.ps-ftr{border-top:1px solid #ddd;margin-top:7px;padding-top:5px;font-size:8px;color:#bbb;display:flex;justify-content:space-between}
-/* ===== PRINT PAGE 2 — OPTIONS ===== */
-#ps2{display:none;font-family:Arial,sans-serif;font-size:10px;color:#000;padding:0;page-break-before:always}
-.opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
-.opt-card{border:1px solid #ddd;border-radius:4px;padding:8px;display:flex;gap:8px;align-items:flex-start;break-inside:avoid}
-.opt-card img{width:70px;height:55px;object-fit:cover;border-radius:3px;flex-shrink:0;border:1px solid #eee}
-.opt-card .oc-body .oc-title{font-weight:700;font-size:9px;margin-bottom:2px;color:#1a1a2e}
-.opt-card .oc-body .oc-desc{font-size:8px;color:#555;line-height:1.3}
-@media print{#ps2{display:block!important}}
+.ps-cfg li{font-size:8px;list-style:none;padding:1px 0}
+.ps-cfg li::before{content:'● ';color:#515136;font-size:6px}
+.ps-ftr{border-top:1px solid #ddd;margin-top:auto;padding-top:5px;font-size:7px;color:#bbb;display:flex;justify-content:space-between}
+/* Page 2+ : Détail options */
+.dv-section{margin-bottom:12px;break-inside:avoid}
+.dv-section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#515136;border-bottom:2px solid #515136;padding-bottom:3px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dv-section-title .ico{font-size:13px}
+.dv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dv-card{border:1px solid #e0e0e0;border-radius:5px;padding:8px;display:flex;gap:8px;align-items:flex-start;break-inside:avoid;background:#fafbfc}
+.dv-card.active{border-color:#515136;background:#f5f7f0;border-width:2px}
+.dv-card img{width:72px;height:56px;object-fit:cover;border-radius:4px;flex-shrink:0;border:1px solid #ddd}
+.dv-card .dv-title{font-weight:700;font-size:8.5px;color:#1a1a2e;margin-bottom:2px;line-height:1.2}
+.dv-card .dv-desc{font-size:7.5px;color:#666;line-height:1.3}
+.dv-card .dv-tag{display:inline-block;font-size:6.5px;font-weight:700;text-transform:uppercase;background:#515136;color:#fff;padding:1px 5px;border-radius:2px;margin-top:3px}
+.dv-info{font-size:8px;color:#555;margin:4px 0 8px;line-height:1.4}
+.dv-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 </head>
 <body>
@@ -286,10 +291,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 </div>
 
 <!-- ===== PRINT ===== -->
-<div id="ps">
+<div id="ps" class="print-page">
   <div class="ps-hdr">
-    <div class="ps-co"><img class="ps-logo" src="https://abri-cerisier.fr/wp-content/uploads/2021/05/Logo-abri-cerisier-retina.png" alt="Abri Cerisier" onerror="this.style.display='none'"><div class="ps-co-text">Abri Cerisier<small>Fabricant français de structures bois sur mesure depuis 1978. Abris de jardin, garages, carports et studios.</small></div></div>
-    <div class="ps-ttl">FICHE TECHNIQUE<small id="ps-typelbl">Abri de Jardin</small></div>
+    <div class="ps-co"><img class="ps-logo" src="https://abri-cerisier.fr/wp-content/uploads/2024/06/logo-abri-cerisier.png" alt="Abri Cerisier" onerror="this.style.display='none'"><div class="ps-co-text">Abri Cerisier<small>Fabricant français de structures bois sur mesure depuis 1978. Abris de jardin, garages, carports et studios.</small></div></div>
+    <div class="ps-ttl">DEVIS TECHNIQUE<small id="ps-typelbl">Abri de Jardin</small></div>
     <div class="ps-ref"><div id="ps-nom" style="font-weight:700;font-size:11px"></div><div id="ps-refno"></div><div id="ps-date"></div></div>
   </div>
   <div class="ps-body">
@@ -316,17 +321,31 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
   </div>
 </div>
 
-<!-- ===== PRINT PAGE 2 — OPTIONS & MENUISERIES ===== -->
-<div id="ps2">
+<!-- ===== PRINT PAGE 2 — DÉTAIL CONFIGURATION ===== -->
+<div id="ps2" class="print-page">
   <div class="ps-hdr">
-    <div class="ps-co"><img class="ps-logo" src="https://abri-cerisier.fr/wp-content/uploads/2021/05/Logo-abri-cerisier-retina.png" alt="Abri Cerisier" onerror="this.style.display='none'"><div class="ps-co-text">Abri Cerisier<small>Fabricant français de structures bois sur mesure depuis 1978. Abris de jardin, garages, carports et studios.</small></div></div>
-    <div class="ps-ttl">OPTIONS SÉLECTIONNÉES<small id="ps2-typelbl"></small></div>
-    <div class="ps-ref"><div id="ps2-nom" style="font-weight:700;font-size:11px"></div><div id="ps2-refno"></div></div>
+    <div class="ps-co"><img class="ps-logo" src="https://abri-cerisier.fr/wp-content/uploads/2024/06/logo-abri-cerisier.png" alt="Abri Cerisier" onerror="this.style.display='none'"><div class="ps-co-text">Abri Cerisier<small>Fabricant français de structures bois sur mesure depuis 1978. Abris de jardin, garages, carports et studios.</small></div></div>
+    <div class="ps-ttl">DÉTAIL DE LA CONFIGURATION<small id="ps2-typelbl"></small></div>
+    <div class="ps-ref"><div id="ps2-nom" style="font-weight:700;font-size:10px"></div><div id="ps2-refno"></div><div id="ps2-date"></div></div>
   </div>
-  <div id="ps2-opts" class="opt-grid"></div>
-  <div class="ps-ftr" style="margin-top:12px">
+  <div id="ps2-content"></div>
+  <div class="ps-ftr">
     <div>Document non contractuel — Abri Cerisier — www.abri-cerisier.fr — 03 27 28 82 30</div>
     <div id="ps2-fref"></div><div id="ps2-fdate"></div>
+  </div>
+</div>
+
+<!-- ===== PRINT PAGE 3 — MENUISERIES ===== -->
+<div id="ps3" class="print-page">
+  <div class="ps-hdr">
+    <div class="ps-co"><img class="ps-logo" src="https://abri-cerisier.fr/wp-content/uploads/2024/06/logo-abri-cerisier.png" alt="Abri Cerisier" onerror="this.style.display='none'"><div class="ps-co-text">Abri Cerisier<small>Fabricant français de structures bois sur mesure depuis 1978. Abris de jardin, garages, carports et studios.</small></div></div>
+    <div class="ps-ttl">MENUISERIES & ACCESSOIRES<small id="ps3-typelbl"></small></div>
+    <div class="ps-ref"><div id="ps3-nom" style="font-weight:700;font-size:10px"></div></div>
+  </div>
+  <div id="ps3-content"></div>
+  <div class="ps-ftr">
+    <div>Document non contractuel — Abri Cerisier — www.abri-cerisier.fr — 03 27 28 82 30</div>
+    <div id="ps3-fref"></div><div id="ps3-fdate"></div>
   </div>
 </div>
 
@@ -1496,60 +1515,144 @@ function upd(){
 function printIt(){
   const d=calcDims(),tags=buildTags(d);
   const tL={abri:'Abri de Jardin',carport:'Carport',garage:'Garage'};
-  document.getElementById('ps-typelbl').textContent=tL[TYPE];
-  document.getElementById('ps-nom').textContent=document.getElementById('f-nom').value||'';
-  document.getElementById('ps-refno').textContent=document.getElementById('f-ref').value||'';
   const ds=new Date().toLocaleDateString('fr-FR');
+  const nom=document.getElementById('f-nom').value||'';
+  const ref=document.getElementById('f-ref').value||'';
+
+  // ── PAGE 1 : Plans techniques ──
+  document.getElementById('ps-typelbl').textContent=tL[TYPE];
+  document.getElementById('ps-nom').textContent=nom;
+  document.getElementById('ps-refno').textContent=ref;
   document.getElementById('ps-date').textContent=`Le ${ds}`;
   document.getElementById('ps-fdate').textContent=ds;
-  document.getElementById('ps-fref').textContent=document.getElementById('f-ref').value||'';
-
+  document.getElementById('ps-fref').textContent=ref;
   drawPlan(document.getElementById('ps-plan'),d,480,340);
   drawElev(document.getElementById('ps-face'),d,'face',380,280);
   drawElev(document.getElementById('ps-gau'),d,'gauche',380,280);
   drawElev(document.getElementById('ps-dro'),d,'droite',380,280);
   drawElev(document.getElementById('ps-fond'),d,'fond',380,280);
-
   renderDims(d,document.getElementById('ps-dt'));
   document.getElementById('ps-cfg').innerHTML=tags.map(t=>`<li>${t}</li>`).join('');
 
-  // ── Build option page 2 ──
+  // ── PAGE 2 : Détail de la configuration ──
   document.getElementById('ps2-typelbl').textContent=tL[TYPE];
-  document.getElementById('ps2-nom').textContent=document.getElementById('f-nom').value||'';
-  document.getElementById('ps2-refno').textContent=document.getElementById('f-ref').value||'';
-  document.getElementById('ps2-fref').textContent=document.getElementById('f-ref').value||'';
-  document.getElementById('ps2-fdate').textContent=new Date().toLocaleDateString('fr-FR');
+  document.getElementById('ps2-nom').textContent=nom;
+  document.getElementById('ps2-date').textContent=`Le ${ds}`;
+  document.getElementById('ps2-fdate').textContent=ds;
 
-  const optCards=[];
-  // Plancher
+  const sysLabels={madrier28:'Madrier épicéa 28 mm',madrier45:'Madrier épicéa 45 mm',ossature:'Ossature bois 45×145 mm'};
+  const sysImgs={madrier28:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
+    madrier45:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
+    ossature:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-16.02.15.png'};
+  const toitLabels={TOIT_PLAT:'Toit plat — bac acier anti-condensation','2PANS':'Toiture 2 pans — tuiles bitumées','1PAN':'Toiture 1 pan — tuiles bitumées','QUADRO':'QUADRO — structure cube toit plat'};
+  const toitImgs={'2PANS':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
+    '1PAN':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
+    'TOIT_PLAT':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
+    'QUADRO':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png'};
+
+  function dvCard(title,desc,img,active){
+    return `<div class="dv-card${active?' active':''}">
+      ${img?`<img src="${img}" alt="${title}" onerror="this.style.display='none'">`:''}
+      <div><div class="dv-title">${title}</div><div class="dv-desc">${desc}</div>
+      ${active?'<span class="dv-tag">Sélectionné</span>':''}</div></div>`;
+  }
+
+  let html='';
+
+  // STRUCTURE
+  html+=`<div class="dv-section">
+    <div class="dv-section-title"><span class="ico">🏗</span> Structure & dimensions</div>
+    <div class="dv-info">
+      <strong>${tL[TYPE]} ${d.L}×${d.P} m</strong> — Surface ext. ${(d.L*d.P).toFixed(1)} m² — Surface int. ${(d.intL*d.intP).toFixed(1)} m²<br>
+      Hauteur murs ${d.hInt.toFixed(2)} m — Hauteur faîte ${(d.hExt+d.rH).toFixed(2)} m — Pente ${d.pente}°
+      ${d.reh>0?` — ${d.reh} rehausse(s) (+${d.reh*13} cm)`:''}
+    </div>
+    <div class="dv-grid">
+      ${dvCard(sysLabels[d.sys]||d.sys,`Système constructif — Épaisseur murs ${(d.wt*100).toFixed(0)} cm`,sysImgs[d.sys],true)}
+      ${dvCard(toitLabels[d.toit]||d.toit,`Type de toiture — Pente ${d.pente}°${d.toit==='1PAN'?' — Orientation: '+document.getElementById('f-orient').options[document.getElementById('f-orient').selectedIndex].text:''}`,toitImgs[d.toit],true)}
+    </div></div>`;
+
+  // DÉBORDS
+  if(d.uf>0||d.ub>0||d.ul>0||d.ur>0){
+    html+=`<div class="dv-section">
+      <div class="dv-section-title"><span class="ico">📐</span> Extensions de toiture</div>
+      <div class="dv-info">Débord standard inclus : ${(d.stdOvhg*100).toFixed(0)} cm — Extensions supplémentaires ci-dessous :</div>
+      <div class="dv-grid">
+        ${d.uf>0?dvCard(`Débord face +${d.uf} cm`,'Extension toiture côté façade avant. Nécessite poteaux de soutien si > 50 cm.','',true):''}
+        ${d.ub>0?dvCard(`Débord fond +${d.ub} cm`,'Extension toiture côté façade arrière.','',true):''}
+        ${d.ul>0?dvCard(`Débord gauche +${d.ul} cm`,'Extension toiture côté gauche.','',true):''}
+        ${d.ur>0?dvCard(`Débord droite +${d.ur} cm`,'Extension toiture côté droit.','',true):''}
+      </div></div>`;
+  }
+
+  // OPTIONS
   const planV=document.getElementById('f-plan').value;
-  if(planV!=='non'&&OPTION_DATA[planV]){
-    const o=OPTION_DATA[planV];
-    optCards.push(`<div class="opt-card"><img src="${o.img}" alt="${o.label}" onerror="this.style.display='none'"><div class="oc-body"><div class="oc-title">${o.label}</div><div class="oc-desc">${o.desc}</div></div></div>`);
-  }
-  // Isolation
   const isoV=document.getElementById('f-iso').value;
-  if(isoV!=='non'&&OPTION_DATA[isoV]){
-    const o=OPTION_DATA[isoV];
-    optCards.push(`<div class="opt-card"><img src="${o.img}" alt="${o.label}" onerror="this.style.display='none'"><div class="oc-body"><div class="oc-title">${o.label}</div><div class="oc-desc">${o.desc}</div></div></div>`);
-  }
-  // Gouttière
-  if(document.getElementById('f-gout').value==='oui'){
-    optCards.push(`<div class="opt-card"><img src="https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-07-a-18.58.22.png" alt="Gouttière" onerror="this.style.display='none'"><div class="oc-body"><div class="oc-title">Gouttière</div><div class="oc-desc">Gouttière zinc avec descente d\'eau pluviale. Protège les fondations et la façade. Disponible en 3 et 4 m.</div></div></div>`);
-  }
-  // Menuiseries
-  MENUS.forEach(m=>{
-    const icon=m.type==='fenetre'?'🪟':'🚪';
-    const paroi=m.wall.charAt(0).toUpperCase()+m.wall.slice(1);
-    optCards.push(`<div class="opt-card">${m.img?`<img src="${m.img}" alt="${m.label}" onerror="this.style.display='none'">`:''}<div class="oc-body"><div class="oc-title">${icon} ${m.label}</div><div class="oc-desc">Paroi : ${paroi} — Dimensions : ${m.lw}×${m.lh} cm</div></div></div>`);
-  });
+  const goutV=document.getElementById('f-gout').value;
+  const hasOpts=planV!=='non'||isoV!=='non'||goutV==='oui';
 
-  const ps2el=document.getElementById('ps2-opts');
-  if(optCards.length>0){
-    ps2el.innerHTML=optCards.join('');
-    document.getElementById('ps2').style.setProperty('display','block','important');
+  if(hasOpts){
+    html+=`<div class="dv-section">
+      <div class="dv-section-title"><span class="ico">⚙️</span> Options sélectionnées</div>
+      <div class="dv-grid">`;
+    if(planV!=='non'&&OPTION_DATA[planV]){
+      const o=OPTION_DATA[planV];
+      html+=dvCard(o.label,o.desc,o.img,true);
+    }
+    if(isoV!=='non'&&OPTION_DATA[isoV]){
+      const o=OPTION_DATA[isoV];
+      html+=dvCard(o.label,o.desc,o.img,true);
+    }
+    if(goutV==='oui'){
+      html+=dvCard('Gouttière zinc','Gouttière zinc avec descente d\'eau pluviale. Protège les fondations et la façade.','https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-07-a-18.58.22.png',true);
+    }
+    html+=`</div></div>`;
+  }
+
+  document.getElementById('ps2-content').innerHTML=html;
+
+  // ── PAGE 3 : Menuiseries ──
+  document.getElementById('ps3-typelbl').textContent=tL[TYPE];
+  document.getElementById('ps3-nom').textContent=nom;
+  document.getElementById('ps3-fdate').textContent=ds;
+
+  if(MENUS.length>0){
+    let mhtml=`<div class="dv-section">
+      <div class="dv-section-title"><span class="ico">🚪</span> Menuiseries — ${MENUS.length} ouverture${MENUS.length>1?'s':''}</div>
+      <div class="dv-info">Détail des portes, fenêtres et baies sélectionnées pour votre configuration :</div>
+      <div class="dv-grid">`;
+    MENUS.forEach((m,i)=>{
+      const paroi=m.wall.charAt(0).toUpperCase()+m.wall.slice(1);
+      const preset=MPRESETS.find(p=>p.id===m.preset);
+      const cat=preset?.cat||'';
+      mhtml+=`<div class="dv-card active">
+        ${m.img?'<img src="'+m.img+'" alt="'+m.label+'" onerror="this.style.display=\'none\'">':'<div style="width:72px;height:56px;background:#e8eef5;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+(m.type==='fenetre'?'W':'P')+'</div>'}
+        <div>
+          <div class="dv-title">${m.label}</div>
+          <div class="dv-desc">
+            ${cat?`<strong>${cat}</strong><br>`:''}
+            Paroi : <strong>${paroi}</strong> — Position : ${m.pos}%<br>
+            Dimensions : <strong>${m.lw} × ${m.lh} cm</strong>
+            ${m.seuil>0?`<br>Hauteur d'allège : ${m.seuil} cm`:''}
+          </div>
+          <span class="dv-tag">Ouverture ${i+1}</span>
+        </div></div>`;
+    });
+    mhtml+=`</div></div>`;
+
+    // Garage door
+    if(TYPE==='garage'){
+      const gW=document.getElementById('f-pglw').value||237;
+      const gH=document.getElementById('f-pglh').value||200;
+      mhtml+=`<div class="dv-section">
+        <div class="dv-section-title"><span class="ico">🏠</span> Porte de garage</div>
+        <div class="dv-grid">${dvCard(`Porte de garage ${gW}×${gH} cm`,'Porte sectionnelle motorisée.','',true)}</div></div>`;
+    }
+
+    document.getElementById('ps3-content').innerHTML=mhtml;
+    document.getElementById('ps3').style.setProperty('display','block','important');
   } else {
-    document.getElementById('ps2').style.display='none';
+    document.getElementById('ps3').style.display='none';
   }
 
   window.print();
