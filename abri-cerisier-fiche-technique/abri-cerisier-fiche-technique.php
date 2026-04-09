@@ -265,13 +265,15 @@ function acft_update_check( $transient ) {
 
     $latest  = ltrim( $release->tag_name ?? '', 'v' );
     if ( version_compare( ACFT_VERSION, $latest, '<' ) ) {
+        // Préférer l'asset ZIP uploadé (structure de dossier correcte) au zipball source
+        $package = acft_get_release_zip_url( $release );
         $transient->response[ ACFT_PLUGIN ] = (object) [
             'id'          => ACFT_GITHUB,
             'slug'        => ACFT_SLUG,
             'plugin'      => ACFT_PLUGIN,
             'new_version' => $latest,
             'url'         => $release->html_url,
-            'package'     => $release->zipball_url,
+            'package'     => $package,
             'icons'       => [],
             'banners'     => [],
             'banners_rtl' => [],
@@ -325,6 +327,21 @@ function acft_fix_update_folder( $source, $remote_source, $upgrader, $hook_extra
         }
     }
     return $source;
+}
+
+/**
+ * Retourne l'URL du ZIP uploadé en asset sur la release, ou le zipball en fallback.
+ * Le ZIP asset a déjà la bonne structure de dossier (abri-cerisier-fiche-technique/).
+ */
+function acft_get_release_zip_url( $release ) {
+    if ( ! empty( $release->assets ) ) {
+        foreach ( $release->assets as $asset ) {
+            if ( isset( $asset->browser_download_url ) && str_ends_with( $asset->name, '.zip' ) ) {
+                return $asset->browser_download_url;
+            }
+        }
+    }
+    return $release->zipball_url ?? '';
 }
 
 /**
