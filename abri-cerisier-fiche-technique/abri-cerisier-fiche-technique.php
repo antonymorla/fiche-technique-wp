@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           2.0.2
+ * Version:           2.0.3
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '2.0.2' );
+define( 'ACFT_VERSION',  '2.0.3' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -406,15 +406,24 @@ function acft_plugins_api_info( $res, $action, $args ) {
  */
 add_filter( 'upgrader_source_selection', 'acft_fix_update_folder', 10, 4 );
 function acft_fix_update_folder( $source, $remote_source, $upgrader, $hook_extra ) {
-    if ( ( $hook_extra['plugin'] ?? '' ) !== ACFT_PLUGIN ) return $source;
+    // Ne traiter que les mises à jour de CE plugin
+    if ( ! isset( $hook_extra['plugin'] ) ) return $source;
+    if ( $hook_extra['plugin'] !== ACFT_PLUGIN ) return $source;
 
     global $wp_filesystem;
-    $desired = trailingslashit( $remote_source ) . ACFT_SLUG;
-    if ( $source !== $desired . '/' && is_dir( $source ) ) {
-        if ( $wp_filesystem->move( $source, $desired ) ) {
-            return trailingslashit( $desired );
-        }
+
+    // Le dossier extrait doit s'appeler exactement ACFT_SLUG
+    $correct_dir = trailingslashit( $remote_source ) . ACFT_SLUG . '/';
+
+    // Si c'est déjà le bon nom, ne rien faire
+    if ( trailingslashit( $source ) === $correct_dir ) return $source;
+
+    // Renommer le dossier extrait vers le bon nom
+    if ( $wp_filesystem->move( untrailingslashit( $source ), untrailingslashit( $correct_dir ) ) ) {
+        return $correct_dir;
     }
+
+    // Si le rename échoue, retourner la source originale
     return $source;
 }
 

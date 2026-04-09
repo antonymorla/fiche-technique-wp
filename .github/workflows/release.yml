@@ -22,10 +22,11 @@ jobs:
 
       - name: Build plugin ZIP
         run: |
-          cd abri-cerisier-fiche-technique
-          zip -r ../abri-cerisier-fiche-technique-${{ github.ref_name }}.zip . \
-            -x "*.DS_Store" \
-            -x "*/.git/*"
+          # ZIP avec le dossier abri-cerisier-fiche-technique/ à la racine
+          # IMPORTANT : le nom du dossier doit être IDENTIQUE à chaque version
+          # sinon WordPress crée un nouveau dossier et perd la référence au plugin
+          zip -r abri-cerisier-fiche-technique.zip abri-cerisier-fiche-technique/ \
+            -x "*.DS_Store"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -33,16 +34,11 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "${{ github.ref_name }} – Fiche Technique"
           body: |
-            ## Mise à jour automatique via GitHub Actions
+            ## Fiche Technique – ${{ github.ref_name }}
 
             **Version :** `${{ steps.version.outputs.VERSION }}`
 
-            ### Installation / Mise à jour
-            - WordPress détecte automatiquement cette mise à jour dans **Extensions → Mises à jour**
-            - Ou téléchargez le ZIP ci-dessous et installez manuellement
-
-            ---
-            *Plugin Fiche Technique – Abri Cerisier / Abri Français*
-          files: abri-cerisier-fiche-technique-${{ github.ref_name }}.zip
+            WordPress détecte automatiquement cette mise à jour dans **Extensions → Mises à jour**.
+          files: abri-cerisier-fiche-technique.zip
           draft: false
           prerelease: false
