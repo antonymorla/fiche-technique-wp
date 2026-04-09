@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           1.5.3
+ * Version:           2.0.0
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '1.5.3' );
+define( 'ACFT_VERSION',  '2.0.0' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -120,6 +120,13 @@ function acft_register_rest() {
     register_rest_route( 'ac-ft/v1', '/pricing', [
         'methods'             => 'GET',
         'callback'            => 'acft_rest_pricing',
+        'permission_callback' => '__return_true',
+    ] );
+
+    // Lookup tables WAPF (directement depuis le plugin wombat/WAPF)
+    register_rest_route( 'ac-ft/v1', '/lookup-tables', [
+        'methods'             => 'GET',
+        'callback'            => 'acft_rest_lookup_tables',
         'permission_callback' => '__return_true',
     ] );
 }
@@ -250,6 +257,71 @@ function acft_parse_price_tables( array $rows ) {
     }
     if ( $current ) $tables[] = $current;
     return $tables;
+}
+
+/**
+ * Endpoint : /ac-ft/v1/lookup-tables
+ * Retourne les lookup tables du plugin WAPF (wombat) exactement comme elles
+ * sont injectées dans le frontend par add_lookup_tables().
+ * Source : filtre WordPress 'wapf/lookup_tables' (défini par le plugin WAPF).
+ */
+function acft_rest_lookup_tables( WP_REST_Request $req ) {
+    $cached = get_transient( 'acft_lookup_tables_v1' );
+    if ( $cached !== false && $cached !== 'error' ) {
+        return rest_ensure_response( $cached );
+    }
+
+    // Appeler le filtre WAPF pour obtenir les lookup tables
+    $tables = apply_filters( 'wapf/lookup_tables', [] );
+
+    if ( ! empty( $tables ) ) {
+        set_transient( 'acft_lookup_tables_v1', $tables, 4 * HOUR_IN_SECONDS );
+        return rest_ensure_response( $tables );
+    }
+
+    // Fallback : chercher dans les options WordPress ou les post meta
+    // Le plugin "WC Product Addon Lookup Table" stocke les données en option
+    global $wpdb;
+    $option_tables = $wpdb->get_results(
+        "SELECT option_name, option_value FROM {$wpdb->options}
+         WHERE option_name LIKE 'wapf_lookup_%' OR option_name LIKE '_wapf_lookup_%'
+         ORDER BY option_name ASC"
+    );
+    if ( $option_tables ) {
+        $result = [];
+        foreach ( $option_tables as $opt ) {
+            $data = maybe_unserialize( $opt->option_value );
+            if ( ! $data ) $data = json_decode( $opt->option_value, true );
+            $key  = str_replace( [ 'wapf_lookup_', '_wapf_lookup_' ], '', $opt->option_name );
+            $result[ $key ] = $data;
+        }
+        set_transient( 'acft_lookup_tables_v1', $result, 4 * HOUR_IN_SECONDS );
+        return rest_ensure_response( $result );
+    }
+
+    // Dernier fallback : chercher dans les pages produits WooCommerce
+    // Les lookup tables sont parfois stockées dans les post meta des produits
+    $products = get_posts( [
+        'post_type'      => 'product',
+        'post_status'    => 'publish',
+        'posts_per_page' => 10,
+        'meta_key'       => '_wapf_lookup_tables',
+    ] );
+    $result = [];
+    foreach ( $products as $p ) {
+        $lt = get_post_meta( $p->ID, '_wapf_lookup_tables', true );
+        if ( $lt ) {
+            $result[ 'product_' . $p->ID ] = $lt;
+        }
+    }
+
+    if ( empty( $result ) ) {
+        set_transient( 'acft_lookup_tables_v1', 'error', 5 * MINUTE_IN_SECONDS );
+        return rest_ensure_response( [ 'error' => 'Aucune lookup table trouvée. Le plugin WAPF doit être actif.' ] );
+    }
+
+    set_transient( 'acft_lookup_tables_v1', $result, 4 * HOUR_IN_SECONDS );
+    return rest_ensure_response( $result );
 }
 
 /* ═══════════════════════════════════════════════════════════════

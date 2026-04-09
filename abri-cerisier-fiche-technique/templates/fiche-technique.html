@@ -255,8 +255,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 
   <div id="price-box">
     <div class="pl">Prix indicatif HT (hors pose &amp; livraison)</div>
-    <div class="pv" id="pdisp">—</div>
-    <button id="print-btn" onclick="printIt()">🖨 Générer la fiche PDF</button>
+    <div class="pv" id="price-val">—</div>
+    <button id="print-btn" onclick="printIt()">🖨 Générer le devis PDF</button>
   </div>
 </div>
 
@@ -295,13 +295,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
   <div class="ps-body">
     <div>
       <div class="ps-drawings">
-        <div class="ps-box"><h5>Plan de masse</h5><svg id="ps-plan" width="100%" viewBox="0 0 340 250"></svg></div>
-        <div class="ps-box"><h5>Façade — Pignon avant</h5><svg id="ps-face" width="100%" viewBox="0 0 340 250"></svg></div>
+        <div class="ps-box"><h5>Plan de masse</h5><svg id="ps-plan" width="100%" viewBox="0 0 480 340"></svg></div>
+        <div class="ps-box"><h5>Façade — Pignon avant</h5><svg id="ps-face" width="100%" viewBox="0 0 380 280"></svg></div>
       </div>
       <div class="ps-elevs">
-        <div class="ps-box"><h5>Vue gauche</h5><svg id="ps-gau" width="100%" viewBox="0 0 300 230"></svg></div>
-        <div class="ps-box"><h5>Vue droite</h5><svg id="ps-dro" width="100%" viewBox="0 0 300 230"></svg></div>
-        <div class="ps-box"><h5>Vue fond — Pignon arrière</h5><svg id="ps-fond" width="100%" viewBox="0 0 300 230"></svg></div>
+        <div class="ps-box"><h5>Vue gauche</h5><svg id="ps-gau" width="100%" viewBox="0 0 380 280"></svg></div>
+        <div class="ps-box"><h5>Vue droite</h5><svg id="ps-dro" width="100%" viewBox="0 0 380 280"></svg></div>
+        <div class="ps-box"><h5>Vue fond — Pignon arrière</h5><svg id="ps-fond" width="100%" viewBox="0 0 380 280"></svg></div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:7px">
@@ -1189,48 +1189,48 @@ function renderDims(d,tbl){
 // ════════════════════════════════════════════════════════
 const MPRESETS=[
   // ── PORTES CLASSIQUES BOIS ──
-  {id:'pz80',       cat:'Porte classique bois',    label:'Porte Z simple 80×186',              type:'porte',  lw:80,  lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.01.png'},
-  {id:'pz140',      cat:'Porte classique bois',    label:'Porte Z double 140×186',             type:'porte',  lw:140, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.15.png'},
-  {id:'pmort80',    cat:'Porte classique bois',    label:'Porte mortaisée simple semi-vitrée 80×186', type:'porte', lw:80, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.29.png'},
-  {id:'pmort140',   cat:'Porte classique bois',    label:'Porte mortaisée double semi-vitrée 140×186', type:'porte', lw:140, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.40.png'},
-  {id:'ppfdv80',    cat:'Porte classique bois',    label:'Porte-fenêtre double vitrage 80×205', type:'porte', lw:80, lh:205, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-09-24-a-15.02.22.png'},
+  {id:'pz80',       cat:'Porte classique bois',    label:'Porte Z simple 80×186',              type:'porte',  lw:80,  lh:186, sku:'PBSPZ', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.01.png'},
+  {id:'pz140',      cat:'Porte classique bois',    label:'Porte Z double 140×186',             type:'porte',  lw:140, lh:186, sku:'PBDPZ', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.15.png'},
+  {id:'pmort80',    cat:'Porte classique bois',    label:'Porte mortaisée simple semi-vitrée 80×186', type:'porte', lw:80, lh:186, sku:'PBSVZ', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.29.png'},
+  {id:'pmort140',   cat:'Porte classique bois',    label:'Porte mortaisée double semi-vitrée 140×186', type:'porte', lw:140, lh:186, sku:'PBDVZ', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.40.png'},
+  {id:'ppfdv80',    cat:'Porte classique bois',    label:'Porte-fenêtre double vitrage 80×205', type:'porte', lw:80, lh:205, sku:'PBE80', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-09-24-a-15.02.22.png'},
   // ── PORTES CONTEMPORAINES BOIS ──
-  {id:'pcont1v',    cat:'Porte contemporaine bois',label:'Porte battante simple vitrée 80×210', type:'porte', lw:80, lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.49.png'},
-  {id:'pcont2v',    cat:'Porte contemporaine bois',label:'Porte battante double vitrée 140×210',type:'porte', lw:140,lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.51.png'},
-  {id:'pcont1p',    cat:'Porte contemporaine bois',label:'Porte battante simple pleine 80×210', type:'porte', lw:80, lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.28.png'},
-  {id:'pcont2p',    cat:'Porte contemporaine bois',label:'Porte battante double pleine 140×210',type:'porte', lw:140,lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.25.png'},
+  {id:'pcont1v',    cat:'Porte contemporaine bois',label:'Porte battante simple vitrée 80×210', type:'porte', lw:80, lh:210, sku:'PBSV', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.49.png'},
+  {id:'pcont2v',    cat:'Porte contemporaine bois',label:'Porte battante double vitrée 140×210',type:'porte', lw:140,lh:210, sku:'PBDV', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.51.png'},
+  {id:'pcont1p',    cat:'Porte contemporaine bois',label:'Porte battante simple pleine 80×210', type:'porte', lw:80, lh:210, sku:'PBSP', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.28.png'},
+  {id:'pcont2p',    cat:'Porte contemporaine bois',label:'Porte battante double pleine 140×210',type:'porte', lw:140,lh:210, sku:'PBDP', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.25.png'},
   {id:'pcont1dv',   cat:'Porte contemporaine bois',label:'Porte battante simple 2/4 vitrée 80×210',type:'porte',lw:80,lh:210, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.03.png'},
   // ── PORTES COULISSANTES BOIS ──
-  {id:'pcoul90v',   cat:'Porte coulissante bois',  label:'Coulissante vitrée 90×186 (autoclave vert)',  type:'porte', lw:90, lh:186, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.56.png'},
-  {id:'pcoul140v',  cat:'Porte coulissante bois',  label:'Coulissante double vitrée 140×186 (autoclave vert)',type:'porte',lw:140,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.24.png'},
+  {id:'pcoul90v',   cat:'Porte coulissante bois',  label:'Coulissante vitrée 90×186 (autoclave vert)',  type:'porte', lw:90, lh:186, sku:'PCSVv90', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.56.png'},
+  {id:'pcoul140v',  cat:'Porte coulissante bois',  label:'Coulissante double vitrée 140×186 (autoclave vert)',type:'porte',lw:140,lh:186, sku:'PCDV140',img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.24.png'},
   // ── PORTES COULISSANTES OSSATURE ──
-  {id:'pcoul110av', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (autoclave vert)',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.45.02.png'},
-  {id:'pcoul110ay', cat:'Porte coulissante ossature',label:'Coulissante acidifié Ayous 110×186',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.51.png'},
-  {id:'pcoul110ag', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (autoclave gris)',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.38.png'},
-  {id:'pcoul110al', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (capotage ALU)',type:'porte',lw:110,lh:186,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.45.18.png'},
+  {id:'pcoul110av', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (autoclave vert)',type:'porte',lw:110,lh:186, sku:'PCSVv1O',img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.45.02.png'},
+  {id:'pcoul110ay', cat:'Porte coulissante ossature',label:'Coulissante acidifié Ayous 110×186',type:'porte',lw:110,lh:186, sku:'PCSPv1O',img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.51.png'},
+  {id:'pcoul110ag', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (autoclave gris)',type:'porte',lw:110,lh:186, sku:'PCSVg1O',img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.38.png'},
+  {id:'pcoul110al', cat:'Porte coulissante ossature',label:'Coulissante acidifié 110×186 (capotage ALU)',type:'porte',lw:110,lh:186, sku:'PCSVaO',img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.45.18.png'},
   // ── PORTES ALU / PVC ──
-  {id:'palu80',     cat:'Porte ALU/PVC',           label:'Porte-fenêtre ALU 80×215 (RAL 7016)',type:'porte', lw:80, lh:215, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.33.png'},
-  {id:'ppvc90',     cat:'Porte ALU/PVC',           label:'Porte battante PVC 90×217 (RAL 7016/Blanc)',type:'porte',lw:90,lh:217,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.33.png'},
+  {id:'palu80',     cat:'Porte ALU/PVC',           label:'Porte-fenêtre ALU 80×215 (RAL 7016)',type:'porte', lw:80, lh:215, sku:'PBSA80', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.33.png'},
+  {id:'ppvc90',     cat:'Porte ALU/PVC',           label:'Porte battante PVC 90×217 (RAL 7016/Blanc)',type:'porte',lw:90,lh:217, sku:'PBPVC90',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.33.png'},
   // ── BAIES COULISSANTES ALU ──
-  {id:'baie180',    cat:'Baie coulissante ALU',    label:'Baie vitrée coulissante ALU 180×217', type:'porte', lw:180,lh:217, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.39.22.png'},
-  {id:'baie240',    cat:'Baie coulissante ALU',    label:'Baie coulissante DV 4/16/4 — 240×195 (RAL 7016)', type:'porte',lw:240,lh:195,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.39.50.png'},
+  {id:'baie180',    cat:'Baie coulissante ALU',    label:'Baie vitrée coulissante ALU 180×217', type:'porte', lw:180,lh:217, sku:'BVA180', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.39.22.png'},
+  {id:'baie240',    cat:'Baie coulissante ALU',    label:'Baie coulissante DV 4/16/4 — 240×195 (RAL 7016)', type:'porte',lw:240,lh:195, sku:'BVA240',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.39.50.png'},
   // ── FENÊTRES CLASSIQUES BOIS ──
-  {id:'f49fix',     cat:'Fenêtre classique bois',  label:'Fenêtre fixe 49×93',                type:'fenetre',lw:49, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.40.png'},
-  {id:'f80fix',     cat:'Fenêtre classique bois',  label:'Fenêtre fixe 80×93',                type:'fenetre',lw:80, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.44.png'},
-  {id:'f49ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 49×93',            type:'fenetre',lw:49, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.40.png'},
-  {id:'f80ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 80×93',            type:'fenetre',lw:80, lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.44.png'},
-  {id:'fdv75',      cat:'Fenêtre classique bois',  label:'Fenêtre double vitrage 75×60',      type:'fenetre',lw:75, lh:60, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.17.48.png'},
+  {id:'f49fix',     cat:'Fenêtre classique bois',  label:'Fenêtre fixe 49×93',                type:'fenetre',lw:49, lh:93, sku:'FF49X93', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.40.png'},
+  {id:'f80fix',     cat:'Fenêtre classique bois',  label:'Fenêtre fixe 80×93',                type:'fenetre',lw:80, lh:93, sku:'FF76X91', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.44.png'},
+  {id:'f49ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 49×93',            type:'fenetre',lw:49, lh:93, sku:'FO49X73', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.40.png'},
+  {id:'f80ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 80×93',            type:'fenetre',lw:80, lh:93, sku:'FO76X91', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.44.png'},
+  {id:'fdv75',      cat:'Fenêtre classique bois',  label:'Fenêtre double vitrage 75×60',      type:'fenetre',lw:75, lh:60, sku:'FE75O', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.17.48.png'},
   // ── FENÊTRES CONTEMPORAINES ──
-  {id:'fhublot',    cat:'Fenêtre contemporaine',   label:'Hublot 91 cm',                     type:'fenetre',lw:91, lh:91, img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.48.52.png'},
-  {id:'fc9353',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 93×53.5 cm',          type:'fenetre',lw:93, lh:53.5,img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.49.08.png'},
-  {id:'fc5393',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 53.5×93 cm',          type:'fenetre',lw:53.5,lh:93, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.32.png'},
-  {id:'fc20054',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 200×54 cm',           type:'fenetre',lw:200,lh:54,  img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.25.png'},
-  {id:'fc54200',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 54×200 cm',           type:'fenetre',lw:54, lh:200, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.48.png'},
+  {id:'fhublot',    cat:'Fenêtre contemporaine',   label:'Hublot 91 cm',                     type:'fenetre',lw:91, lh:91, sku:'FHF91', img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.48.52.png'},
+  {id:'fc9353',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 93×53.5 cm',          type:'fenetre',lw:93, lh:53.5, sku:'FF91H',img:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.49.08.png'},
+  {id:'fc5393',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 53.5×93 cm',          type:'fenetre',lw:53.5,lh:93, sku:'FF91V', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.32.png'},
+  {id:'fc20054',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 200×54 cm',           type:'fenetre',lw:200,lh:54, sku:'FL200H',  img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.25.png'},
+  {id:'fc54200',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 54×200 cm',           type:'fenetre',lw:54, lh:200, sku:'FL200V', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.48.png'},
   // ── FENÊTRES ALU / PVC ──
-  {id:'falu60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU 60×95 (RAL 7016)',     type:'fenetre',lw:60, lh:95, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
-  {id:'fpano120',   cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU panoramique 120×95 (RAL 7016)',type:'fenetre',lw:120,lh:95,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
-  {id:'fpvc60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC 60×95 (RAL 7016/Blanc)',type:'fenetre',lw:60, lh:95, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
-  {id:'fpvc120',    cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC panoramique 120×95 (RAL 7016/Blanc)',type:'fenetre',lw:120,lh:95,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
+  {id:'falu60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU 60×95 (RAL 7016)',     type:'fenetre',lw:60, lh:95, sku:'FBA60', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
+  {id:'fpano120',   cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU panoramique 120×95 (RAL 7016)',type:'fenetre',lw:120,lh:95, sku:'FBA120',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
+  {id:'fpvc60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC 60×95 (RAL 7016/Blanc)',type:'fenetre',lw:60, lh:95, sku:'FPVC60', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
+  {id:'fpvc120',    cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC panoramique 120×95 (RAL 7016/Blanc)',type:'fenetre',lw:120,lh:95, sku:'FPVC120',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
 ];
 function addM(){
   const id=++MCNT,p=MPRESETS[0];
@@ -1290,6 +1290,153 @@ function renderMenus(){
 }
 
 // ════════════════════════════════════════════════════════
+// PRICING ENGINE — lookuptable + formules WAPF
+// ════════════════════════════════════════════════════════
+let LOOKUP_TABLES = {}; // Chargé depuis /ac-ft/v1/lookup-tables
+let WAPF_CONFIG = null; // Chargé depuis /ac-ft/v1/wapf-config/{type}
+let PRICING_LOADED = false;
+
+// findNearest — réplique exacte du JS WAPF
+function findNearest(obj, key){
+  if(!obj||typeof obj!=='object') return undefined;
+  const k=String(key);
+  if(obj.hasOwnProperty(k)) return obj[k];
+  // Parse as number and find closest
+  const num=parseFloat(k.replace(',','.'));
+  if(isNaN(num)) return obj[k]||undefined;
+  let closest=null, minDiff=Infinity;
+  for(const ok of Object.keys(obj)){
+    const on=parseFloat(ok.replace(',','.'));
+    if(!isNaN(on)){
+      const diff=Math.abs(on-num);
+      if(diff<minDiff){minDiff=diff;closest=ok;}
+    }
+  }
+  return closest!==null?obj[closest]:undefined;
+}
+
+// lookuptable(tableName, key1, key2, ...)
+function lookuptable(tableName,...keys){
+  let tbl=LOOKUP_TABLES[tableName];
+  if(!tbl) return 0;
+  // Traverse nested object with findNearest at each level
+  for(const key of keys){
+    if(tbl===undefined||tbl===null||typeof tbl!=='object') return 0;
+    tbl=findNearest(tbl, key);
+  }
+  const v=parseFloat(tbl);
+  return isNaN(v)?0:v;
+}
+
+// Calcul du prix basé sur la configuration courante
+function calcPrice(d){
+  if(!PRICING_LOADED) return {base:0,options:{},menuiseries:{},total:0};
+
+  // Variables WAPF
+  const sysMap={'madrier28':1,'madrier45':1,'ossature':2};
+  const toitMap={'QUADRO':1,'1PAN':2,'2PANS':3,'TOIT_PLAT':4};
+  const varSys=sysMap[d.sys]||1;
+  const varToit=toitMap[d.toit]||3;
+  const varBardage=1; // default
+  const sku=`${varSys}${varToit}${varBardage}`;
+
+  // Dimensions arrondies (nearest 0.5)
+  const roundHalf=v=>Math.round(v*2)/2;
+  const lArr=roundHalf(d.L), pArr=roundHalf(d.P);
+  const dimKey=`${lArr}x${pArr}`;
+
+  // Prix de base = lookuptable(table-dim; SKU; LxP)
+  const base=lookuptable('table-dim', sku, dimKey);
+
+  // Options
+  const opts={};
+
+  // Rehausses
+  if(d.reh>0){
+    const rehPrice=lookuptable('options','rehausse')||lookuptable('options','3');
+    const perim=(d.L*2+d.P*2);
+    opts.rehausse={label:`${d.reh} rehausse(s)`,price:rehPrice*perim*d.reh};
+  }
+
+  // Plancher
+  const planV=document.getElementById('f-plan').value;
+  if(planV!=='non'){
+    const planPrice=lookuptable('options',planV)||lookuptable('options','plancher');
+    opts.plancher={label:OPTION_DATA[planV]?.label||planV,price:planPrice*d.L*d.P,img:OPTION_DATA[planV]?.img};
+  }
+
+  // Isolation
+  const isoV=document.getElementById('f-iso').value;
+  if(isoV!=='non'){
+    const isoPrice=lookuptable('options',isoV)||lookuptable('options','isolation');
+    opts.isolation={label:OPTION_DATA[isoV]?.label||isoV,price:isoPrice*d.L*d.P,img:OPTION_DATA[isoV]?.img};
+  }
+
+  // Gouttière
+  if(document.getElementById('f-gout').value==='oui'){
+    const goutPrice=lookuptable('options','gouttiere')||0;
+    opts.gouttiere={label:'Gouttière zinc',price:goutPrice,img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-07-a-18.58.22.png'};
+  }
+
+  // Extensions toiture (débords supplémentaires)
+  const extPrice=lookuptable('options','extension')||0;
+  if(d.uf>0) opts.debord_face={label:`Débord face +${d.uf} cm`,price:extPrice*(d.uf/100)*d.L};
+  if(d.ub>0) opts.debord_fond={label:`Débord fond +${d.ub} cm`,price:extPrice*(d.ub/100)*d.L};
+  if(d.ul>0) opts.debord_gauche={label:`Débord gauche +${d.ul} cm`,price:extPrice*(d.ul/100)*d.P};
+  if(d.ur>0) opts.debord_droite={label:`Débord droite +${d.ur} cm`,price:extPrice*(d.ur/100)*d.P};
+
+  // Menuiseries
+  const menuPrices={};
+  MENUS.forEach(m=>{
+    // Trouver le code lookuptable pour cette menuiserie
+    const preset=MPRESETS.find(p=>p.id===m.preset);
+    const code=preset?.sku||m.preset?.toUpperCase()||'';
+    const unitPrice=lookuptable('menuiseries',code);
+    menuPrices[m.id]={label:m.label,price:unitPrice,wall:m.wall,img:m.img};
+  });
+
+  // Total
+  const optTotal=Object.values(opts).reduce((s,o)=>s+(o.price||0),0);
+  const menuTotal=Object.values(menuPrices).reduce((s,o)=>s+(o.price||0),0);
+  const total=base+optTotal+menuTotal;
+
+  return {base,sku,dimKey,options:opts,menuiseries:menuPrices,optTotal,menuTotal,total};
+}
+
+// Charger les données depuis l'API WordPress (si disponible)
+async function loadPricingData(){
+  const api=window.ACFT?.api;
+  if(!api){console.log('Mode standalone — pas d\'API pricing');return;}
+
+  try{
+    // 1. Lookup tables (depuis WAPF)
+    const ltResp=await fetch(api+'/lookup-tables',{headers:{'X-WP-Nonce':window.ACFT.nonce}});
+    if(ltResp.ok){
+      LOOKUP_TABLES=await ltResp.json();
+      if(!LOOKUP_TABLES.error) PRICING_LOADED=true;
+      console.log('Lookup tables chargées:',Object.keys(LOOKUP_TABLES));
+    }
+
+    // 2. Config WAPF (champs + formules + images)
+    const cfgResp=await fetch(api+'/wapf-config/'+TYPE,{headers:{'X-WP-Nonce':window.ACFT.nonce}});
+    if(cfgResp.ok){
+      WAPF_CONFIG=await cfgResp.json();
+      console.log('Config WAPF chargée:',WAPF_CONFIG?.length||0,'groupes');
+    }
+  }catch(e){
+    console.warn('Erreur chargement pricing:',e);
+  }
+  upd(); // Refresh avec les prix
+}
+
+// Lancer le chargement au démarrage
+if(document.readyState==='complete') loadPricingData();
+else window.addEventListener('load',loadPricingData);
+
+// Formater un prix
+function fmtPrice(v){return v!=null&&!isNaN(v)?v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'—';}
+
+// ════════════════════════════════════════════════════════
 // CONFIG TAGS
 // ════════════════════════════════════════════════════════
 function buildTags(d){
@@ -1330,6 +1477,19 @@ function upd(){
 
   renderDims(d,document.getElementById('dim-tbl'));
   document.getElementById('cfg-tags').innerHTML=buildTags(d).map(t=>`<span class="tag">${t}</span>`).join('');
+
+  // Prix
+  const pricing=calcPrice(d);
+  const priceEl=document.getElementById('price-val');
+  if(priceEl){
+    if(PRICING_LOADED&&pricing.total>0){
+      priceEl.textContent=fmtPrice(pricing.total);
+      priceEl.style.opacity='1';
+    } else {
+      priceEl.textContent=PRICING_LOADED?'—':'Chargement...';
+      priceEl.style.opacity='.5';
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -1346,11 +1506,11 @@ function printIt(){
   document.getElementById('ps-fdate').textContent=ds;
   document.getElementById('ps-fref').textContent=document.getElementById('f-ref').value||'';
 
-  drawPlan(document.getElementById('ps-plan'),d,340,250);
-  drawElev(document.getElementById('ps-face'),d,'face',340,250);
-  drawElev(document.getElementById('ps-gau'),d,'gauche',300,230);
-  drawElev(document.getElementById('ps-dro'),d,'droite',300,230);
-  drawElev(document.getElementById('ps-fond'),d,'fond',300,230);
+  drawPlan(document.getElementById('ps-plan'),d,480,340);
+  drawElev(document.getElementById('ps-face'),d,'face',380,280);
+  drawElev(document.getElementById('ps-gau'),d,'gauche',380,280);
+  drawElev(document.getElementById('ps-dro'),d,'droite',380,280);
+  drawElev(document.getElementById('ps-fond'),d,'fond',380,280);
 
   renderDims(d,document.getElementById('ps-dt'));
   document.getElementById('ps-cfg').innerHTML=tags.map(t=>`<li>${t}</li>`).join('');
