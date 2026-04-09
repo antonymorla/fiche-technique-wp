@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           1.5.0
+ * Version:           1.5.1
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '1.5.0' );
+define( 'ACFT_VERSION',  '1.5.1' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -336,7 +336,7 @@ function acft_fix_update_folder( $source, $remote_source, $upgrader, $hook_extra
 function acft_get_release_zip_url( $release ) {
     if ( ! empty( $release->assets ) ) {
         foreach ( $release->assets as $asset ) {
-            if ( isset( $asset->browser_download_url ) && str_ends_with( $asset->name, '.zip' ) ) {
+            if ( isset( $asset->browser_download_url ) && substr( $asset->name, -4 ) === '.zip' ) {
                 return $asset->browser_download_url;
             }
         }
@@ -349,12 +349,12 @@ function acft_get_release_zip_url( $release ) {
  */
 function acft_get_github_release() {
     $cached = get_transient( 'acft_github_release' );
-    if ( $cached !== false ) return $cached;
+    if ( $cached !== false && $cached !== 'error' ) return $cached;
 
     $resp = wp_remote_get(
         'https://api.github.com/repos/' . ACFT_GITHUB . '/releases/latest',
         [
-            'timeout' => 10,
+            'timeout' => 15,
             'headers' => [
                 'Accept'     => 'application/vnd.github.v3+json',
                 'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . get_bloginfo( 'url' ),
@@ -363,12 +363,18 @@ function acft_get_github_release() {
     );
 
     if ( is_wp_error( $resp ) || wp_remote_retrieve_response_code( $resp ) !== 200 ) {
-        set_transient( 'acft_github_release', null, 30 * MINUTE_IN_SECONDS );
+        // Cache erreur 5min pour ne pas spammer l'API
+        set_transient( 'acft_github_release', 'error', 5 * MINUTE_IN_SECONDS );
         return null;
     }
 
     $release = json_decode( wp_remote_retrieve_body( $resp ) );
-    set_transient( 'acft_github_release', $release, 6 * HOUR_IN_SECONDS );
+    if ( empty( $release->tag_name ) ) {
+        set_transient( 'acft_github_release', 'error', 5 * MINUTE_IN_SECONDS );
+        return null;
+    }
+
+    set_transient( 'acft_github_release', $release, HOUR_IN_SECONDS );
     return $release;
 }
 
