@@ -494,8 +494,29 @@ function drawPlan(svg,d,vw=480,vh=340){
   const wx=ox+d.ovL*sc, wy=oy+d.ovF*sc; // top-left of wall exterior
   const drawW=d.L*sc, drawP=d.P*sc, wt=d.wt*sc;
 
-  // Hors tout boundary (dashed)
-  sRect(svg,ox,oy,htW,htP,'none','#bbb',.8,'5 3');
+  // Hors tout boundary — extension toiture (hachurée)
+  // Fill overhang zones with diagonal hatch pattern
+  const ovLpx=d.ovL*sc, ovRpx=d.ovR*sc, ovFpx=d.ovF*sc, ovBpx=d.ovB*sc;
+  const hatchCol='#c8d0b8', hatchOp=.5;
+  // Top strip (fond overhang)
+  if(ovBpx>2) sRect(svg,ox,oy,htW,ovBpx,'#f0f3ea','none',0);
+  // Bottom strip (face overhang)
+  if(ovFpx>2) sRect(svg,ox,oy+htP-ovFpx,htW,ovFpx,'#f0f3ea','none',0);
+  // Left strip (gauche overhang)
+  if(ovLpx>2) sRect(svg,ox,oy,ovLpx,htP,'#f0f3ea','none',0);
+  // Right strip (droite overhang)
+  if(ovRpx>2) sRect(svg,ox+htW-ovRpx,oy,ovRpx,htP,'#f0f3ea','none',0);
+  // Diagonal hatch lines across the overhang area
+  const step=8;
+  for(let i=-htP;i<htW+htP;i+=step){
+    const lx1=ox+Math.max(0,i), ly1=oy+Math.max(0,-i);
+    const lx2=ox+Math.min(htW,i+htP), ly2=oy+Math.min(htP,htP+htW-i-htP);
+    // Only draw in overhang zones (not inside wall rect)
+    if(lx1<wx||lx2>wx+drawW||ly1<wy||ly2>wy+drawP)
+      sLine(svg,lx1,ly1,lx2,ly2,hatchCol,hatchOp);
+  }
+  // Hors tout border
+  sRect(svg,ox,oy,htW,htP,'none','#515136',.8,'5 3');
 
   if(TYPE==='carport'){
     drawPlanCarport(svg,d,wx,wy,drawW,drawP,wt,sc);
@@ -583,6 +604,13 @@ function drawPlan(svg,d,vw=480,vh=340){
   if(d.ovB>d.stdOvhg+0.01){
     dimL(svg,wx+drawW*0.7,oy,wx+drawW*0.7,wy,`${(d.ovB*100).toFixed(0)} cm`,-30,'#e67e22');
   }
+
+  // Légende
+  const legX=ox+4, legY=oy+htP-18;
+  sRect(svg,legX,legY,8,8,'#f0f3ea','#515136',.5,'3 2');
+  sTxt(svg,legX+11,legY+4,'Extension toiture (débord)',6,'#888','start');
+  sRect(svg,legX,legY+11,8,8,'#e8eef5','#1a1a2e',1);
+  sTxt(svg,legX+11,legY+15,'Murs extérieurs',6,'#888','start');
 }
 
 function drawPlanCarport(svg,d,wx,wy,drawW,drawP,wt,sc){
