@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           2.0.1
+ * Version:           2.0.2
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '2.0.1' );
+define( 'ACFT_VERSION',  '2.0.2' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -467,6 +467,22 @@ function acft_get_github_release() {
     return $release;
 }
 
+/**
+ * Forcer WordPress à vérifier les mises à jour de ce plugin plus souvent.
+ * Quand l'admin visite la page Extensions, on efface le cache pour forcer un check frais.
+ */
+add_action( 'load-plugins.php', function() {
+    delete_transient( 'acft_github_release' );
+    // Forcer WordPress à re-checker les mises à jour de plugins
+    delete_site_transient( 'update_plugins' );
+} );
+
+// Aussi quand l'admin visite la page Mises à jour
+add_action( 'load-update-core.php', function() {
+    delete_transient( 'acft_github_release' );
+    delete_site_transient( 'update_plugins' );
+} );
+
 /* ═══════════════════════════════════════════════════════════════
    5. PAGE DE RÉGLAGES WordPress (Réglages → Fiche Technique)
 ═══════════════════════════════════════════════════════════════ */
@@ -489,65 +505,57 @@ add_action( 'admin_init', function() {
 function acft_settings_page() {
     $slug     = acft_get_slug();
     $full_url = trailingslashit( get_site_url() . '/' . $slug );
-    $release  = acft_get_github_release();
-    $latest   = $release ? ltrim( $release->tag_name, 'v' ) : '?';
 
-    if ( isset( $_GET['acft_clear'] ) ) {
-        delete_transient( 'acft_pricing_v1' );
-        delete_transient( 'acft_github_release' );
-        echo '<div class="notice notice-success"><p>Cache vidé.</p></div>';
-    }
+    // Force refresh release info (pas de cache pour la page admin)
+    delete_transient( 'acft_github_release' );
+    $release = acft_get_github_release();
+    $latest  = ( $release && ! empty( $release->tag_name ) ) ? ltrim( $release->tag_name, 'v' ) : '—';
     ?>
     <div class="wrap">
-        <h1>⚙️ Fiche Technique — Réglages</h1>
+        <h1>Fiche Technique — Réglages</h1>
 
         <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
-            <h2 style="margin-top:0">🔗 URL de l'outil (accès interne)</h2>
-            <p>Partagez ce lien uniquement en interne :</p>
+            <h2 style="margin-top:0">URL de l'outil</h2>
             <p><a href="<?php echo esc_url( $full_url ); ?>" target="_blank" style="font-size:15px;font-weight:600"><?php echo esc_html( $full_url ); ?></a></p>
         </div>
 
         <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
-            <h2 style="margin-top:0">🔄 Version et mises à jour</h2>
-            <p><strong>Version installée :</strong> <?php echo esc_html( ACFT_VERSION ); ?></p>
-            <p><strong>Dernière version GitHub :</strong> <?php echo esc_html( $latest ); ?></p>
+            <h2 style="margin-top:0">Version</h2>
+            <p><strong>Installée :</strong> <?php echo esc_html( ACFT_VERSION ); ?></p>
+            <p><strong>GitHub :</strong> <?php echo esc_html( $latest ); ?></p>
             <?php if ( $release && version_compare( ACFT_VERSION, $latest, '<' ) ) : ?>
-                <div class="notice notice-warning inline"><p>⚠️ Mise à jour disponible ! Allez dans <a href="<?php echo admin_url('update-core.php'); ?>">Mises à jour WordPress</a>.</p></div>
+                <p><a href="<?php echo esc_url( admin_url( 'update-core.php' ) ); ?>" class="button button-primary">Mettre à jour vers <?php echo esc_html( $latest ); ?></a></p>
             <?php else : ?>
-                <p style="color:green">✅ Plugin à jour.</p>
+                <p style="color:green">Plugin à jour.</p>
             <?php endif; ?>
         </div>
 
         <form method="post" action="options.php">
             <?php settings_fields( 'acft_group' ); ?>
             <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
-                <h2 style="margin-top:0">🔧 Configuration</h2>
+                <h2 style="margin-top:0">URL cachée</h2>
                 <table class="form-table">
                     <tr>
-                        <th><label for="acft_slug">Slug (URL cachée)</label></th>
+                        <th><label for="acft_slug">Slug</label></th>
                         <td>
                             <code><?php echo esc_html( get_site_url() . '/' ); ?></code>
                             <input type="text" id="acft_slug" name="acft_slug"
                                    value="<?php echo esc_attr( $slug ); ?>" class="regular-text" />
                             <code>/</code>
-                            <p class="description">Choisissez un slug difficile à deviner. Ex : <code>outil-technique-ab3x7</code></p>
                         </td>
                     </tr>
                 </table>
-                <?php submit_button( 'Enregistrer le slug' ); ?>
+                <?php submit_button( 'Enregistrer' ); ?>
             </div>
         </form>
 
         <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
-            <h2 style="margin-top:0">📡 Endpoints REST API</h2>
-            <ul>
-                <li><code><?php echo esc_html( rest_url( 'ac-ft/v1/media?s=porte' ) ); ?></code></li>
-                <li><code><?php echo esc_html( rest_url( 'ac-ft/v1/wapf-config/abri' ) ); ?></code></li>
-                <li><code><?php echo esc_html( rest_url( 'ac-ft/v1/pricing' ) ); ?></code></li>
+            <h2 style="margin-top:0">REST API</h2>
+            <ul style="list-style:disc;padding-left:20px">
+                <li><code>/ac-ft/v1/lookup-tables</code> — Tables de prix WAPF</li>
+                <li><code>/ac-ft/v1/wapf-config/{type}</code> — Config configurateur</li>
+                <li><code>/ac-ft/v1/media?s=...</code> — Recherche médias</li>
             </ul>
-            <a href="<?php echo esc_url( admin_url( 'options-general.php?page=acft-settings&acft_clear=1' ) ); ?>" class="button">
-                🗑️ Vider les caches (prix + GitHub)
-            </a>
         </div>
     </div>
     <?php
