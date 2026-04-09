@@ -1541,14 +1541,16 @@ function printIt(){
   document.getElementById('ps2-fdate').textContent=ds;
 
   const sysLabels={madrier28:'Madrier épicéa 28 mm',madrier45:'Madrier épicéa 45 mm',ossature:'Ossature bois 45×145 mm'};
-  const sysImgs={madrier28:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
-    madrier45:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
-    ossature:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-16.02.15.png'};
-  const toitLabels={TOIT_PLAT:'Toit plat — bac acier anti-condensation','2PANS':'Toiture 2 pans — tuiles bitumées','1PAN':'Toiture 1 pan — tuiles bitumées','QUADRO':'QUADRO — structure cube toit plat'};
-  const toitImgs={'2PANS':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
-    '1PAN':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
-    'TOIT_PLAT':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png',
-    'QUADRO':'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.42.58.png'};
+  const sysImgs={
+    madrier28:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.32.51.png',
+    madrier45:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.33.02.png',
+    ossature:'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.23.26.png'};
+  const toitLabels={TOIT_PLAT:'Toit plat — bac acier','2PANS':'Toiture 2 pans','1PAN':'Toiture 1 pan','QUADRO':'QUADRO — toit plat cube'};
+  const toitImgs={
+    '1PAN':'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.10.20.png',
+    '2PANS':'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.10.09.png',
+    'TOIT_PLAT':'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.09.40.png',
+    'QUADRO':'https://abri-bois.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-15.09.52.png'};
 
   function dvCard(title,desc,img,active){
     return `<div class="dv-card${active?' active':''}">
@@ -1682,6 +1684,12 @@ const OPTION_DATA={
   lr60cp:{label:'Isolation LR 60 mm + contreplaqué 8 mm',
     desc:'Laine de roche 60mm + finition contreplaqué peuplier 8mm. Esthétique naturelle en intérieur.',
     img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-06-a-10.42.51.png'},
+  lr60sr:{label:'Isolation LR 60 mm + sapin rouge 15 mm',
+    desc:'Laine de roche 60mm + finition sapin rouge autoclave 15mm intérieur. Aspect bois brut.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-06-a-10.44.26.png'},
+  isoToit:{label:'Isolation toiture — Laine de roche 140 mm',
+    desc:'Panneau laine de roche 140mm en toiture. Isolation thermique haute performance pour abris chauffés.',
+    img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2026-02-23-a-14.35.33.png'},
 };
 
 upd();
