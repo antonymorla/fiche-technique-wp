@@ -768,22 +768,40 @@ function drawElev(svg,d,side,vw=320,vh=260){
   drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
 
   // Poteaux de soutien (débord > 50 cm)
-  // Un seul poteau à l'extrémité, hauteur = du sol au dessous du toit
+  // Un seul poteau à l'extrémité, hauteur = du sol au dessous du toit à ce point
   const postW=0.12*sc, postCol='#f0b429', postStroke='#856404';
-  // Calcul de la hauteur du toit à l'extrémité du débord
-  const roofH_=g.rH*sc;
-  const slopeR=g.roofT==='triangle'?roofH_/(drawW/2||1):
-               (g.roofT==='trapL'||g.roofT==='trapR')?roofH_/(drawW||1):0;
+  const rHpx=g.rH*sc;
+  // Fonction : Y du dessous du toit à une distance dx du bord gauche du mur
+  function roofYat(dx){
+    // dx<0 = à gauche du mur, dx>drawW = à droite du mur
+    const slope=rHpx/(drawW||1); // pente 1-pan (px/px)
+    const slope2=rHpx/((drawW/2)||1); // pente 2-pans (px/px, chaque côté)
+    if(g.roofT==='trapL'){
+      // Faîte gauche (baseY-rHpx), gouttière droite (baseY). Pente descend G→D.
+      return (baseY-rHpx) + slope*dx; // dx=0→faîte, dx=drawW→baseY
+    }
+    if(g.roofT==='trapR'){
+      // Faîte droite (baseY-rHpx), gouttière gauche (baseY). Pente descend D→G.
+      return baseY - slope*dx; // dx=0→baseY, dx=drawW→faîte
+    }
+    if(g.roofT==='triangle'){
+      // Faîte au centre, descend vers G et D
+      const mid=drawW/2;
+      return dx<mid ? (baseY-rHpx)+slope2*Math.abs(mid-dx) :
+                      (baseY-rHpx)+slope2*Math.abs(dx-mid);
+    }
+    // flat, slope1, slope2 : toit plat à baseY ou baseY-rHpx
+    return g.roofT==='flat'?baseY:baseY-rHpx;
+  }
   if(g.ovhgL>0.50){
-    // Hauteur du toit à l'extrémité gauche du débord
-    const roofAtPost=g.roofT==='triangle'||g.roofT==='trapL'?baseY+slopeR*oL:
-                     g.roofT==='trapR'?baseY+slopeR*oL:baseY;
-    sRect(svg,baseX-oL,roofAtPost,postW,gndY-roofAtPost,postCol,postStroke,1);
+    const topY=roofYat(-oL/sc*sc); // Y du toit au bord extérieur gauche
+    // Utilise dx négatif = à gauche du mur
+    const ry=roofYat(-oL);
+    sRect(svg,baseX-oL,ry,postW,gndY-ry,postCol,postStroke,1);
   }
   if(g.ovhgR>0.50){
-    const roofAtPost=g.roofT==='triangle'||g.roofT==='trapR'?baseY+slopeR*oR:
-                     g.roofT==='trapL'?baseY+slopeR*oR:baseY;
-    sRect(svg,baseX+drawW+oR-postW,roofAtPost,postW,gndY-roofAtPost,postCol,postStroke,1);
+    const ry=roofYat(drawW+oR);
+    sRect(svg,baseX+drawW+oR-postW,ry,postW,gndY-ry,postCol,postStroke,1);
   }
 
   // Gouttière
