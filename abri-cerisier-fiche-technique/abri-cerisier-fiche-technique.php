@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           2.1.1
+ * Version:           2.1.2
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '2.1.1' );
+define( 'ACFT_VERSION',  '2.1.2' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -532,8 +532,13 @@ function acft_settings_page() {
             <h2 style="margin-top:0">Version</h2>
             <p><strong>Installée :</strong> <?php echo esc_html( ACFT_VERSION ); ?></p>
             <p><strong>GitHub :</strong> <?php echo esc_html( $latest ); ?></p>
-            <?php if ( $release && version_compare( ACFT_VERSION, $latest, '<' ) ) : ?>
-                <p><a href="<?php echo esc_url( admin_url( 'update-core.php' ) ); ?>" class="button button-primary">Mettre à jour vers <?php echo esc_html( $latest ); ?></a></p>
+            <?php if ( $release && version_compare( ACFT_VERSION, $latest, '<' ) ) :
+                $update_url = wp_nonce_url(
+                    admin_url( 'update.php?action=upgrade-plugin&plugin=' . urlencode( ACFT_PLUGIN ) ),
+                    'upgrade-plugin_' . ACFT_PLUGIN
+                );
+            ?>
+                <p><a href="<?php echo esc_url( $update_url ); ?>" class="button button-primary">Installer la mise à jour <?php echo esc_html( $latest ); ?></a></p>
             <?php else : ?>
                 <p style="color:green">Plugin à jour.</p>
             <?php endif; ?>
@@ -573,7 +578,28 @@ function acft_settings_page() {
 /* ─── Liens dans la liste des extensions ──────────────────────── */
 add_filter( 'plugin_action_links_' . ACFT_PLUGIN, function( $links ) {
     $url      = trailingslashit( get_site_url() . '/' . acft_get_slug() );
-    $links[]  = '<a href="' . esc_url( $url ) . '" target="_blank">🔗 Voir l\'outil</a>';
-    $links[]  = '<a href="' . esc_url( admin_url( 'options-general.php?page=acft-settings' ) ) . '">⚙️ Réglages</a>';
+    $links[]  = '<a href="' . esc_url( $url ) . '" target="_blank">Voir l\'outil</a>';
+    $links[]  = '<a href="' . esc_url( admin_url( 'options-general.php?page=acft-settings' ) ) . '">Réglages</a>';
+
+    // Lien de mise à jour si disponible
+    $release = acft_get_github_release();
+    if ( $release && ! empty( $release->tag_name ) ) {
+        $latest = ltrim( $release->tag_name, 'v' );
+        if ( version_compare( ACFT_VERSION, $latest, '<' ) ) {
+            $update_url = wp_nonce_url(
+                admin_url( 'update.php?action=upgrade-plugin&plugin=' . urlencode( ACFT_PLUGIN ) ),
+                'upgrade-plugin_' . ACFT_PLUGIN
+            );
+            $links[] = '<a href="' . esc_url( $update_url ) . '" style="color:#515136;font-weight:700">Mettre à jour → ' . esc_html( $latest ) . '</a>';
+        }
+    }
     return $links;
 } );
+
+/* ─── Notification sous la ligne du plugin (comme wordpress.org) ──── */
+add_action( 'in_plugin_update_message-' . ACFT_PLUGIN, function( $plugin_data ) {
+    $release = acft_get_github_release();
+    if ( $release && ! empty( $release->body ) ) {
+        echo '<br><em style="font-size:12px">' . esc_html( wp_strip_all_tags( $release->body ) ) . '</em>';
+    }
+}, 10, 1 );
