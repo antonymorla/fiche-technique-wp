@@ -15,21 +15,21 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 .fr{margin-bottom:8px}
 .fr label{display:block;font-size:11px;color:#555;margin-bottom:2px;font-weight:600}
 .fr select,.fr input[type=number],.fr input[type=text]{width:100%;padding:5px 7px;border:1px solid #ddd;border-radius:4px;font-size:12px;background:#fafafa}
-.fr select:focus,.fr input:focus{outline:none;border-color:#e74c3c}
+.fr select:focus,.fr input:focus{outline:none;border-color:#515136}
 .hint{font-size:10px;color:#bbb;margin-top:1px}
 .row2{display:flex;gap:7px}.row2 .fr{flex:1}
 #type-tabs{display:flex;gap:5px;margin-bottom:14px}
 .tab-btn{flex:1;padding:7px 3px;border:2px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;font-weight:700;text-align:center;color:#aaa;transition:all .15s}
-.tab-btn.active{border-color:#e74c3c;background:#fff5f5;color:#e74c3c}
+.tab-btn.active{border-color:#515136;background:#fff5f5;color:#515136}
 .mitem{background:#f8f9fa;border:1px solid #eee;border-radius:5px;padding:8px;margin-bottom:7px;position:relative}
-.mitem .x{position:absolute;top:5px;right:8px;cursor:pointer;color:#e74c3c;font-size:18px;font-weight:700;background:none;border:none;line-height:1}
+.mitem .x{position:absolute;top:5px;right:8px;cursor:pointer;color:#515136;font-size:18px;font-weight:700;background:none;border:none;line-height:1}
 .add-btn{width:100%;padding:6px;border:2px dashed #ddd;border-radius:5px;background:none;cursor:pointer;color:#bbb;font-size:12px}
-.add-btn:hover{border-color:#e74c3c;color:#e74c3c}
-#price-box{background:#1a1a2e;color:#fff;padding:12px 16px;flex-shrink:0;border-top:3px solid #e74c3c}
+.add-btn:hover{border-color:#515136;color:#515136}
+#price-box{background:#1a1a2e;color:#fff;padding:12px 16px;flex-shrink:0;border-top:3px solid #515136}
 #price-box .pl{font-size:10px;opacity:.6;text-transform:uppercase;letter-spacing:.5px}
-#price-box .pv{font-size:20px;font-weight:700;color:#e74c3c}
-#print-btn{width:100%;margin-top:8px;padding:9px;background:#e74c3c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:700}
-#print-btn:hover{background:#c0392b}
+#price-box .pv{font-size:20px;font-weight:700;color:#515136}
+#print-btn{width:100%;margin-top:8px;padding:9px;background:#515136;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:700}
+#print-btn:hover{background:#3d3d28}
 #preview{flex:1;padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
 .card{background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.07);padding:14px 16px}
 .card h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:10px}
@@ -50,7 +50,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
   @page{size:A4 landscape;margin:8mm}
 }
 #ps{display:none;font-family:Arial,sans-serif;font-size:10px;color:#000;padding:0}
-.ps-hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #c0392b;padding-bottom:8px;margin-bottom:8px}
+.ps-hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #515136;padding-bottom:8px;margin-bottom:8px}
 .ps-co{display:flex;align-items:center;gap:10px}
 .ps-logo{height:40px;width:auto;object-fit:contain}
 .ps-co-text{font-size:13px;font-weight:900;color:#1a1a2e;line-height:1.2}
@@ -67,10 +67,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 .ps-dt td{padding:2px 4px;border-bottom:1px solid #f5f5f5}
 .ps-dt td:last-child{font-weight:700;text-align:right}
 .ps-cfg li{font-size:9px;list-style:none;padding:1px 0}
-.ps-cfg li::before{content:'• ';color:#e74c3c}
+.ps-cfg li::before{content:'• ';color:#515136}
 .ps-price{background:#1a1a2e;color:#fff;border-radius:3px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;margin-top:auto}
 .ps-price .l{font-size:8px;opacity:.7;text-transform:uppercase}
-.ps-price .v{font-size:18px;font-weight:900;color:#e74c3c}
+.ps-price .v{font-size:18px;font-weight:900;color:#515136}
 .ps-ftr{border-top:1px solid #ddd;margin-top:7px;padding-top:5px;font-size:8px;color:#bbb;display:flex;justify-content:space-between}
 /* ===== PRINT PAGE 2 — OPTIONS ===== */
 #ps2{display:none;font-family:Arial,sans-serif;font-size:10px;color:#000;padding:0;page-break-before:always}
@@ -438,7 +438,7 @@ function sTxtBg(p,x,y,s,sz=10,fill='#333'){
   sTxt(p,x,y,s,sz,fill);
 }
 
-function sArrow(p,x1,y1,x2,y2,col='#c0392b',sz=5){
+function sArrow(p,x1,y1,x2,y2,col='#3d3d28',sz=5){
   const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
   if(len<1)return;
   const ux=dx/len,uy=dy/len;
@@ -447,7 +447,7 @@ function sArrow(p,x1,y1,x2,y2,col='#c0392b',sz=5){
 }
 
 /* dimension line: from (x1,y1) to (x2,y2), offset perpendicular by `off` px */
-function dimL(p,x1,y1,x2,y2,label,off=28,col='#c0392b'){
+function dimL(p,x1,y1,x2,y2,label,off=28,col='#3d3d28'){
   const dx=x2-x1,dy=y2-y1,isH=Math.abs(dx)>Math.abs(dy);
   const ox=isH?0:off, oy=isH?off:0;
   const lx1=x1+ox,ly1=y1+oy,lx2=x2+ox,ly2=y2+oy;
@@ -461,11 +461,14 @@ function dimL(p,x1,y1,x2,y2,label,off=28,col='#c0392b'){
   sArrow(p,lx2,ly2,lx1,ly1,col,5);
   // label
   if(isH){
-    // Horizontal dim: label above, no rotation
-    sTxtBg(p,mx,my-(Math.abs(oy)*.3+6),label,9,col);
+    // Horizontal dim: label BELOW the line (offset positive = below ground)
+    const labelY=my+8;
+    sTxtBg(p,mx,labelY,label,8,col);
   } else {
-    // Vertical dim: label rotated 90° alongside the line
-    const lx=mx+(ox>0?7:-7);
+    // Vertical dim: label rotated, positioned AWAY from the wall
+    // off>0 → dim is RIGHT of wall → text further RIGHT
+    // off<0 → dim is LEFT of wall → text further LEFT
+    const lx=mx+(ox>0?9:-9);
     const sz=8;
     const w=label.length*sz*0.55+6;
     sRect(p,lx-sz*0.7,my-w/2,sz*1.4,w,'white','none',0);
@@ -627,8 +630,15 @@ function getElevGeom(d,side){
     if(toit==='2PANS')
       return{w,wallH:hExt,roofT:'triangle',rH,ovhgL,ovhgR,ovhgTop};
     if(toit==='1PAN'){
-      if(orient==='droite') return{w,wallH:hExt,roofT:'trapL',rH,ovhgL,ovhgR,ovhgTop}; // high-L low-R
-      if(orient==='gauche') return{w,wallH:hExt,roofT:'trapR',rH,ovhgL,ovhgR,ovhgTop}; // high-R low-L
+      if(orient==='droite'||orient==='gauche'){
+        // Slope extends through lateral overhangs
+        const slopeRate=rH/w; // m rise per m horizontal
+        const isHighL=orient==='droite'; // high-left for orient=droite, high-right for orient=gauche
+        // Extra rise/drop from overhang slope continuation
+        const rOvhgL=slopeRate*ovhgL; // height change at left ovhg edge
+        const rOvhgR=slopeRate*ovhgR; // height change at right ovhg edge
+        return{w,wallH:hExt,roofT:isHighL?'trapL':'trapR',rH,ovhgL,ovhgR,ovhgTop,rOvhgL,rOvhgR};
+      }
       // fond/face orient: pignon not visible from face/fond
       const isHigh=(orient==='fond'&&side==='face')||(orient==='face'&&side==='fond');
       return{w,wallH:isHigh?hExt+rH:hExt,roofT:'flat',rH:0,ovhgL,ovhgR,ovhgTop};
@@ -682,10 +692,12 @@ function drawElev(svg,d,side,vw=320,vh=260){
   if(TYPE==='carport'){drawCarportElev(svg,d,side,vw,vh);return;}
 
   const g=getElevGeom(d,side);
-  const PAD={t:25,b:45,l:65,r:50};
+  const hasMenus=MENUS.some(m=>m.wall===side);
+  const hasHT=(g.ovhgL+g.ovhgR)>0.01;
+  const PAD={t:25,b:hasMenus?(hasHT?80:65):(hasHT?55:45),l:55,r:50};
   const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
 
-  const maxH=g.wallH+(g.roofT==='flat'?0.12:g.rH);
+  const maxH=g.wallH+(g.roofT==='flat'?0.39:g.rH);
   const totW=g.w+g.ovhgL+g.ovhgR;
   const sc=Math.min(avW/totW,(avH-8)/maxH);
 
@@ -717,6 +729,17 @@ function drawElev(svg,d,side,vw=320,vh=260){
 
   // Roof
   drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
+
+  // Poteaux de soutien (débord > 50 cm)
+  const postW=0.12*sc, postCol='#f0b429', postStroke='#856404';
+  if(g.ovhgL>0.50){
+    const px=baseX-oL+postW/2;
+    sRect(svg,px-postW/2,baseY,postW,gndY-baseY,postCol,postStroke,1);
+  }
+  if(g.ovhgR>0.50){
+    const px=baseX+drawW+oR-postW*1.5;
+    sRect(svg,px,baseY,postW,gndY-baseY,postCol,postStroke,1);
+  }
 
   // Gouttière
   if(document.getElementById('f-gout').value==='oui'){
@@ -758,16 +781,57 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
 
   // ── DIMENSION LINES ──────────────────────────────────
-  const roofTopY=baseY-(g.roofT==='flat'?0.12*sc:g.rH*sc);
-  const hTot=g.wallH+(g.roofT==='flat'?0.12:g.rH);
+  const roofTopY=baseY-(g.roofT==='flat'?0.39*sc:g.rH*sc);
+  const hTot=g.wallH+(g.roofT==='flat'?0.39:g.rH);
   const hasRise=g.rH>0&&g.roofT!=='flat'&&g.roofT!=='slope1';
 
-  // ── WIDTH (bottom) ──
-  dimL(svg,baseX,gndY,baseX+drawW,gndY,`${g.w} m`,28);
-  // HT width (always show — includes overhangs)
+  // ── BOTTOM DIMENSION CHAINS (layered, well spaced) ──
+  const wallMenus2=MENUS.filter(m=>m.wall===side).sort((a,b)=>a.pos-b.pos);
   const htW_elev=g.w+g.ovhgL+g.ovhgR;
-  if(htW_elev>g.w+0.01){
-    dimL(svg,baseX-oL,gndY,baseX+drawW+oR,gndY,`HT ${htW_elev.toFixed(2)} m`,44,'#e67e22');
+  const showHT=htW_elev>g.w+0.01;
+
+  // Calculate Y offsets in advance to avoid overlap
+  let row1Y=gndY+14; // menuiserie chain (if any)
+  let row2Y, row3Y;
+  if(wallMenus2.length>0){
+    row2Y=row1Y+16; // ext width below chain
+    row3Y=row2Y+16; // HT below ext
+  } else {
+    row2Y=gndY+14;  // ext width
+    row3Y=row2Y+16; // HT below ext
+  }
+
+  // ROW 1: Menuiserie chain
+  if(wallMenus2.length>0){
+    const pts=[{x:0,type:'wall'}];
+    wallMenus2.forEach(m=>{
+      const halfW=(m.lw/100)/g.w*100/2;
+      pts.push({x:m.pos-halfW, type:'menuL', lw:m.lw});
+      pts.push({x:m.pos+halfW, type:'menuR'});
+    });
+    pts.push({x:100,type:'wall'});
+    for(let i=0;i<pts.length-1;i++){
+      const x1=baseX+(pts[i].x/100)*drawW;
+      const x2=baseX+(pts[i+1].x/100)*drawW;
+      const isMenu=(pts[i].type==='menuL');
+      const dist=isMenu?pts[i].lw:((pts[i+1].x-pts[i].x)/100*g.w*100).toFixed(0);
+      const col=isMenu?'#2980b9':'#3d3d28';
+      if(x2-x1>3){
+        sLine(svg,x1,row1Y-2,x1,row1Y+2,col,.6);
+        sLine(svg,x2,row1Y-2,x2,row1Y+2,col,.6);
+        sLine(svg,x1,row1Y,x2,row1Y,col,.8);
+        if(x2-x1>8){sArrow(svg,x1,row1Y,x2,row1Y,col,3);sArrow(svg,x2,row1Y,x1,row1Y,col,3);}
+        if(x2-x1>14) sTxtBg(svg,(x1+x2)/2,row1Y-5,`${dist}`,6,col);
+      }
+    }
+  }
+
+  // ROW 2: Wall ext. width
+  dimL(svg,baseX,gndY,baseX+drawW,gndY,`${g.w} m`,row2Y-gndY);
+
+  // ROW 3: HT width
+  if(showHT){
+    dimL(svg,baseX-oL,gndY,baseX+drawW+oR,gndY,`HT ${htW_elev.toFixed(2)} m`,row3Y-gndY,'#e67e22');
   }
 
   // ── LEFT SIDE: wall height only (no stacking) ──
@@ -790,38 +854,6 @@ function drawElev(svg,d,side,vw=320,vh=260){
   // ── INTERIOR HEIGHT (centered in wall, smaller) ──
   sTxtBg(svg,baseX+drawW/2,gndY-wallHpx*0.45,`int. ${d.hInt.toFixed(2)} m`,7,'#3498db');
 
-  // ── MENUISERIE DIMENSION CHAIN ──────────────────────
-  const wallMenus=MENUS.filter(m=>m.wall===side).sort((a,b)=>a.pos-b.pos);
-  if(wallMenus.length>0){
-    const chainY=gndY+16; // just below wall width dim line
-    const chainCol='#8e44ad';
-    // Build edge points: [leftWall, ...menuiserie edges..., rightWall]
-    const edges=[0]; // left wall = 0%
-    wallMenus.forEach(m=>{
-      const halfW=(m.lw/100)/g.w*100/2; // half-width as % of wall
-      edges.push(m.pos-halfW); // left edge of menuiserie
-      edges.push(m.pos+halfW); // right edge of menuiserie
-    });
-    edges.push(100); // right wall = 100%
-
-    // Draw chain segments: wallEdge→menuL, menuR→menuL (gap), menuR→wallEdge
-    for(let i=0;i<edges.length-1;i+=2){
-      const x1=baseX+(edges[i]/100)*drawW;
-      const x2=baseX+(edges[i+1]/100)*drawW;
-      const dist=((edges[i+1]-edges[i])/100*g.w*100).toFixed(0); // cm
-      if(edges[i+1]-edges[i]>2){ // skip tiny gaps
-        // Small dim line
-        sLine(svg,x1,chainY-2,x1,chainY+2,chainCol,.6);
-        sLine(svg,x2,chainY-2,x2,chainY+2,chainCol,.6);
-        sLine(svg,x1,chainY,x2,chainY,chainCol,.8);
-        sArrow(svg,x1,chainY,x2,chainY,chainCol,3);
-        sArrow(svg,x2,chainY,x1,chainY,chainCol,3);
-        if(x2-x1>18){
-          sTxtBg(svg,(x1+x2)/2,chainY-5,`${dist}`,6,chainCol);
-        }
-      }
-    }
-  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -829,95 +861,112 @@ function drawElev(svg,d,side,vw=320,vh=260){
 // Posts only — no walls
 // ════════════════════════════════════════════════════════
 function drawCarportElev(svg,d,side,vw,vh){
-  const PAD={t:25,b:45,l:65,r:50};
+  const PAD={t:25,b:50,l:55,r:45};
   const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
-
-  // Determine visible dimension & posts
   const isFace=side==='face'||side==='fond';
   const viewW=isFace?d.L:d.P;
   const ovhgL=isFace?d.ovL:(side==='gauche'?d.ovF:d.ovB);
   const ovhgR=isFace?d.ovR:(side==='gauche'?d.ovB:d.ovF);
-  const ovhgTop=isFace?(side==='face'?d.ovF:d.ovB):(side==='gauche'?d.ovL:d.ovR);
-
-  const maxH=d.hExt+d.rH+ovhgTop;
+  const maxH=d.hExt+d.rH;
   const totW=viewW+ovhgL+ovhgR;
   const sc=Math.min(avW/totW,(avH-8)/maxH);
   const gndY=vh-PAD.b;
-  const hpx=d.hExt*sc;
+  const hpx=d.hExt*sc, rHpx=d.rH*sc;
   const baseX=PAD.l+(avW-totW*sc)/2+ovhgL*sc;
-  const drawWpx=viewW*sc;
-  const ps=parseFloat(document.getElementById('f-pot').value)*sc||0.12*sc;
+  const dW=viewW*sc;
+  const oL=ovhgL*sc, oR=ovhgR*sc;
+  const rx=baseX-oL, rw=dW+oL+oR; // roof full width
+  const ps=Math.max(6,parseFloat(document.getElementById('f-pot').value)*sc||0.12*sc);
 
-  // Ground
+  // Ground + hatch
   sLine(svg,PAD.l/2,gndY,vw-PAD.r/2,gndY,'#888',2);
   for(let i=0;i<18;i++) sLine(svg,PAD.l/2+i*14,gndY,PAD.l/2+i*14-10,gndY+12,'#ddd',.5);
 
-  // Post array
-  const np=isFace?d.nPosts:2;
-  const spacing=isFace?(np>1?drawWpx/(np-1):drawWpx):drawWpx;
-
   // Posts
+  const np=isFace?d.nPosts:2;
   for(let i=0;i<np;i++){
-    const px=baseX+(isFace?spacing*i:i*drawWpx)-ps/2;
-    sRect(svg,px,gndY-hpx,ps,hpx,'#bdc3c7','#2c3e50',1.5);
-    // post base plate
-    sRect(svg,px-3,gndY-4,ps+6,4,'#95a5a6','#555',1);
+    const px=baseX+(np>1?(dW/(np-1))*i:dW/2)-ps/2;
+    sRect(svg,px,gndY-hpx,ps,hpx,'#d5d8dc','#555',1.5);
+    sRect(svg,px-2,gndY-3,ps+4,3,'#aaa','#555',.8); // base plate
   }
 
-  // Horizontal beam on top of posts
-  const beamH=Math.max(4,0.20*sc);
-  sRect(svg,baseX-ovhgL*sc,gndY-hpx-beamH,drawWpx+ovhgL*sc+ovhgR*sc,beamH,'#d5cba0','#5d4037',1.5);
-
-  // Rafters (visible from side views)
-  if(!isFace){
-    const nRaft=Math.max(3,Math.round(viewW/0.6));
-    for(let i=0;i<=nRaft;i++){
-      const rx=baseX-ovhgL*sc+((drawWpx+ovhgL*sc+ovhgR*sc)/nRaft)*i;
-      sLine(svg,rx,gndY-hpx-beamH,rx,gndY-hpx-beamH-5,'#8d6e63',.8);
-    }
+  // Closures
+  const clos=document.getElementById('f-clos').value;
+  const showClos=(side==='fond'&&clos.includes('fond'))||(side==='gauche'&&clos.includes('g'))||(side==='droite'&&clos.includes('d'));
+  if(showClos){
+    sRect(svg,baseX,gndY-hpx,dW,hpx,'rgba(200,215,230,0.3)','#7f8c8d',1,'5 3');
+    sTxt(svg,baseX+dW/2,gndY-hpx/2,'Fermeture bardage',7,'#888');
   }
 
-  // Roof
-  const g={w:viewW,wallH:d.hExt,roofT:'triangle',rH:d.rH,ovhgL,ovhgR,ovhgTop};
-  if(d.toit==='2PANS') g.roofT='triangle';
-  else if(d.toit==='1PAN'){
-    const orient=document.getElementById('f-orient').value;
+  // Roof shape — SIMPLIFIED
+  const topY=gndY-hpx;
+  const orient=d.toit==='1PAN'?document.getElementById('f-orient').value:'';
+  const isFlat=d.toit==='TOIT_PLAT'||d.toit==='QUADRO';
+
+  if(isFlat){
+    // Simple rectangle for flat roof
+    const slabH=Math.max(8,0.39*sc);
+    sRect(svg,rx,topY-slabH,rw,slabH,'#d5d8dc','#555',1.5);
+  } else if(d.toit==='2PANS'){
     if(isFace){
-      g.roofT=orient==='droite'?'trapL':orient==='gauche'?'trapR':'flat';
+      // Triangle (gable)
+      const peak=topY-rHpx;
+      sPoly(svg,[[rx,topY],[rx+rw/2,peak],[rx+rw,topY]],'#d5d8dc','#555',1.5);
+      sTxt(svg,rx+rw*0.3,topY-rHpx*0.3,`${d.pente}°`,8,'#888');
+      sTxt(svg,rx+rw*0.7,topY-rHpx*0.3,`${d.pente}°`,8,'#888');
+    } else {
+      // Side view: slope rectangle
+      sRect(svg,rx,topY-rHpx,rw,rHpx,'#d5d8dc','#555',1.5);
+      sTxt(svg,rx+rw/2,topY-rHpx/2,`pente ${d.pente}°`,8,'#888');
+      sTxt(svg,rx+rw/2,topY-rHpx-8,'faîte',7,'#555');
+    }
+  } else if(d.toit==='1PAN'){
+    // Determine which end is high and low
+    let highL, highR; // true if that side is the high (ridge) side
+
+    if(isFace){
+      highL=orient==='droite'; highR=orient==='gauche';
+      if(orient==='face'||orient==='fond'){highL=false;highR=false;} // flat on face/fond view
     } else {
       const isG=side==='gauche';
-      if(orient==='droite'){
-        if(isG){g.wallH=d.hExt+d.rH;g.roofT='flat';g.rH=0;}           // GAUCHE=high side
-        else   {g.wallH=d.hExt;g.roofT='slope1';g.rH=d.rH;}            // DROITE=gutter side
-      } else if(orient==='gauche'){
-        if(isG){g.wallH=d.hExt;g.roofT='slope1';g.rH=d.rH;}            // GAUCHE=gutter side
-        else   {g.wallH=d.hExt+d.rH;g.roofT='flat';g.rH=0;}            // DROITE=high side
-      }
-      else if(orient==='fond') g.roofT=isG?'trapL':'trapR';
-      else g.roofT=isG?'trapR':'trapL';
+      if(orient==='droite'){highL=isG;highR=!isG;}
+      else if(orient==='gauche'){highL=!isG;highR=isG;}
+      else if(orient==='fond'){highL=isG;highR=!isG;}
+      else{highL=!isG;highR=isG;}
     }
-  } else {
-    g.roofT='flat';
+
+    if(!highL&&!highR){
+      // Flat view (looking along the slope)
+      const isHigh=(orient==='fond'&&side==='face')||(orient==='face'&&side==='fond')||
+                   (orient==='droite'&&side==='gauche')||(orient==='gauche'&&side==='droite');
+      const ht=isHigh?topY-rHpx:topY;
+      const slabH=Math.max(8,0.39*sc);
+      sRect(svg,rx,ht-slabH,rw,slabH,'#d5d8dc','#555',1.5);
+    } else {
+      // Right triangle (slope visible)
+      const highY=topY-rHpx;
+      const lowY=topY;
+      const lyL=highL?highY:lowY, lyR=highR?highY:lowY;
+      sPoly(svg,[[rx,lyL],[rx+rw,lyR],[rx+rw,topY],[rx,topY]],'#d5d8dc','#555',1.5);
+      sTxt(svg,rx+rw/2,(lyL+lyR)/2-rHpx*0.1,`${d.pente}°`,8,'#888');
+      const faiteSide=highL?'start':'end';
+      const faiteX=highL?rx+3:rx+rw-3;
+      sTxt(svg,faiteX,Math.min(lyL,lyR)-5,'faîte',7,'#555',faiteSide);
+    }
   }
 
-  // Closures (filled walls on selected sides)
-  const clos=document.getElementById('f-clos').value;
-  const showClosure=(isFace&&(clos==='fond'))||(side==='gauche'&&clos.includes('gauche'))||(side==='droite'&&clos.includes('droite'))||(side==='fond'&&clos.includes('fond'));
-  if(showClosure){
-    sRect(svg,baseX,gndY-hpx,drawWpx,hpx,'rgba(200,210,220,0.5)','#7f8c8d',1,'4 3');
-    sTxt(svg,baseX+drawWpx/2,gndY-hpx/2,'Fermeture',8,'#888');
+  // Dim lines
+  dimL(svg,baseX,gndY,baseX+dW,gndY,`${viewW} m`,22);
+  const dimLx=Math.max(10,PAD.l*0.4);
+  const totalH=isFlat?d.hExt:d.hExt+d.rH;
+  const topDim=isFlat?topY-Math.max(8,0.39*sc):topY-rHpx;
+  dimL(svg,dimLx,topDim,dimLx,gndY,`H ${totalH.toFixed(2)} m`,-5);
+  // HT width
+  if(oL+oR>1){
+    dimL(svg,rx,gndY,rx+rw,gndY,`HT ${(viewW+ovhgL+ovhgR).toFixed(2)} m`,36,'#e67e22');
   }
-
-  // Roof drawn using same helper
-  const baseY2=gndY-g.wallH*sc;
-  drawRoof(svg,d,g,baseX,baseY2,drawWpx,ovhgL*sc,ovhgR*sc,sc,vw);
-
-  // Dimension lines
-  dimL(svg,baseX,gndY,baseX+drawWpx,gndY,`${viewW} m`,28);
-  dimL(svg,baseX-PAD.l+8,gndY-hpx,baseX-PAD.l+8,gndY,`H ${d.hExt.toFixed(2)} m`,-5);
-  if(np>1) sTxtBg(svg,baseX+drawWpx/2,gndY-hpx/2,`espacement ${(viewW/(np-1)).toFixed(2)} m`,8,'#555');
-  sTxt(svg,baseX-ovhgL*sc+(drawWpx+ovhgL*sc+ovhgR*sc)/2,gndY-hpx-beamH-9,'Poutre / sablière',8,'#8d6e63');
-  if(isFace) sTxt(svg,baseX+drawWpx/2,gndY-hpx-beamH-22,`${d.nPosts} poteaux`,8,'#555');
+  // Post spacing
+  if(np>1) sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`${np} poteaux — esp. ${(viewW/(np-1)).toFixed(2)} m`,7,'#555');
 }
 
 // ════════════════════════════════════════════════════════
@@ -928,12 +977,10 @@ function drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw){
   const roofH=g.rH*sc;
 
   if(g.roofT==='flat'){
-    const slabH=Math.max(5,0.15*sc);
-    sRect(svg,rx,baseY-slabH,rw,slabH,'#95a5a6','#555',1.5);
-    if(d.toit==='QUADRO'){
-      sRect(svg,rx+2,baseY-slabH+1,rw-4,2,'#5d6d7e','none',0);
-      sTxt(svg,rx+rw/2,baseY-slabH-6,'EPDM',7,'#666');
-    }
+    const slabH=Math.max(8,0.39*sc); // 39cm réel
+    sRect(svg,rx,baseY-slabH,rw,slabH,'#d5d8dc','#555',1.5);
+    // Bac acier / EPDM line at top
+    sLine(svg,rx,baseY-slabH+2,rx+rw,baseY-slabH+2,'#888',.8);
     return;
   }
 
@@ -948,26 +995,43 @@ function drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw){
   }
 
   if(g.roofT==='trapL'){
-    // high left, low right
+    // 1-PAN pignon: high left, low right
+    // WALL part: filled triangle between wall tops
     const ty=baseY-roofH;
-    sPoly(svg,[[rx,ty],[rx+rw,baseY],[rx+rw,baseY],[rx,ty]],'none','none');
-    sPoly(svg,[[rx,ty],[rx+rw,baseY],[rx+rw,baseY-2],[rx,ty-2]],'#d5d8dc','none');
-    // actual visible face: triangle (high left corner to low right = 1-pan pignon)
-    sPoly(svg,[[rx,baseY],[rx,ty],[rx+rw,baseY]],'#d5d8dc','#555',1.5);
-    sTxt(svg,rx+rw*0.3,baseY-roofH*0.3,`${d.pente}°`,9,'#888');
-    // faîte indicator
-    sLine(svg,rx-4,ty,rx+8,ty,'#555',1.5);
-    sTxt(svg,rx-5,ty,'faîte',8,'#888','end');
+    sPoly(svg,[[baseX,baseY],[baseX,ty],[baseX+drawW,baseY]],'#d5d8dc','#555',1.5);
+    sTxt(svg,baseX+drawW*0.35,baseY-roofH*0.3,`${d.pente}°`,9,'#888');
+    sLine(svg,baseX-4,ty,baseX+8,ty,'#555',1.5);
+    sTxt(svg,baseX-5,ty-3,'faîte',7,'#888','end');
+    // OVERHANG: slope LINE continues beyond walls (just a line, not filled)
+    const slopeRate=roofH/(drawW||1);
+    if(g.ovhgL>0.01){
+      const extL=slopeRate*(g.ovhgL*sc);
+      sLine(svg,rx,ty-extL,baseX,ty,'#555',1.5); // line extends up-left
+    }
+    if(g.ovhgR>0.01){
+      const extR=slopeRate*(g.ovhgR*sc);
+      sLine(svg,baseX+drawW,baseY,rx+rw,baseY+extR,'#555',1.5); // line extends down-right
+    }
     return;
   }
 
   if(g.roofT==='trapR'){
-    // high right, low left
+    // 1-PAN pignon: high right, low left
     const ty=baseY-roofH;
-    sPoly(svg,[[rx,baseY],[rx+rw,baseY],[rx+rw,ty]],'#d5d8dc','#555',1.5);
-    sTxt(svg,rx+rw*0.7,baseY-roofH*0.3,`${d.pente}°`,9,'#888');
-    sLine(svg,rx+rw-8,ty,rx+rw+4,ty,'#555',1.5);
-    sTxt(svg,rx+rw+5,ty,'faîte',8,'#888','start');
+    sPoly(svg,[[baseX,baseY],[baseX+drawW,baseY],[baseX+drawW,ty]],'#d5d8dc','#555',1.5);
+    sTxt(svg,baseX+drawW*0.65,baseY-roofH*0.3,`${d.pente}°`,9,'#888');
+    sLine(svg,baseX+drawW-8,ty,baseX+drawW+4,ty,'#555',1.5);
+    sTxt(svg,baseX+drawW+5,ty-3,'faîte',7,'#888','start');
+    // OVERHANG: slope LINE continues beyond walls
+    const slopeRate=roofH/(drawW||1);
+    if(g.ovhgR>0.01){
+      const extR=slopeRate*(g.ovhgR*sc);
+      sLine(svg,baseX+drawW,ty,rx+rw,ty-extR,'#555',1.5); // line extends up-right
+    }
+    if(g.ovhgL>0.01){
+      const extL=slopeRate*(g.ovhgL*sc);
+      sLine(svg,rx,baseY+extL,baseX,baseY,'#555',1.5); // line extends down-left
+    }
     return;
   }
 
