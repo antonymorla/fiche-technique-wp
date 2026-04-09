@@ -1296,23 +1296,21 @@ let LOOKUP_TABLES = {}; // Chargé depuis /ac-ft/v1/lookup-tables
 let WAPF_CONFIG = null; // Chargé depuis /ac-ft/v1/wapf-config/{type}
 let PRICING_LOADED = false;
 
-// findNearest — réplique exacte du JS WAPF
+// findNearest — réplique EXACTE du JS WAPF (arrondi PLAFOND/ceiling)
 function findNearest(obj, key){
   if(!obj||typeof obj!=='object') return undefined;
   const k=String(key);
   if(obj.hasOwnProperty(k)) return obj[k];
-  // Parse as number and find closest
-  const num=parseFloat(k.replace(',','.'));
-  if(isNaN(num)) return obj[k]||undefined;
-  let closest=null, minDiff=Infinity;
-  for(const ok of Object.keys(obj)){
-    const on=parseFloat(ok.replace(',','.'));
-    if(!isNaN(on)){
-      const diff=Math.abs(on-num);
-      if(diff<minDiff){minDiff=diff;closest=ok;}
-    }
+  // WAPF: parse keys as float, sort, ceiling lookup
+  const keys=Object.keys(obj).map(x=>parseFloat(x)).filter(x=>!isNaN(x)).sort((a,b)=>a-b);
+  if(!keys.length) return obj[k]||undefined;
+  const val=parseFloat(String(key).replace(',','.'));
+  if(isNaN(val)) return obj[k]||undefined;
+  if(val<keys[0]) return obj[String(keys[0])];
+  for(let i=0;i<keys.length-1;i++){
+    if(val>keys[i]&&val<=keys[i+1]) return obj[String(keys[i+1])];
   }
-  return closest!==null?obj[closest]:undefined;
+  return obj[String(keys[keys.length-1])];
 }
 
 // lookuptable(tableName, key1, key2, ...)
