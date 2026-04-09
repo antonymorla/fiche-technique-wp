@@ -543,17 +543,26 @@ function drawPlan(svg,d,vw=480,vh=340){
     }
   }
 
-  // Support posts for overhangs > 50cm
-  [{side:'face',ov:d.ovF,get px(){return wx+drawW/2;},get py(){return wy+drawP+d.ovF*sc-0.12*sc;}},
-   {side:'fond', ov:d.ovB,get px(){return wx+drawW/2;},get py(){return wy-d.ovB*sc;}},
-   {side:'gauche',ov:d.ovL,get px(){return wx-d.ovL*sc;},get py(){return wy+drawP/2;}},
-   {side:'droite',ov:d.ovR,get px(){return wx+drawW+d.ovR*sc-0.12*sc;},get py(){return wy+drawP/2;}}
-  ].forEach(({ov,px,py})=>{
-    if(ov>0.5){
-      const ps=0.12*sc;
-      sRect(svg,px-ps/2,py-ps/2,ps,ps,'#f0b429','#856404',1.2);
+  // Support posts for overhangs > 50cm (portée max 3m → poteaux espacés de ≤3m)
+  const postSz=0.12*sc, maxSpan=3; // 3m portée max
+  function drawPostRow(x1,y1,x2,y2,ov){
+    if(ov<=0.5) return;
+    const len=Math.sqrt((x2-x1)**2+(y2-y1)**2)/sc; // longueur du mur en m
+    const nPosts=Math.max(2,Math.ceil(len/maxSpan)+1); // min 2 (extrémités)
+    for(let i=0;i<nPosts;i++){
+      const t=nPosts>1?i/(nPosts-1):0.5;
+      const cx=x1+(x2-x1)*t, cy=y1+(y2-y1)*t;
+      sRect(svg,cx-postSz/2,cy-postSz/2,postSz,postSz,'#f0b429','#856404',1.2);
     }
-  });
+  }
+  // Face overhang: posts along bottom edge (at max ovhg Y)
+  drawPostRow(wx,wy+drawP+d.ovF*sc,wx+drawW,wy+drawP+d.ovF*sc,d.ovF);
+  // Fond overhang: posts along top edge
+  drawPostRow(wx,wy-d.ovB*sc+postSz,wx+drawW,wy-d.ovB*sc+postSz,d.ovB);
+  // Gauche overhang: posts along left edge
+  drawPostRow(wx-d.ovL*sc+postSz/2,wy,wx-d.ovL*sc+postSz/2,wy+drawP,d.ovL);
+  // Droite overhang: posts along right edge
+  drawPostRow(wx+drawW+d.ovR*sc-postSz/2,wy,wx+drawW+d.ovR*sc-postSz/2,wy+drawP,d.ovR);
 
   // Menuiseries
   MENUS.forEach(m=>{
@@ -758,26 +767,14 @@ function drawElev(svg,d,side,vw=320,vh=260){
   // Roof
   drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
 
-  // Poteaux de soutien (débord > 50 cm, portée max 3m)
+  // Poteaux de soutien (débord > 50 cm)
+  // Un seul poteau à l'extrémité de chaque débord (côté extérieur)
   const postW=0.12*sc, postCol='#f0b429', postStroke='#856404';
-  const isFaceOrFond=side==='face'||side==='fond';
-  const wallLen=isFaceOrFond?d.L:d.P; // longueur du mur visible
   if(g.ovhgL>0.50){
-    // Poteau aux deux extrémités
     sRect(svg,baseX-oL,baseY,postW,gndY-baseY,postCol,postStroke,1);
-    sRect(svg,baseX-oL+oL-postW-2,baseY,postW,gndY-baseY,postCol,postStroke,1);
-    // Poteaux intermédiaires si portée > 3m
-    if(wallLen>3){
-      const nInt=Math.ceil(wallLen/3)-1;
-      for(let i=1;i<=nInt;i++){
-        const px=baseX-oL+oL-postW/2+(drawW/(nInt+1))*i*0;
-        // Actually, intermediate posts are along the wall length, visible on plan not elevation side view
-      }
-    }
   }
   if(g.ovhgR>0.50){
     sRect(svg,baseX+drawW+oR-postW,baseY,postW,gndY-baseY,postCol,postStroke,1);
-    sRect(svg,baseX+drawW+2,baseY,postW,gndY-baseY,postCol,postStroke,1);
   }
 
   // Gouttière
