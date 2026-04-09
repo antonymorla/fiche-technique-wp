@@ -510,7 +510,7 @@ function drawPlan(svg,d,vw=480,vh=340){
   const htW=d.htL*sc, htP=d.htP*sc;
   const cx=vw/2, cy=vh/2;
   const ox=cx-htW/2, oy=cy-htP/2; // top-left of hors-tout
-  const wx=ox+d.ovL*sc, wy=oy+d.ovF*sc; // top-left of wall exterior
+  const wx=ox+d.ovL*sc, wy=oy+d.ovB*sc; // top-left of wall (FOND ovhg at top, FACE at bottom)
   const drawW=d.L*sc, drawP=d.P*sc, wt=d.wt*sc;
 
   // Hors tout boundary — extension toiture (hachurée)
