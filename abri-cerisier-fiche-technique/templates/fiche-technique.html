@@ -768,13 +768,22 @@ function drawElev(svg,d,side,vw=320,vh=260){
   drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
 
   // Poteaux de soutien (débord > 50 cm)
-  // Un seul poteau à l'extrémité de chaque débord (côté extérieur)
+  // Un seul poteau à l'extrémité, hauteur = du sol au dessous du toit
   const postW=0.12*sc, postCol='#f0b429', postStroke='#856404';
+  // Calcul de la hauteur du toit à l'extrémité du débord
+  const roofH_=g.rH*sc;
+  const slopeR=g.roofT==='triangle'?roofH_/(drawW/2||1):
+               (g.roofT==='trapL'||g.roofT==='trapR')?roofH_/(drawW||1):0;
   if(g.ovhgL>0.50){
-    sRect(svg,baseX-oL,baseY,postW,gndY-baseY,postCol,postStroke,1);
+    // Hauteur du toit à l'extrémité gauche du débord
+    const roofAtPost=g.roofT==='triangle'||g.roofT==='trapL'?baseY+slopeR*oL:
+                     g.roofT==='trapR'?baseY+slopeR*oL:baseY;
+    sRect(svg,baseX-oL,roofAtPost,postW,gndY-roofAtPost,postCol,postStroke,1);
   }
   if(g.ovhgR>0.50){
-    sRect(svg,baseX+drawW+oR-postW,baseY,postW,gndY-baseY,postCol,postStroke,1);
+    const roofAtPost=g.roofT==='triangle'||g.roofT==='trapR'?baseY+slopeR*oR:
+                     g.roofT==='trapL'?baseY+slopeR*oR:baseY;
+    sRect(svg,baseX+drawW+oR-postW,roofAtPost,postW,gndY-roofAtPost,postCol,postStroke,1);
   }
 
   // Gouttière
