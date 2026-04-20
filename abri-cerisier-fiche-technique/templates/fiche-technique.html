@@ -354,8 +354,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 // STATE
 // ════════════════════════════════════════════════════════
 let TYPE='abri', MENUS=[], MCNT=0;
-const WALL_T={madrier28:0.028,madrier45:0.045,ossature:0.135};
-const STD_OVHG_PITCH=0.30, STD_OVHG_FLAT=0.10;
+const WALL_T={madrier28:0.027,madrier45:0.045,ossature:0.135}; // 27mm, 45mm, 135mm
 
 // ════════════════════════════════════════════════════════
 // TYPE SWITCH
@@ -381,46 +380,109 @@ function calcDims(){
   const toit=document.getElementById('f-toit').value;
   const pente=parseInt(document.getElementById('f-pente').value)||18;
   const orient=document.getElementById('f-orient').value;
+  const isFlat=toit==='TOIT_PLAT'||toit==='QUADRO';
+  const isQuadro=toit==='QUADRO';
+  const hasGout=document.getElementById('f-gout').value==='oui';
 
+  // User extra overhangs (cm → m)
   const uf=(parseFloat(document.getElementById('f-df').value)||0)/100;
   const ub=(parseFloat(document.getElementById('f-db').value)||0)/100;
   const ul=(parseFloat(document.getElementById('f-dl').value)||0)/100;
   const ur=(parseFloat(document.getElementById('f-dr').value)||0)/100;
 
-  const isFlat=toit==='TOIT_PLAT'||toit==='QUADRO';
-  const stdOvhg=isFlat?STD_OVHG_FLAT:STD_OVHG_PITCH;
+  // ── DÉBORDS STANDARDS (dépend du type + toiture) ──
+  let stdOvhgF, stdOvhgB, stdOvhgL, stdOvhgR;
+  if(TYPE==='carport'){
+    // Carport : 20 cm tout le tour (1pan, 2pans, toit plat)
+    stdOvhgF=0.20; stdOvhgB=0.20; stdOvhgL=0.20; stdOvhgR=0.20;
+  } else if(isQuadro){
+    // QUADRO : 0 cm débord
+    stdOvhgF=0; stdOvhgB=0; stdOvhgL=0; stdOvhgR=0;
+  } else if(isFlat){
+    // Toit plat (abri/garage) : 10 cm tout le tour, 20 cm si gouttière (pour intégration)
+    const tp=hasGout?0.20:0.10;
+    stdOvhgF=tp; stdOvhgB=tp; stdOvhgL=tp; stdOvhgR=tp;
+  } else {
+    // 2 pans / 1 pan (abri/garage) : 20 cm côtés (G/D), 20 cm face, 10 cm arrière
+    stdOvhgF=0.20; stdOvhgB=0.10; stdOvhgL=0.20; stdOvhgR=0.20;
+  }
+  const stdOvhg=stdOvhgF; // pour compatibilité (valeur de référence)
 
-  // total overhang per side = standard + user extra
-  const ovF=stdOvhg+uf, ovB=stdOvhg+ub, ovL=stdOvhg+ul, ovR=stdOvhg+ur;
+  // Total overhang = standard + user extra
+  const ovF=stdOvhgF+uf, ovB=stdOvhgB+ub, ovL=stdOvhgL+ul, ovR=stdOvhgR+ur;
 
+  // ── ÉPAISSEUR MURS ──
   let wt=0;
   if(TYPE==='carport'){wt=parseFloat(document.getElementById('f-pot').value)||0.12;}
-  else{wt=WALL_T[sys]||0.028;}
+  else{wt=WALL_T[sys]||0.027;}
 
-  const hInt=2.08+reh*0.13;
-  const hExt=hInt+(TYPE==='carport'?0:wt*0.5); // structural plate height
-
-  const penteRad=pente*Math.PI/180;
-  let rH=0;
-  if(toit==='2PANS')      rH=(L/2)*Math.tan(penteRad);
-  else if(toit==='1PAN'){
-    if(orient==='droite'||orient==='gauche') rH=L*Math.tan(penteRad);
-    else rH=P*Math.tan(penteRad);
+  // ── DIMENSIONS EXTÉRIEURES (madrier toit plat : -17 cm) ──
+  let Lext=L, Pext=P;
+  if(isFlat && sys!=='ossature' && TYPE!=='carport'){
+    // Madrier toit plat : retirer 17 cm sur chaque dimension
+    Lext=L-0.17; Pext=P-0.17;
   }
 
-  const htL=L+ovL+ovR, htP=P+ovF+ovB;
-  const intL=Math.round((L-wt*2)*100)/100;
-  const intP=Math.round((P-wt*2)*100)/100;
+  // ── DIMENSIONS INTÉRIEURES ──
+  let intL, intP;
+  if(isQuadro && sys==='ossature'){
+    // QUADRO ossature : -11 cm de chaque côté = -22 cm en tout
+    intL=Math.round((Lext-0.22)*100)/100;
+    intP=Math.round((Pext-0.22)*100)/100;
+  } else {
+    intL=Math.round((Lext-wt*2)*100)/100;
+    intP=Math.round((Pext-wt*2)*100)/100;
+  }
 
+  // ── HAUTEUR INTÉRIEURE (sous ferme/sablière) ──
+  let hInt;
+  if(TYPE==='carport'){
+    hInt=2.10; // carport : 2,10 m sous ferme
+  } else if(isQuadro){
+    hInt=TYPE==='garage'?2.20:2.10; // QUADRO : 2,10 abri / 2,20 garage
+  } else if(sys==='ossature'){
+    hInt=TYPE==='garage'?2.26:2.00; // Ossature : 2,00 abri / 2,26 garage
+  } else {
+    // Madrier : 13,5 planches côté = 188,5 cm pour abri, 215 cm pour garage
+    hInt=TYPE==='garage'?2.15:1.885;
+  }
+  hInt+=reh*0.13; // rehausses
+
+  // ── HAUTEUR EXTÉRIEURE (hors tout murs) ──
+  const hExt=TYPE==='carport'?hInt:hInt+wt*0.5;
+
+  // ── HAUTEUR FAÎTAGE ──
+  const penteRad=pente*Math.PI/180;
+  let rH=0;
+  if(isQuadro){
+    // QUADRO : hauteur hors tout fixe (2,50 abri / 2,60 garage / 2,46 carport toit plat)
+    if(TYPE==='carport') rH=2.46-hExt;
+    else if(TYPE==='garage') rH=2.60-hExt;
+    else rH=2.50-hExt;
+    if(rH<0) rH=0;
+  } else if(toit==='2PANS'){
+    rH=(L/2)*Math.tan(penteRad);
+  } else if(toit==='1PAN'){
+    if(orient==='droite'||orient==='gauche') rH=L*Math.tan(penteRad);
+    else rH=P*Math.tan(penteRad);
+  } else if(isFlat && TYPE==='carport'){
+    rH=2.46-hExt; // carport toit plat : haut bandeau 2,46 m
+    if(rH<0) rH=0;
+  }
+
+  // ── HORS TOUT ──
+  const htL=Lext+ovL+ovR, htP=Pext+ovF+ovB;
+
+  // ── POTEAUX CARPORT ──
   let nPosts=0;
   if(TYPE==='carport'){
     const esp=parseInt(document.getElementById('f-esp').value)||4;
     nPosts=Math.ceil(L/esp)+1;
   }
 
-  return {L,P,reh,sys,toit,pente,orient,wt,hInt,hExt,rH,
-          ovF,ovB,ovL,ovR,stdOvhg,uf,ub,ul,ur,
-          htL,htP,intL,intP,nPosts,penteRad,isFlat};
+  return {L:Lext,P:Pext,Lnom:L,Pnom:P,reh,sys,toit,pente,orient,wt,hInt,hExt,rH,
+          ovF,ovB,ovL,ovR,stdOvhg,stdOvhgF,stdOvhgB,stdOvhgL,stdOvhgR,uf,ub,ul,ur,
+          htL,htP,intL,intP,nPosts,penteRad,isFlat,isQuadro,hasGout};
 }
 
 // ════════════════════════════════════════════════════════
@@ -1180,23 +1242,32 @@ function drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw){
 // DIMS TABLE
 // ════════════════════════════════════════════════════════
 function renderDims(d,tbl){
+  // Épaisseur murs en mm (pas cm)
+  const wtMm=Math.round(d.wt*1000);
+  // Débords standards détaillés
+  const debStd=d.isQuadro?'0 cm':`F:${(d.stdOvhgF*100).toFixed(0)} / B:${(d.stdOvhgB*100).toFixed(0)} / G:${(d.stdOvhgL*100).toFixed(0)} / D:${(d.stdOvhgR*100).toFixed(0)} cm`;
+
   const rows=[
-    ['Largeur ext.', `${d.L} m`],
-    ['Profondeur ext.', `${d.P} m`],
+    ['Largeur ext.', `${d.L.toFixed(2)} m`],
+    ['Profondeur ext.', `${d.P.toFixed(2)} m`],
+    // Dimensions nominales si différentes (sur-mesure ou madrier toit plat)
+    d.Lnom!==d.L?['Largeur nominale', `${d.Lnom} m`]:null,
+    d.Pnom!==d.P?['Profondeur nominale', `${d.Pnom} m`]:null,
     TYPE!=='carport'?['Largeur int.', `${d.intL.toFixed(2)} m`]:null,
     TYPE!=='carport'?['Profondeur int.', `${d.intP.toFixed(2)} m`]:null,
+    TYPE==='carport'?['Dim. int. poteaux', `${d.intL.toFixed(2)} × ${d.intP.toFixed(2)} m`]:null,
     ['Hauteur intérieure', `${d.hInt.toFixed(2)} m`],
-    d.rH>0?['Hauteur faîte', `${(d.hExt+d.rH).toFixed(2)} m`]:null,
+    d.rH>0?['Hauteur faîtage', `${(d.hExt+d.rH).toFixed(2)} m`]:null,
     ['Largeur hors tout', `${d.htL.toFixed(2)} m`],
     ['Profondeur hors tout', `${d.htP.toFixed(2)} m`],
     ['Surface ext.', `${(d.L*d.P).toFixed(2)} m²`],
     TYPE!=='carport'?['Surface int.', `${(d.intL*d.intP).toFixed(2)} m²`]:null,
-    ['Débord std.', `${(d.stdOvhg*100).toFixed(0)} cm`],
+    ['Débord std.', debStd],
     d.uf>0?['+ Débord face', `${(d.uf*100).toFixed(0)} cm`]:null,
     d.ub>0?['+ Débord fond', `${(d.ub*100).toFixed(0)} cm`]:null,
     d.ul>0?['+ Débord gauche', `${(d.ul*100).toFixed(0)} cm`]:null,
     d.ur>0?['+ Débord droite', `${(d.ur*100).toFixed(0)} cm`]:null,
-    TYPE!=='carport'?['Épaisseur murs', `${(d.wt*100).toFixed(0)} cm`]:null,
+    TYPE!=='carport'?['Épaisseur murs', `${wtMm} mm`]:null,
     TYPE==='carport'?['Section poteaux', `${(d.wt*100).toFixed(0)}×${(d.wt*100).toFixed(0)} cm`]:null,
     TYPE==='carport'?['Nb. poteaux côté', `${d.nPosts}`]:null,
   ].filter(Boolean);
