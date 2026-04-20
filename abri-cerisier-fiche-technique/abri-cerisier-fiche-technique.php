@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           2.4.0
+ * Version:           2.4.1
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '2.4.0' );
+define( 'ACFT_VERSION',  '2.4.1' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -477,20 +477,27 @@ function acft_get_github_release() {
 }
 
 /**
- * Forcer WordPress à vérifier les mises à jour de ce plugin plus souvent.
- * Quand l'admin visite la page Extensions, on efface le cache pour forcer un check frais.
+ * Forcer la vérification de notre plugin quand l'admin visite Extensions ou Mises à jour.
+ * On efface JUSTE notre cache GitHub, puis on injecte la MAJ dans le transient existant.
  */
-add_action( 'load-plugins.php', function() {
+add_action( 'load-plugins.php', 'acft_force_update_check' );
+add_action( 'load-update-core.php', 'acft_force_update_check' );
+function acft_force_update_check() {
+    // Effacer notre cache pour forcer un appel frais à l'API GitHub
     delete_transient( 'acft_github_release' );
-    // Forcer WordPress à re-checker les mises à jour de plugins
-    delete_site_transient( 'update_plugins' );
-} );
 
-// Aussi quand l'admin visite la page Mises à jour
-add_action( 'load-update-core.php', function() {
-    delete_transient( 'acft_github_release' );
-    delete_site_transient( 'update_plugins' );
-} );
+    // Injecter notre mise à jour dans le transient existant (sans tout supprimer)
+    $current = get_site_transient( 'update_plugins' );
+    if ( ! is_object( $current ) ) $current = new stdClass();
+    if ( ! isset( $current->checked ) ) $current->checked = [];
+    $current->checked[ ACFT_PLUGIN ] = ACFT_VERSION;
+
+    // Appeler notre filtre manuellement
+    $current = acft_update_check( $current );
+
+    // Sauvegarder
+    set_site_transient( 'update_plugins', $current );
+}
 
 /* ═══════════════════════════════════════════════════════════════
    5. PAGE DE RÉGLAGES WordPress (Réglages → Fiche Technique)

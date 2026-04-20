@@ -743,18 +743,20 @@ function getElevGeom(d,side){
 
   if(side==='face'||side==='fond'){
     const w=L;
-    const ovhgL=ovL,ovhgR=ovR;         // left=gauche, right=droite
+    // FOND vu depuis l'arrière : gauche/droite sont INVERSÉS par rapport à FACE
+    const isFond=side==='fond';
+    const ovhgL=isFond?ovR:ovL, ovhgR=isFond?ovL:ovR;
     const ovhgTop=side==='face'?ovF:ovB;
     if(toit==='2PANS')
       return{w,wallH:hExt,roofT:'triangle',rH,ovhgL,ovhgR,ovhgTop};
     if(toit==='1PAN'){
       if(orient==='droite'||orient==='gauche'){
-        // Slope extends through lateral overhangs
-        const slopeRate=rH/w; // m rise per m horizontal
-        const isHighL=orient==='droite'; // high-left for orient=droite, high-right for orient=gauche
-        // Extra rise/drop from overhang slope continuation
-        const rOvhgL=slopeRate*ovhgL; // height change at left ovhg edge
-        const rOvhgR=slopeRate*ovhgR; // height change at right ovhg edge
+        const slopeRate=rH/w;
+        // FACE: orient=droite → high-left (trapL). FOND: inversé → high-right (trapR)
+        let isHighL=orient==='droite';
+        if(isFond) isHighL=!isHighL; // Miroir pour la vue fond
+        const rOvhgL=slopeRate*ovhgL;
+        const rOvhgR=slopeRate*ovhgR;
         return{w,wallH:hExt,roofT:isHighL?'trapL':'trapR',rH,ovhgL,ovhgR,ovhgTop,rOvhgL,rOvhgR};
       }
       // fond/face orient: pignon not visible from face/fond
