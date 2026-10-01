@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           2.5.0
+ * Version:           2.5.1
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '2.5.0' );
+define( 'ACFT_VERSION',  '2.5.1' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -56,6 +56,9 @@ add_action( 'template_redirect', 'acft_serve_page' );
 function acft_serve_page() {
     if ( ! get_query_var( 'acft_page' ) ) return;
 
+    // Outil interne : jamais en cache (WP Rocket ignore nocache_headers et
+    // servait une version figée de l'outil, avec un nonce périmé)
+    if ( ! defined( 'DONOTCACHEPAGE' ) ) define( 'DONOTCACHEPAGE', true );
     nocache_headers();
     status_header( 200 );
     header( 'Content-Type: text/html; charset=UTF-8' );
