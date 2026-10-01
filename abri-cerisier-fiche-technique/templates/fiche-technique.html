@@ -874,7 +874,8 @@ function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
 }
 // Bouts de madriers croisés aux angles (vue en élévation)
 function drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc){
-  const fin=FINITIONS.madrier, cw=(0.10+d.wt)*sc, h=gndY-baseY;
+  // Les madriers dépassent de 10 cm au-delà des murs extérieurs (« débordement madriers 10 cm de chaque côté »)
+  const fin=FINITIONS.madrier, cw=0.10*sc, h=gndY-baseY;
   const pat=patBoards(svg,fin,sc,baseX,gndY-fin.board*sc/2,-.14);
   sRect(svg,baseX-cw,baseY,cw,h,pat,shade(fin.c[1],-.3),.8);
   sRect(svg,baseX+drawW,baseY,cw,h,pat,shade(fin.c[1],-.3),.8);
