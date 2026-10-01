@@ -105,24 +105,20 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
     <div class="fs">
       <h3>Dimensions</h3>
       <div class="row2">
-        <div class="fr"><label>Largeur (m)</label>
-          <select id="f-lar" onchange="upd()">
-            <option>1.5</option><option>2</option><option>2.5</option><option>3</option><option>3.5</option>
-            <option>4</option><option>4.5</option><option selected>5</option><option>5.5</option><option>6</option>
-            <option>6.5</option><option>7</option><option>7.5</option><option>8</option><option>9</option><option>10</option>
-          </select>
+        <div class="fr"><label>Largeur (cm)</label>
+          <input type="number" id="f-lar" value="500" min="100" max="1200" step="1" list="dl-lar" oninput="upd()" onchange="upd()">
+          <datalist id="dl-lar"><option value="150"><option value="200"><option value="250"><option value="300"><option value="350"><option value="400"><option value="450"><option value="500"><option value="550"><option value="600"><option value="650"><option value="700"><option value="750"><option value="800"><option value="900"><option value="1000"></datalist>
         </div>
-        <div class="fr"><label>Profondeur (m)</label>
-          <select id="f-pro" onchange="upd()">
-            <option>2</option><option>2.5</option><option>3</option><option>3.5</option>
-            <option selected>4</option><option>4.5</option><option>5</option><option>5.5</option><option>6</option><option>6.5</option><option>7</option>
-          </select>
+        <div class="fr"><label>Profondeur (cm)</label>
+          <input type="number" id="f-pro" value="400" min="100" max="1200" step="1" list="dl-pro" oninput="upd()" onchange="upd()">
+          <datalist id="dl-pro"><option value="200"><option value="250"><option value="300"><option value="350"><option value="400"><option value="450"><option value="500"><option value="550"><option value="600"><option value="650"><option value="700"></datalist>
         </div>
       </div>
+      <div class="hint" id="h-dims">Sur mesure au centimètre près.</div>
       <div class="fr">
         <label>Rehausses × 13 cm</label>
         <input type="number" id="f-reh" value="0" min="0" max="10" onchange="upd()">
-        <div class="hint">Hauteur int. de base : 2,08 m</div>
+        <div class="hint" id="h-reh">Hauteur int. de base : 1,885 m</div>
       </div>
     </div>
 
@@ -178,6 +174,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
           <option value="6">Max. 6 m (lamellé-collé)</option>
         </select>
       </div>
+      <div class="fr"><label>Implantation</label>
+        <select id="f-ados" onchange="upd()">
+          <option value="non">Isolé</option>
+          <option value="gauche">Adossé côté gauche</option>
+          <option value="droite">Adossé côté droit</option>
+        </select>
+        <div class="hint">Adossé : pas de débord ni de poteaux côté mur</div>
+      </div>
       <div class="fr"><label>Fermetures</label>
         <select id="f-clos" onchange="upd()">
           <option value="aucune">Aucune (carport ouvert)</option>
@@ -194,9 +198,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
       <h3>Porte de garage</h3>
       <div class="fr"><label>Type</label>
         <select id="f-pgtype" onchange="upd()">
-          <option value="basculante_metal">Basculante métal</option>
-          <option value="basculante_bois">Basculante bois autoclave</option>
-          <option value="basculante_ayous">Basculante Ayous</option>
+          <option value="PGM">Basculante métallique 2,37 × 2 m</option>
+          <option value="PGPH">Basculante bois autoclave vert horizontale</option>
+          <option value="PGPV">Basculante bois autoclave vert verticale</option>
+          <option value="PGBH">Basculante bois autoclave brun horizontale</option>
+          <option value="PGG">Basculante bois autoclave gris ajourée</option>
+          <option value="PGN">Basculante bois autoclave noir ajourée</option>
+          <option value="PGAH">Basculante Ayous horizontale</option>
+          <option value="PGAV">Basculante Ayous aléatoire verticale</option>
           <option value="sectionnelle">Sectionnelle</option>
         </select>
       </div>
@@ -208,7 +217,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
 
     <div class="fs">
       <h3>Débords toiture supplémentaires (cm)</h3>
-      <div class="hint" style="margin-bottom:6px">Débord standard inclus : 30 cm (toits inclinés) / 10 cm (plat)</div>
+      <div class="hint" style="margin-bottom:6px" id="h-deb">Débord standard inclus : 20 cm (fond 10 cm) en 1 et 2 pans, 10 cm en toit plat (20 cm avec gouttière), 0 en QUADRO, 20 cm sur les carports</div>
       <div class="row2">
         <div class="fr"><label>Face (avant)</label><input type="number" id="f-df" value="0" min="0" max="300" step="5" onchange="upd()"></div>
         <div class="fr"><label>Fond (arrière)</label><input type="number" id="f-db" value="0" min="0" max="300" step="5" onchange="upd()"></div>
@@ -372,9 +381,16 @@ function setType(t){
 // ════════════════════════════════════════════════════════
 // CALC DIMS
 // ════════════════════════════════════════════════════════
+const r2=v=>Math.round(v*100)/100;
+// Saisie en cm (sur mesure au centimètre) → mètres
+function readCm(id,def){
+  const v=parseFloat(String(document.getElementById(id).value).replace(',','.'));
+  return (isNaN(v)||v<50)?def:Math.round(v)/100;
+}
 function calcDims(){
-  const L  =parseFloat(document.getElementById('f-lar').value);
-  const P  =parseFloat(document.getElementById('f-pro').value);
+  const L  =readCm('f-lar',5);
+  const P  =readCm('f-pro',4);
+  const ados=TYPE==='carport'?document.getElementById('f-ados').value:'non';
   const reh=parseInt(document.getElementById('f-reh').value)||0;
   const sys=document.getElementById('f-sys').value;
   const toit=document.getElementById('f-toit').value;
@@ -393,8 +409,9 @@ function calcDims(){
   // ── DÉBORDS STANDARDS (dépend du type + toiture) ──
   let stdOvhgF, stdOvhgB, stdOvhgL, stdOvhgR;
   if(TYPE==='carport'){
-    // Carport : 20 cm tout le tour (1pan, 2pans, toit plat)
-    stdOvhgF=0.20; stdOvhgB=0.20; stdOvhgL=0.20; stdOvhgR=0.20;
+    // Carport : 20 cm tout le tour (1pan, 2pans, toit plat), 0 côté mur si adossé
+    stdOvhgF=0.20; stdOvhgB=0.20;
+    stdOvhgL=ados==='gauche'?0:0.20; stdOvhgR=ados==='droite'?0:0.20;
   } else if(isQuadro){
     // QUADRO : 0 cm débord
     stdOvhgF=0; stdOvhgB=0; stdOvhgL=0; stdOvhgR=0;
@@ -418,14 +435,22 @@ function calcDims(){
 
   // ── DIMENSIONS EXTÉRIEURES (madrier toit plat : -17 cm) ──
   let Lext=L, Pext=P;
-  if(isFlat && sys!=='ossature' && TYPE!=='carport'){
+  if(TYPE==='carport'){
+    // Carport (règle du configurateur du site) : la dimension choisie est le
+    // hors tout de la toiture ; poteaux = hors tout − débords standards
+    Lext=r2(L-stdOvhgL-stdOvhgR); Pext=r2(P-stdOvhgF-stdOvhgB);
+  } else if(isFlat && sys!=='ossature'){
     // Madrier toit plat : retirer 17 cm sur chaque dimension
-    Lext=L-0.17; Pext=P-0.17;
+    Lext=r2(L-0.17); Pext=r2(P-0.17);
   }
 
   // ── DIMENSIONS INTÉRIEURES ──
   let intL, intP;
-  if(isQuadro && sys==='ossature'){
+  if(TYPE==='carport'){
+    // Entre poteaux ; adossé : une seule rangée de poteaux en largeur
+    intL=r2(Lext-wt*(ados==='non'?2:1));
+    intP=r2(Pext-wt*2);
+  } else if(isQuadro && sys==='ossature'){
     // QUADRO ossature : -11 cm de chaque côté = -22 cm en tout
     intL=Math.round((Lext-0.22)*100)/100;
     intP=Math.round((Pext-0.22)*100)/100;
@@ -454,10 +479,13 @@ function calcDims(){
   // ── HAUTEUR FAÎTAGE ──
   const penteRad=pente*Math.PI/180;
   let rH=0;
-  if(isQuadro){
-    // QUADRO : hauteur hors tout fixe (2,50 abri / 2,60 garage / 2,46 carport toit plat)
-    if(TYPE==='carport') rH=2.46-hExt;
-    else if(TYPE==='garage') rH=2.60-hExt;
+  if(isFlat && TYPE==='carport'){
+    // Carport toit plat / QUADRO : bandeau de 36 cm au-dessus de la ferme
+    // (2,10 m sous ferme → 2,46 m haut bandeau, rehausses comprises)
+    rH=0.36;
+  } else if(isQuadro){
+    // QUADRO : hauteur hors tout fixe (2,50 abri / 2,60 garage)
+    if(TYPE==='garage') rH=2.60-hExt;
     else rH=2.50-hExt;
     if(rH<0) rH=0;
   } else if(toit==='2PANS'){
@@ -465,24 +493,25 @@ function calcDims(){
   } else if(toit==='1PAN'){
     if(orient==='droite'||orient==='gauche') rH=L*Math.tan(penteRad);
     else rH=P*Math.tan(penteRad);
-  } else if(isFlat && TYPE==='carport'){
-    rH=2.46-hExt; // carport toit plat : haut bandeau 2,46 m
-    if(rH<0) rH=0;
   }
 
   // ── HORS TOUT ──
-  const htL=Lext+ovL+ovR, htP=Pext+ovF+ovB;
+  const htL=r2(Lext+ovL+ovR), htP=r2(Pext+ovF+ovB);
 
-  // ── POTEAUX CARPORT ──
-  let nPosts=0;
+  // ── POTEAUX CARPORT (même calcul que le configurateur du site) ──
+  // nCols = poteaux par rangée (en largeur), nRows = rangées (en profondeur)
+  let nPosts=0, nCols=0, nRows=0;
   if(TYPE==='carport'){
     const esp=parseInt(document.getElementById('f-esp').value)||4;
-    nPosts=Math.ceil(L/esp)+1;
+    const espL=(esp===6||toit==='1PAN'||toit==='2PANS')?6:4;
+    nCols=Math.ceil(L/espL)+(ados==='non'?1:0);
+    nRows=Math.ceil(P/esp)+1;
+    nPosts=nCols*nRows;
   }
 
   return {L:Lext,P:Pext,Lnom:L,Pnom:P,reh,sys,toit,pente,orient,wt,hInt,hExt,rH,
           ovF,ovB,ovL,ovR,stdOvhg,stdOvhgF,stdOvhgB,stdOvhgL,stdOvhgR,uf,ub,ul,ur,
-          htL,htP,intL,intP,nPosts,penteRad,isFlat,isQuadro,hasGout};
+          htL,htP,intL,intP,nPosts,nCols,nRows,ados,penteRad,isFlat,isQuadro,hasGout};
 }
 
 // ════════════════════════════════════════════════════════
@@ -589,9 +618,11 @@ function drawPlan(svg,d,vw=480,vh=340){
   if(ovRpx>2) sRect(svg,ox+htW-ovRpx,oy,ovRpx,htP,'#f0f3ea','none',0);
   // Diagonal hatch lines across the overhang area
   const step=8;
-  for(let i=-htP;i<htW+htP;i+=step){
-    const lx1=ox+Math.max(0,i), ly1=oy+Math.max(0,-i);
-    const lx2=ox+Math.min(htW,i+htP), ly2=oy+Math.min(htP,htP+htW-i-htP);
+  // Lignes x − y = c à 45°, bornées au rectangle hors tout
+  for(let i=-htP;i<htW;i+=step){
+    const ax=Math.max(0,i), bx=Math.min(htW,i+htP);
+    const lx1=ox+ax, ly1=oy+ax-i;
+    const lx2=ox+bx, ly2=oy+bx-i;
     // Only draw in overhang zones (not inside wall rect)
     if(lx1<wx||lx2>wx+drawW||ly1<wy||ly2>wy+drawP)
       sLine(svg,lx1,ly1,lx2,ly2,hatchCol,hatchOp);
@@ -659,14 +690,14 @@ function drawPlan(svg,d,vw=480,vh=340){
 
   // ── DIMENSION LINES ──────────────────────────────────
   // Exterior largeur (bottom, main)
-  dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L} m`,24);
+  dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L.toFixed(2)} m`,24);
   // Exterior profondeur (right, main)
-  dimL(svg,wx+drawW,wy,wx+drawW,wy+drawP,`${d.P} m`,24);
+  dimL(svg,wx+drawW,wy,wx+drawW,wy+drawP,`${d.P.toFixed(2)} m`,24);
   // Hors tout largeur (top, offset above plan)
-  if(d.htL!==d.L)
+  if(Math.abs(d.htL-d.L)>0.001)
     dimL(svg,ox,oy,ox+htW,oy,`HT ${d.htL.toFixed(2)} m`,-18,'#e67e22');
   // Hors tout profondeur (left, offset left of plan)
-  if(d.htP!==d.P)
+  if(Math.abs(d.htP-d.P)>0.001)
     dimL(svg,ox,oy,ox,oy+htP,`HT ${d.htP.toFixed(2)} m`,-18,'#e67e22');
 
   // Interior dims — centered, small, with white bg
@@ -700,31 +731,40 @@ function drawPlan(svg,d,vw=480,vh=340){
   sRect(svg,legX,legY,6,6,'#f0f3ea','#515136',.5,'3 2');
   sTxt(svg,legX+9,legY+3,'Extension toiture',5,'#888','start');
   sRect(svg,legX+90,legY,6,6,'#e8eef5','#1a1a2e',1);
-  sTxt(svg,legX+99,legY+3,'Murs ext.',5,'#888','start');
+  sTxt(svg,legX+99,legY+3,TYPE==='carport'?'Emprise poteaux':'Murs ext.',5,'#888','start');
 }
 
+// Abscisses (0→1) des poteaux d'une rangée en largeur ; côté adossé = mur, pas de poteau
+function carportColsT(d){
+  const n=d.nCols, ts=[];
+  if(d.ados==='non'){for(let i=0;i<n;i++) ts.push(n>1?i/(n-1):0.5);}
+  else if(d.ados==='gauche'){for(let i=1;i<=n;i++) ts.push(i/n);}
+  else {for(let i=0;i<n;i++) ts.push(i/n);}
+  return ts;
+}
 function drawPlanCarport(svg,d,wx,wy,drawW,drawP,wt,sc){
   const ps=parseFloat(document.getElementById('f-pot').value)*sc||0.12*sc;
-  const np=d.nPosts;
   // Beam outlines (light fill)
   sRect(svg,wx,wy,drawW,ps,'#ecf0f1','#555',.8);
   sRect(svg,wx,wy+drawP-ps,drawW,ps,'#ecf0f1','#555',.8);
   // Side beams
   sRect(svg,wx,wy,ps,drawP,'#ecf0f1','#555',.5);
   sRect(svg,wx+drawW-ps,wy,ps,drawP,'#ecf0f1','#555',.5);
-  // Posts
-  for(let row=0;row<2;row++){
-    const py=row===0?wy:wy+drawP-ps;
-    for(let i=0;i<np;i++){
-      const px=wx+(drawW/(np>1?np-1:1))*i-ps/2;
-      sRect(svg,px,py,ps,ps,'#bdc3c7','#2c3e50',1.5);
-    }
+  // Mur d'adossement (hachuré, côté mur)
+  if(d.ados!=='non'){
+    const mw=Math.max(6,0.20*sc), mx=d.ados==='gauche'?wx-mw:wx+drawW;
+    sRect(svg,mx,wy-12,mw,drawP+24,'#e5e5e5','#555',1);
+    for(let y=wy-12;y<wy+drawP+12;y+=6) sLine(svg,mx,y+6,mx+mw,y,'#999',.6);
+    sTxt(svg,mx+mw/2,wy-16,'MUR',6,'#777');
   }
-  // Intermediate posts for long depth
-  if(d.P>d.nPosts*parseFloat(document.getElementById('f-esp').value)/2){
-    const midY=wy+drawP/2-ps/2;
-    sRect(svg,wx-ps/2,midY,ps,ps,'#bdc3c7','#2c3e50',1.5);
-    sRect(svg,wx+drawW-ps/2,midY,ps,ps,'#bdc3c7','#2c3e50',1.5);
+  // Poteaux : grille nCols × nRows, à l'intérieur de l'emprise poteaux
+  const cols=carportColsT(d), nr=d.nRows;
+  for(let r=0;r<nr;r++){
+    const py=wy+(nr>1?(drawP-ps)*r/(nr-1):(drawP-ps)/2);
+    cols.forEach(t=>{
+      const px=wx+(drawW-ps)*t;
+      sRect(svg,px,py,ps,ps,'#bdc3c7','#2c3e50',1.5);
+    });
   }
 }
 
@@ -973,7 +1013,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
 
   // ROW 2: Wall ext. width
-  dimL(svg,baseX,gndY,baseX+drawW,gndY,`${g.w} m`,row2Y-gndY);
+  dimL(svg,baseX,gndY,baseX+drawW,gndY,`${g.w.toFixed(2)} m`,row2Y-gndY);
 
   // ROW 3: HT width
   if(showHT){
@@ -1027,18 +1067,35 @@ function drawCarportElev(svg,d,side,vw,vh){
   sLine(svg,PAD.l/2,gndY,vw-PAD.r/2,gndY,'#888',2);
   for(let i=0;i<18;i++) sLine(svg,PAD.l/2+i*14,gndY,PAD.l/2+i*14-10,gndY+12,'#ddd',.5);
 
-  // Posts
-  const np=isFace?d.nPosts:2;
-  for(let i=0;i<np;i++){
-    const px=baseX+(np>1?(dW/(np-1))*i:dW/2)-ps/2;
-    sRect(svg,px,gndY-hpx,ps,hpx,'#d5d8dc','#555',1.5);
-    sRect(svg,px-2,gndY-3,ps+4,3,'#aaa','#555',.8); // base plate
+  // Posts — vue face/fond : poteaux d'une rangée ; vue côté : rangées en profondeur
+  // Côté adossé vu de face : mur ; vue du côté adossé : le mur cache les poteaux
+  const wallSide=(side==='gauche'&&d.ados==='gauche')||(side==='droite'&&d.ados==='droite');
+  let ts;
+  if(isFace) ts=carportColsT(d);
+  else {const nr=d.nRows; ts=[]; for(let i=0;i<nr;i++) ts.push(nr>1?i/(nr-1):0.5);}
+  if(wallSide){
+    sRect(svg,baseX,gndY-hpx,dW,hpx,'#e5e5e5','#555',1.2);
+    for(let x=baseX;x<baseX+dW;x+=10) sLine(svg,x,gndY,Math.min(x+10,baseX+dW),gndY-10,'#bbb',.5);
+    sTxtBg(svg,baseX+dW/2,gndY-hpx*0.55,'Mur d\'adossement',7,'#555');
+  } else {
+    ts.forEach(t=>{
+      const px=baseX+(dW-ps)*t;
+      sRect(svg,px,gndY-hpx,ps,hpx,'#d5d8dc','#555',1.5);
+      sRect(svg,px-2,gndY-3,ps+4,3,'#aaa','#555',.8); // base plate
+    });
   }
+  if(isFace&&d.ados!=='non'){
+    const mw=Math.max(6,0.20*sc), mx=d.ados==='gauche'?baseX-mw:baseX+dW;
+    sRect(svg,mx,gndY-hpx-rHpx-6,mw,hpx+rHpx+6,'#e5e5e5','#555',1);
+    for(let y=gndY-hpx-rHpx;y<gndY;y+=6) sLine(svg,mx,y+6,mx+mw,y,'#999',.6);
+  }
+  const np=ts.length;
 
   // Closures
   const clos=document.getElementById('f-clos').value;
-  const showClos=(side==='fond'&&clos.includes('fond'))||(side==='gauche'&&clos.includes('g'))||(side==='droite'&&clos.includes('d'));
-  if(showClos){
+  const CLOS={aucune:[],gauche:['gauche'],droite:['droite'],fond:['fond'],gd:['gauche','droite'],gdf:['gauche','droite','fond']};
+  const showClos=(CLOS[clos]||[]).includes(side);
+  if(showClos&&!wallSide){
     sRect(svg,baseX,gndY-hpx,dW,hpx,'rgba(200,215,230,0.3)','#7f8c8d',1,'5 3');
     sTxt(svg,baseX+dW/2,gndY-hpx/2,'Fermeture bardage',7,'#888');
   }
@@ -1049,8 +1106,8 @@ function drawCarportElev(svg,d,side,vw,vh){
   const isFlat=d.toit==='TOIT_PLAT'||d.toit==='QUADRO';
 
   if(isFlat){
-    // Simple rectangle for flat roof
-    const slabH=Math.max(8,0.39*sc);
+    // Bandeau toit plat : 36 cm au-dessus de la ferme (2,10 → 2,46 m)
+    const slabH=Math.max(6,rHpx);
     sRect(svg,rx,topY-slabH,rw,slabH,'#d5d8dc','#555',1.5);
   } else if(d.toit==='2PANS'){
     if(isFace){
@@ -1101,17 +1158,25 @@ function drawCarportElev(svg,d,side,vw,vh){
   }
 
   // Dim lines
-  dimL(svg,baseX,gndY,baseX+dW,gndY,`${viewW} m`,22);
+  dimL(svg,baseX,gndY,baseX+dW,gndY,`${viewW.toFixed(2)} m`,22);
+  // Gauche : hauteur faîtage (haut du bandeau / faîte) ; droite : hauteur sous ferme
   const dimLx=Math.max(10,PAD.l*0.4);
-  const totalH=isFlat?d.hExt:d.hExt+d.rH;
-  const topDim=isFlat?topY-Math.max(8,0.39*sc):topY-rHpx;
-  dimL(svg,dimLx,topDim,dimLx,gndY,`H ${totalH.toFixed(2)} m`,-5);
+  const totalH=d.hExt+d.rH;
+  const topDim=isFlat?topY-Math.max(6,rHpx):topY-rHpx;
+  dimL(svg,dimLx,topDim,dimLx,gndY,`H faîtage ${totalH.toFixed(2)} m`,-5);
+  const dimRx=rx+rw+12;
+  dimL(svg,dimRx,topY,dimRx,gndY,`${d.hInt.toFixed(2)} m sous ferme`,5,'#3498db');
   // HT width
   if(oL+oR>1){
     dimL(svg,rx,gndY,rx+rw,gndY,`HT ${(viewW+ovhgL+ovhgR).toFixed(2)} m`,36,'#e67e22');
   }
-  // Post spacing
-  if(np>1) sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`${np} poteaux — esp. ${(viewW/(np-1)).toFixed(2)} m`,7,'#555');
+  // Post spacing (entraxe entre poteaux visibles, mur compris côté adossé)
+  if(!wallSide&&np>1){
+    const esp=(viewW-d.wt)*(ts[1]-ts[0]);
+    sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`${np} poteaux — entraxe ${esp.toFixed(2)} m`,7,'#555');
+  } else if(!wallSide&&np===1){
+    sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`1 poteau`,7,'#555');
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -1249,29 +1314,50 @@ function renderDims(d,tbl){
   // Débords standards détaillés
   const debStd=d.isQuadro?'0 cm':`F:${(d.stdOvhgF*100).toFixed(0)} / B:${(d.stdOvhgB*100).toFixed(0)} / G:${(d.stdOvhgL*100).toFixed(0)} / D:${(d.stdOvhgR*100).toFixed(0)} cm`;
 
+  if(TYPE==='carport'){
+    const ADOS={gauche:'Adossé côté gauche',droite:'Adossé côté droit'};
+    const crows=[
+      ['Largeur hors tout', `${d.htL.toFixed(2)} m`],
+      ['Profondeur hors tout', `${d.htP.toFixed(2)} m`],
+      ['Largeur ext. poteaux', `${d.L.toFixed(2)} m`],
+      ['Profondeur ext. poteaux', `${d.P.toFixed(2)} m`],
+      ['Dim. int. poteaux', `${d.intL.toFixed(2)} × ${d.intP.toFixed(2)} m`],
+      ['Hauteur sous ferme', `${d.hInt.toFixed(2)} m`],
+      ['Hauteur faîtage', `${(d.hExt+d.rH).toFixed(2)} m`],
+      ['Surface toiture', `${(d.htL*d.htP).toFixed(2)} m²`],
+      ['Emprise poteaux', `${(d.L*d.P).toFixed(2)} m²`],
+      d.ados!=='non'?['Implantation', ADOS[d.ados]]:null,
+      ['Débord std.', debStd],
+      d.uf>0?['+ Débord face', `${(d.uf*100).toFixed(0)} cm`]:null,
+      d.ub>0?['+ Débord fond', `${(d.ub*100).toFixed(0)} cm`]:null,
+      d.ul>0?['+ Débord gauche', `${(d.ul*100).toFixed(0)} cm`]:null,
+      d.ur>0?['+ Débord droite', `${(d.ur*100).toFixed(0)} cm`]:null,
+      ['Section poteaux', `${(d.wt*100).toFixed(0)}×${(d.wt*100).toFixed(0)} cm`],
+      ['Nb. poteaux', `${d.nPosts} (${d.nRows} rangée${d.nRows>1?'s':''} de ${d.nCols})`],
+    ].filter(Boolean);
+    tbl.innerHTML=crows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    return;
+  }
   const rows=[
     ['Largeur ext.', `${d.L.toFixed(2)} m`],
     ['Profondeur ext.', `${d.P.toFixed(2)} m`],
-    // Dimensions nominales si différentes (sur-mesure ou madrier toit plat)
-    d.Lnom!==d.L?['Largeur nominale', `${d.Lnom} m`]:null,
-    d.Pnom!==d.P?['Profondeur nominale', `${d.Pnom} m`]:null,
-    TYPE!=='carport'?['Largeur int.', `${d.intL.toFixed(2)} m`]:null,
-    TYPE!=='carport'?['Profondeur int.', `${d.intP.toFixed(2)} m`]:null,
-    TYPE==='carport'?['Dim. int. poteaux', `${d.intL.toFixed(2)} × ${d.intP.toFixed(2)} m`]:null,
+    // Dimensions nominales si différentes (madrier toit plat)
+    Math.abs(d.Lnom-d.L)>0.001?['Largeur nominale', `${d.Lnom.toFixed(2)} m`]:null,
+    Math.abs(d.Pnom-d.P)>0.001?['Profondeur nominale', `${d.Pnom.toFixed(2)} m`]:null,
+    ['Largeur int.', `${d.intL.toFixed(2)} m`],
+    ['Profondeur int.', `${d.intP.toFixed(2)} m`],
     ['Hauteur intérieure', `${d.hInt.toFixed(2)} m`],
     d.rH>0?['Hauteur faîtage', `${(d.hExt+d.rH).toFixed(2)} m`]:null,
     ['Largeur hors tout', `${d.htL.toFixed(2)} m`],
     ['Profondeur hors tout', `${d.htP.toFixed(2)} m`],
     ['Surface ext.', `${(d.L*d.P).toFixed(2)} m²`],
-    TYPE!=='carport'?['Surface int.', `${(d.intL*d.intP).toFixed(2)} m²`]:null,
+    ['Surface int.', `${(d.intL*d.intP).toFixed(2)} m²`],
     ['Débord std.', debStd],
     d.uf>0?['+ Débord face', `${(d.uf*100).toFixed(0)} cm`]:null,
     d.ub>0?['+ Débord fond', `${(d.ub*100).toFixed(0)} cm`]:null,
     d.ul>0?['+ Débord gauche', `${(d.ul*100).toFixed(0)} cm`]:null,
     d.ur>0?['+ Débord droite', `${(d.ur*100).toFixed(0)} cm`]:null,
-    TYPE!=='carport'?['Épaisseur murs', `${wtMm} mm`]:null,
-    TYPE==='carport'?['Section poteaux', `${(d.wt*100).toFixed(0)}×${(d.wt*100).toFixed(0)} cm`]:null,
-    TYPE==='carport'?['Nb. poteaux côté', `${d.nPosts}`]:null,
+    ['Épaisseur murs', `${wtMm} mm`],
   ].filter(Boolean);
   tbl.innerHTML=rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
 }
@@ -1286,12 +1372,39 @@ const MPRESETS=[
   {id:'pmort80',    cat:'Porte classique bois',    label:'Porte mortaisée simple semi-vitrée 80×186', type:'porte', lw:80, lh:186, sku:'PBSVZ', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.29.png'},
   {id:'pmort140',   cat:'Porte classique bois',    label:'Porte mortaisée double semi-vitrée 140×186', type:'porte', lw:140, lh:186, sku:'PBDVZ', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.40.png'},
   {id:'ppfdv80',    cat:'Porte classique bois',    label:'Porte-fenêtre double vitrage 80×205', type:'porte', lw:80, lh:205, sku:'PBE80', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-09-24-a-15.02.22.png'},
+  {id:'ppfdv120',   cat:'Porte classique bois',     label:'Porte-fenêtre double vitrage 120×205',         type:'porte',    lw:120, lh:205, sku:'PBE120', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-09-24-a-15.02.27.png'},
+  // ── PORTES CLASSIQUES OSSATURE (bardées, H 186) ──
+  {id:'pclsv',      cat:'Porte classique ossature',  label:'Porte simple bardée autoclave vert clin vertical 80×186',  type:'porte',    lw:80, lh:186, sku:'PCLSVV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.59.21.png'},
+  {id:'pcltv',      cat:'Porte classique ossature',  label:'Porte tierce bardée autoclave vert clin vertical 120×186',  type:'porte',    lw:120, lh:186, sku:'PCLTVV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.59.30.png'},
+  {id:'pcldv',      cat:'Porte classique ossature',  label:'Porte double bardée autoclave vert clin vertical 160×186',  type:'porte',    lw:160, lh:186, sku:'PCLDVV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.59.11.png'},
+  {id:'pclsb',      cat:'Porte classique ossature',  label:'Porte simple bardée autoclave brun clin vertical 80×186',  type:'porte',    lw:80, lh:186, sku:'PCLSBV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.58.55.png'},
+  {id:'pcltb',      cat:'Porte classique ossature',  label:'Porte tierce bardée autoclave brun clin vertical 120×186',  type:'porte',    lw:120, lh:186, sku:'PCLTBV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.59.04.png'},
+  {id:'pcldb',      cat:'Porte classique ossature',  label:'Porte double bardée autoclave brun clin vertical 160×186',  type:'porte',    lw:160, lh:186, sku:'PCLDBV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.58.47.png'},
+  {id:'pclsa',      cat:'Porte classique ossature',  label:'Porte simple bardée ayous clin vertical 80×186',  type:'porte',    lw:80, lh:186, sku:'PCLSAV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.58.29.png'},
+  {id:'pclta',      cat:'Porte classique ossature',  label:'Porte tierce bardée ayous clin vertical 120×186',  type:'porte',    lw:120, lh:186, sku:'PCLTAV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.58.39.png'},
+  {id:'pclda',      cat:'Porte classique ossature',  label:'Porte double bardée ayous clin vertical 160×186',  type:'porte',    lw:160, lh:186, sku:'PCLDAV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.58.21.png'},
   // ── PORTES CONTEMPORAINES BOIS ──
   {id:'pcont1v',    cat:'Porte contemporaine bois',label:'Porte battante simple vitrée 80×210', type:'porte', lw:80, lh:210, sku:'PBSV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.49.png'},
   {id:'pcont2v',    cat:'Porte contemporaine bois',label:'Porte battante double vitrée 140×210',type:'porte', lw:140,lh:210, sku:'PBDV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.41.51.png'},
   {id:'pcont1p',    cat:'Porte contemporaine bois',label:'Porte battante simple pleine 80×210', type:'porte', lw:80, lh:210, sku:'PBSP', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.28.png'},
   {id:'pcont2p',    cat:'Porte contemporaine bois',label:'Porte battante double pleine 140×210',type:'porte', lw:140,lh:210, sku:'PBDP', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.25.png'},
-  {id:'pcont1dv',   cat:'Porte contemporaine bois',label:'Porte battante simple 2/4 vitrée 80×210',type:'porte',lw:80,lh:210, img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.03.png'},
+  {id:'pcont1dv',   cat:'Porte contemporaine bois',label:'Porte battante simple 2/4 vitrée 80×210',type:'porte',lw:80,lh:210, sku:'PBSV24', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.03.png'},
+  {id:'pcont1qv',   cat:'Porte contemporaine bois',  label:'Porte battante simple 1/4 vitrée 80×210',      type:'porte',    lw:80, lh:210, sku:'PBSV14', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.17.png'},
+  {id:'pcont2dv',   cat:'Porte contemporaine bois',  label:'Porte battante double 2/4 vitrée 140×210',     type:'porte',    lw:140, lh:210, sku:'PBDV24', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.04.png'},
+  {id:'pcont2qv',   cat:'Porte contemporaine bois',  label:'Porte battante double 1/4 vitrée 140×210',     type:'porte',    lw:140, lh:210, sku:'PBDV14', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.42.15.png'},
+  // ── PORTES CONTEMPORAINES OSSATURE (bardées, H 186) ──
+  {id:'pcsaa',      cat:'Porte contemporaine ossature',  label:'Porte simple bardée Ayous aléatoire 80×186',   type:'porte',    lw:80, lh:186, sku:'PCSAA', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.56.26.png'},
+  {id:'pcdaa',      cat:'Porte contemporaine ossature',  label:'Porte double bardée Ayous aléatoire 160×186',  type:'porte',    lw:160, lh:186, sku:'PCDAA', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.56.15.png'},
+  {id:'pcsnv',      cat:'Porte contemporaine ossature',  label:'Porte simple bardée autoclave noir vertical ajouré 80×186',  type:'porte',    lw:80, lh:186, sku:'PCSNV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.56.59.png'},
+  {id:'pcdnv',      cat:'Porte contemporaine ossature',  label:'Porte double bardée autoclave noir vertical ajouré 160×186',  type:'porte',    lw:160, lh:186, sku:'PCDNV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.56.36.png'},
+  {id:'pcsgv',      cat:'Porte contemporaine ossature',  label:'Porte simple bardée autoclave gris vertical ajouré 80×186',  type:'porte',    lw:80, lh:186, sku:'PCSGV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.57.14.png'},
+  {id:'pcdgv',      cat:'Porte contemporaine ossature',  label:'Porte double bardée autoclave gris vertical ajouré 160×186',  type:'porte',    lw:160, lh:186, sku:'PCDGV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.57.07.png'},
+  {id:'pcsbh',      cat:'Porte contemporaine ossature',  label:'Porte simple bardée autoclave brun clin horizontal 80×186',  type:'porte',    lw:80, lh:186, sku:'PCSBH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.57.33.png'},
+  {id:'pcdbh',      cat:'Porte contemporaine ossature',  label:'Porte double bardée autoclave brun clin horizontal 160×186',  type:'porte',    lw:160, lh:186, sku:'PCDBH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.57.26.png'},
+  {id:'pcsvh',      cat:'Porte contemporaine ossature',  label:'Porte simple bardée autoclave vert clin horizontal 80×186',  type:'porte',    lw:80, lh:186, sku:'PCSVH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.57.55.png'},
+  {id:'pcdvh',      cat:'Porte contemporaine ossature',  label:'Porte double bardée autoclave vert clin horizontal 160×186',  type:'porte',    lw:160, lh:186, sku:'PCDVH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.57.46.png'},
+  {id:'pcsah',      cat:'Porte contemporaine ossature',  label:'Porte simple bardée ayous clin horizontal 80×186',  type:'porte',    lw:80, lh:186, sku:'PCSAH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.58.12.png'},
+  {id:'pcdah',      cat:'Porte contemporaine ossature',  label:'Porte double bardée ayous clin horizontal 160×186',  type:'porte',    lw:160, lh:186, sku:'PCDAH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-29-a-17.58.03.png'},
   // ── PORTES COULISSANTES BOIS ──
   {id:'pcoul90v',   cat:'Porte coulissante bois',  label:'Coulissante vitrée 90×186 (autoclave vert)',  type:'porte', lw:90, lh:186, sku:'PCSVv90', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.43.56.png'},
   {id:'pcoul140v',  cat:'Porte coulissante bois',  label:'Coulissante double vitrée 140×186 (autoclave vert)',type:'porte',lw:140,lh:186, sku:'PCDV140',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.44.24.png'},
@@ -1312,22 +1425,38 @@ const MPRESETS=[
   {id:'f49ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 49×93',            type:'fenetre',lw:49, lh:93, sku:'FO49X73', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.40.png'},
   {id:'f80ouv',     cat:'Fenêtre classique bois',  label:'Fenêtre ouvrante 80×93',            type:'fenetre',lw:80, lh:93, sku:'FO76X91', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.44.png'},
   {id:'fdv75',      cat:'Fenêtre classique bois',  label:'Fenêtre double vitrage 75×60',      type:'fenetre',lw:75, lh:60, sku:'FE75O', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.17.48.png'},
+  {id:'fdv95',      cat:'Fenêtre classique bois',   label:'Fenêtre double vitrage 95×60',                 type:'fenetre',  lw:95, lh:60, sku:'FE950', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.17.40.png'},
+  {id:'fdv95120',   cat:'Fenêtre classique bois',   label:'Fenêtre double vitrage 95×120',                type:'fenetre',  lw:95, lh:120, sku:'FE120O', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.27.58.png'},
   // ── FENÊTRES CONTEMPORAINES ──
   {id:'fhublot',    cat:'Fenêtre contemporaine',   label:'Hublot 91 cm',                     type:'fenetre',lw:91, lh:91, sku:'FHF91', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.48.52.png'},
   {id:'fc9353',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 93×53.5 cm',          type:'fenetre',lw:93, lh:53.5, sku:'FF91H',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.49.08.png'},
   {id:'fc5393',     cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 53.5×93 cm',          type:'fenetre',lw:53.5,lh:93, sku:'FF91V', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-03-01-a-09.12.32.png'},
   {id:'fc20054',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 200×54 cm',           type:'fenetre',lw:200,lh:54, sku:'FL200H',  img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.25.png'},
   {id:'fc54200',    cat:'Fenêtre contemporaine',   label:'Fenêtre fixe 54×200 cm',           type:'fenetre',lw:54, lh:200, sku:'FL200V', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.48.png'},
+  {id:'fab80',      cat:'Fenêtre contemporaine',    label:'Fenêtre double vitrage abattante 80×45',       type:'fenetre',  lw:80, lh:45, sku:'FA80O', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.16.png'},
+  {id:'fab120',     cat:'Fenêtre contemporaine',    label:'Fenêtre double vitrage abattante 120×45',      type:'fenetre',  lw:120, lh:45, sku:'FA120O', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.17.57.png'},
+  // ── FENÊTRES CONTEMPORAINES OSSATURE ──
+  {id:'fhublotO',   cat:'Fenêtre contemporaine ossature',  label:'Hublot 91 cm sur ossature',                    type:'fenetre',  lw:91, lh:91, sku:'FHF91O', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.48.52.png'},
+  {id:'fc5393O',    cat:'Fenêtre contemporaine ossature',  label:'Fenêtre fixe 53,5×93 cm sur ossature',         type:'fenetre',  lw:53.5, lh:93, sku:'FF91OH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.49.08.png'},
+  {id:'fc9353O',    cat:'Fenêtre contemporaine ossature',  label:'Fenêtre fixe 93×53,5 cm sur ossature',         type:'fenetre',  lw:93, lh:53.5, sku:'FF91OV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-02-19-a-18.49.08.png'},
+  {id:'fc54200O',   cat:'Fenêtre contemporaine ossature',  label:'Fenêtre fixe 54×200 cm sur ossature',          type:'fenetre',  lw:54, lh:200, sku:'FL200OH', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.48.png'},
+  {id:'fc20054O',   cat:'Fenêtre contemporaine ossature',  label:'Fenêtre fixe 200×54 cm sur ossature',          type:'fenetre',  lw:200, lh:54, sku:'FL200OV', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.18.25.png'},
   // ── FENÊTRES ALU / PVC ──
   {id:'falu60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU 60×95 (RAL 7016)',     type:'fenetre',lw:60, lh:95, sku:'FBA60', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
   {id:'fpano120',   cat:'Fenêtre ALU/PVC',         label:'Fenêtre ALU panoramique 120×95 (RAL 7016)',type:'fenetre',lw:120,lh:95, sku:'FBA120',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
   {id:'fpvc60',     cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC 60×95 (RAL 7016/Blanc)',type:'fenetre',lw:60, lh:95, sku:'FPVC60', img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.47.png'},
   {id:'fpvc120',    cat:'Fenêtre ALU/PVC',         label:'Fenêtre PVC panoramique 120×95 (RAL 7016/Blanc)',type:'fenetre',lw:120,lh:95, sku:'FPVC120',img:'https://abri-cerisier.fr/wp-content/uploads/2021/05/Capture-decran-2024-06-04-a-16.11.40.png'},
 ];
+// Options par ouverture (codes de la table « menuiseries » du site)
+const MOPTS={
+  fenetre:[['','Aucune'],['VDF','Volets décoratifs fixes'],['VBF','Volets battants'],['115','Jardinière']],
+  porte:[['','Aucune'],['VDP','Volets décoratifs fixes'],['VBP','Volets battants']],
+};
+const optLabel=m=>(MOPTS[m.type]||[]).find(o=>o[0]===m.opt)?.[1]||'';
 function addM(){
   const id=++MCNT,p=MPRESETS[0];
   const defSeuil=p.type==='fenetre'?100:0; // fenêtres à 100cm, portes au sol
-  MENUS.push({id,preset:p.id,label:p.label,type:p.type,lw:p.lw,lh:p.lh,pos:50,wall:'face',seuil:defSeuil,img:p.img||''});
+  MENUS.push({id,preset:p.id,label:p.label,type:p.type,lw:p.lw,lh:p.lh,pos:50,wall:'face',seuil:defSeuil,img:p.img||'',opt:''});
   renderMenus();upd();
 }
 function removeM(id){MENUS=MENUS.filter(m=>m.id!==id);renderMenus();upd();}
@@ -1337,9 +1466,15 @@ function onMC(id){
   if(p){
     const wasType=m.type;
     m.preset=p.id;m.label=p.label;m.type=p.type;m.lw=p.lw;m.lh=p.lh;m.img=p.img||'';
-    // Auto-set seuil when changing type
-    if(wasType!==m.type) m.seuil=m.type==='fenetre'?100:0;
+    // Auto-set seuil (et options) when changing type
+    if(wasType!==m.type){
+      m.seuil=m.type==='fenetre'?100:0;
+      m.opt='';
+      document.getElementById(`mseuil-${id}`).value=m.seuil;
+      renderMenus();
+    }
   }
+  if(document.getElementById(`mopt-${id}`)) m.opt=document.getElementById(`mopt-${id}`).value;
   m.pos=parseInt(document.getElementById(`mpos-${id}`).value)||50;
   m.wall=document.getElementById(`mwall-${id}`).value;
   m.seuil=parseInt(document.getElementById(`mseuil-${id}`).value)||0;
@@ -1378,6 +1513,10 @@ function renderMenus(){
           <span style="font-size:10px;color:#888">${m.lw}×${m.lh} cm</span>
         </div>
       </div>
+      <div class="fr"><label>Option</label>
+        <select id="mopt-${m.id}" onchange="onMC(${m.id})">
+          ${(MOPTS[m.type]||[]).map(([v,l])=>`<option value="${v}"${v===(m.opt||'')?' selected':''}>${l}</option>`).join('')}
+        </select></div>
     </div>`).join('');
 }
 
@@ -1430,9 +1569,14 @@ function calcPrice(d){
   const varBardage=1; // default
   const sku=`${varSys}${varToit}${varBardage}`;
 
-  // Dimensions arrondies (nearest 0.5)
-  const roundHalf=v=>Math.round(v*2)/2;
-  const lArr=roundHalf(d.L), pArr=roundHalf(d.P);
+  // Dimensions arrondies comme le configurateur du site (var_largeur_arrondi) :
+  // sur la dimension saisie, au 0,5 m supérieur sous 8 m, au mètre supérieur au-delà
+  const arrondi=v=>{
+    const f=Math.floor(v+1e-9), r=r2(v-f);
+    if(r===0) return f;
+    return f+(v<8?(r<0.501?0.5:1):1);
+  };
+  const lArr=arrondi(d.Lnom), pArr=arrondi(d.Pnom);
   const dimKey=`${lArr}x${pArr}`;
 
   // Prix de base = lookuptable(table-dim; SKU; LxP)
@@ -1481,9 +1625,15 @@ function calcPrice(d){
     // Trouver le code lookuptable pour cette menuiserie
     const preset=MPRESETS.find(p=>p.id===m.preset);
     const code=preset?.sku||m.preset?.toUpperCase()||'';
-    const unitPrice=lookuptable('menuiseries',code);
-    menuPrices[m.id]={label:m.label,price:unitPrice,wall:m.wall,img:m.img};
+    const optPrice=m.opt?lookuptable('menuiseries',m.opt):0;
+    const unitPrice=lookuptable('menuiseries',code)+optPrice;
+    menuPrices[m.id]={label:m.label+(m.opt?` + ${optLabel(m).toLowerCase()}`:''),price:unitPrice,wall:m.wall,img:m.img};
   });
+  // Porte de garage (codes PG* de la table menuiseries)
+  if(TYPE==='garage'){
+    const pg=document.getElementById('f-pgtype');
+    menuPrices.garage={label:'Porte de garage '+pg.options[pg.selectedIndex].text.toLowerCase(),price:lookuptable('menuiseries',pg.value),wall:'face'};
+  }
 
   // Total
   const optTotal=Object.values(opts).reduce((s,o)=>s+(o.price||0),0);
@@ -1531,7 +1681,8 @@ function fmtPrice(v){return v!=null&&!isNaN(v)?v.toLocaleString('fr-FR',{minimum
 // ════════════════════════════════════════════════════════
 function buildTags(d){
   const T={abri:'Abri de Jardin',carport:'Carport',garage:'Garage'};
-  const tags=[T[TYPE],`${d.L}×${d.P} m`];
+  const fmt=v=>String(r2(v)).replace('.',',');
+  const tags=[T[TYPE],TYPE==='carport'?`${fmt(d.htL)}×${fmt(d.htP)} m hors tout`:`${fmt(d.Lnom)}×${fmt(d.Pnom)} m`];
   if(d.reh>0) tags.push(`${d.reh} rehausse${d.reh>1?'s':''} (+${d.reh*13} cm)`);
   const tL={TOIT_PLAT:'Toit plat bac acier','2PANS':'2 Pans','1PAN':'1 Pan','QUADRO':'QUADRO cube EPDM'};
   tags.push(tL[d.toit]);
@@ -1541,14 +1692,32 @@ function buildTags(d){
   if(TYPE==='carport'){
     tags.push(document.getElementById('f-pot').options[document.getElementById('f-pot').selectedIndex].text);
     tags.push(`Espacement max. ${document.getElementById('f-esp').value} m`);
-    tags.push(`${d.nPosts} poteaux par rangée`);
+    tags.push(`${d.nPosts} poteaux (${d.nRows} rangée${d.nRows>1?'s':''} de ${d.nCols})`);
+    if(d.ados!=='non') tags.push(`Adossé côté ${d.ados==='gauche'?'gauche':'droit'}`);
+    const cl=document.getElementById('f-clos');
+    if(cl.value!=='aucune') tags.push('Fermeture : '+cl.options[cl.selectedIndex].text.toLowerCase());
+  }
+  if(TYPE==='garage'){
+    const pg=document.getElementById('f-pgtype');
+    tags.push(`Porte de garage ${pg.options[pg.selectedIndex].text.toLowerCase()} ${document.getElementById('f-pglw').value}×${document.getElementById('f-pglh').value} cm`);
   }
   const p=document.getElementById('f-plan').value;if(p!=='non')tags.push('Plancher');
   const iso=document.getElementById('f-iso').value;if(iso!=='non')tags.push('Isolation '+iso);
   if(document.getElementById('f-gout').value==='oui')tags.push('Gouttière');
   if(d.uf>0||d.ub>0||d.ul>0||d.ur>0) tags.push(`Débords ext. : F+${(d.uf*100).toFixed(0)} B+${(d.ub*100).toFixed(0)} G+${(d.ul*100).toFixed(0)} D+${(d.ur*100).toFixed(0)} cm`);
-  MENUS.forEach(m=>tags.push(`${m.type==='fenetre'?'🪟':'🚪'} ${m.label} (${m.wall})`));
+  MENUS.forEach(m=>tags.push(`${m.type==='fenetre'?'🪟':'🚪'} ${m.label}${m.opt?' + '+optLabel(m).toLowerCase():''} (${m.wall})`));
   return tags;
+}
+
+// Indications du panneau selon le type et le système
+function updHints(d){
+  const hd=document.getElementById('h-dims'), hr=document.getElementById('h-reh');
+  if(TYPE==='carport') hd.textContent='Sur mesure au cm. Dimensions hors tout de la toiture (poteaux : −20 cm par côté libre).';
+  else if(d.isFlat&&d.sys!=='ossature') hd.textContent='Sur mesure au cm. Madrier toit plat : murs = dimension − 17 cm.';
+  else hd.textContent='Sur mesure au centimètre près.';
+  const base=Math.round((d.hInt-d.reh*0.13)*1000)/1000;
+  const baseTxt=(Math.round(base*100)===base*100?base.toFixed(2):base.toFixed(3)).replace('.',',');
+  hr.textContent=`Hauteur ${TYPE==='carport'?'sous ferme':'int.'} de base : ${baseTxt} m`;
 }
 
 // ════════════════════════════════════════════════════════
@@ -1558,6 +1727,7 @@ function upd(){
   const d=calcDims();
   document.getElementById('r-pente').style.display=d.isFlat?'none':'';
   document.getElementById('r-orient').style.display=d.toit==='1PAN'?'':'none';
+  updHints(d);
 
   drawPlan(document.getElementById('sv-plan'),d,480,340);
   drawElev(document.getElementById('sv-face'),d,'face',380,280);
@@ -1653,16 +1823,27 @@ function printIt(){
   let html='';
 
   // STRUCTURE
+  const f2=v=>v.toFixed(2).replace('.',',');
+  const penteTxt=d.isFlat?'':` — Pente ${d.pente}°`;
+  const orientTxt=d.toit==='1PAN'?' — Orientation : '+document.getElementById('f-orient').options[document.getElementById('f-orient').selectedIndex].text:'';
+  const rehTxt=d.reh>0?` — ${d.reh} rehausse(s) (+${d.reh*13} cm)`:'';
+  let structInfo, structCard;
+  if(TYPE==='carport'){
+    const pot=document.getElementById('f-pot');
+    structInfo=`<strong>Carport ${f2(d.htL)} × ${f2(d.htP)} m hors tout</strong> — Surface toiture ${f2(d.htL*d.htP)} m² — Emprise poteaux ${f2(d.L)} × ${f2(d.P)} m<br>
+      Hauteur sous ferme ${f2(d.hInt)} m — Hauteur faîtage ${f2(d.hExt+d.rH)} m${penteTxt}${rehTxt}`;
+    structCard=dvCard(`Poteaux ${pot.options[pot.selectedIndex].text}`,`Structure poteaux — ${d.nPosts} poteaux, espacement max. ${document.getElementById('f-esp').value} m${d.ados!=='non'?` — adossé côté ${d.ados==='gauche'?'gauche':'droit'}`:''}`,sysImgs.madrier28,true);
+  } else {
+    structInfo=`<strong>${tL[TYPE]} ${f2(d.L)} × ${f2(d.P)} m</strong> — Surface ext. ${f2(d.L*d.P)} m² — Surface int. ${f2(d.intL*d.intP)} m²<br>
+      Hauteur intérieure ${f2(d.hInt)} m — Hauteur faîtage ${f2(d.hExt+d.rH)} m${penteTxt}${rehTxt}`;
+    structCard=dvCard(sysLabels[d.sys]||d.sys,`Système constructif — Épaisseur murs ${Math.round(d.wt*1000)} mm`,sysImgs[d.sys],true);
+  }
   html+=`<div class="dv-section">
     <div class="dv-section-title"><span class="ico">🏗</span> Structure & dimensions</div>
-    <div class="dv-info">
-      <strong>${tL[TYPE]} ${d.L}×${d.P} m</strong> — Surface ext. ${(d.L*d.P).toFixed(1)} m² — Surface int. ${(d.intL*d.intP).toFixed(1)} m²<br>
-      Hauteur murs ${d.hInt.toFixed(2)} m — Hauteur faîte ${(d.hExt+d.rH).toFixed(2)} m — Pente ${d.pente}°
-      ${d.reh>0?` — ${d.reh} rehausse(s) (+${d.reh*13} cm)`:''}
-    </div>
+    <div class="dv-info">${structInfo}</div>
     <div class="dv-grid">
-      ${dvCard(sysLabels[d.sys]||d.sys,`Système constructif — Épaisseur murs ${(d.wt*100).toFixed(0)} cm`,sysImgs[d.sys],true)}
-      ${dvCard(toitLabels[d.toit]||d.toit,`Type de toiture — Pente ${d.pente}°${d.toit==='1PAN'?' — Orientation: '+document.getElementById('f-orient').options[document.getElementById('f-orient').selectedIndex].text:''}`,toitImgs[d.toit],true)}
+      ${structCard}
+      ${dvCard(toitLabels[d.toit]||d.toit,`Type de toiture${penteTxt}${orientTxt}`,toitImgs[d.toit],true)}
     </div></div>`;
 
   // DÉBORDS
@@ -1709,8 +1890,10 @@ function printIt(){
   document.getElementById('ps3-nom').textContent=nom;
   document.getElementById('ps3-fdate').textContent=ds;
 
-  if(MENUS.length>0){
-    let mhtml=`<div class="dv-section">
+  if(MENUS.length>0||TYPE==='garage'){
+    let mhtml='';
+    if(MENUS.length>0){
+    mhtml+=`<div class="dv-section">
       <div class="dv-section-title"><span class="ico">🚪</span> Menuiseries — ${MENUS.length} ouverture${MENUS.length>1?'s':''}</div>
       <div class="dv-info">Détail des portes, fenêtres et baies sélectionnées pour votre configuration :</div>
       <div class="dv-grid">`;
@@ -1727,25 +1910,37 @@ function printIt(){
             Paroi : <strong>${paroi}</strong> — Position : ${m.pos}%<br>
             Dimensions : <strong>${m.lw} × ${m.lh} cm</strong>
             ${m.seuil>0?`<br>Hauteur d'allège : ${m.seuil} cm`:''}
+            ${m.opt?`<br>Option : <strong>${optLabel(m)}</strong>`:''}
           </div>
           <span class="dv-tag">Ouverture ${i+1}</span>
         </div></div>`;
     });
     mhtml+=`</div></div>`;
+    }
 
     // Garage door
     if(TYPE==='garage'){
       const gW=document.getElementById('f-pglw').value||237;
       const gH=document.getElementById('f-pglh').value||200;
+      const pg=document.getElementById('f-pgtype');
+      const PG_IMGS={PGM:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-metalique.png',
+        PGPH:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-pin-vert-horizontal.png',
+        PGPV:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-pin-vert-veritcal.png',
+        PGAH:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-ayous-horizontal.png',
+        PGAV:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-ayous-aleatoir.png',
+        PGG:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-pin-gris.png',
+        PGN:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-douglas-noir.png',
+        PGBH:'https://abri-cerisier.fr/wp-content/uploads/2026/03/Porte-basculante-pin-brun-horizontal.png'};
       mhtml+=`<div class="dv-section">
         <div class="dv-section-title"><span class="ico">🏠</span> Porte de garage</div>
-        <div class="dv-grid">${dvCard(`Porte de garage ${gW}×${gH} cm`,'Porte sectionnelle motorisée.','',true)}</div></div>`;
+        <div class="dv-grid">${dvCard(`Porte de garage ${gW}×${gH} cm`,`Porte ${pg.options[pg.selectedIndex].text.toLowerCase()}.`,PG_IMGS[pg.value]||'',true)}</div></div>`;
     }
 
     document.getElementById('ps3-content').innerHTML=mhtml;
     document.getElementById('ps3').style.setProperty('display','block','important');
   } else {
-    document.getElementById('ps3').style.display='none';
+    // !important : la règle @media print .print-page{display:block!important} l'emporterait
+    document.getElementById('ps3').style.setProperty('display','none','important');
   }
 
   // Précharger toutes les images avant d'imprimer

@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 2.4.1
+Stable tag: 2.5.0
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,15 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 2.5.0 =
+* Dimensions sur mesure au centimètre (saisie libre en cm), arrondi de prix identique au configurateur du site
+* Carport : la dimension saisie est le hors tout de la toiture ; poteaux = hors tout − 20 cm par côté libre ; intérieur = poteaux − sections (règle du configurateur du site, tous types de toit)
+* Carport : option « adossé côté gauche / droit » (pas de débord ni de poteaux côté mur), poteaux en grille comme le site
+* Carport : cote « H faîtage 2,46 m » jusqu'en haut du bandeau + cote « 2,10 m sous ferme » ; page 2 sans madrier ni pente en toit plat
+* 35 menuiseries ajoutées (toutes celles des configurateurs abri et garage du site), portes ossature bardées H 186 cm
+* 8 portes de garage du site, options volets décoratifs / battants / jardinière par ouverture, avec prix
+* Corrections : fermeture « Fond » qui s'affichait aussi à droite, page 3 vide imprimée sans menuiserie, hachures hors du plan de masse, indications obsolètes du panneau
 
 = 1.2.0 =
 * Ajout du système de mise à jour automatique depuis GitHub
