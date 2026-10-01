@@ -158,6 +158,36 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:#f0f2f5;c
       </div>
     </div>
 
+    <div class="fs">
+      <h3>Rendu des vues</h3>
+      <div class="fr"><label>Style</label>
+        <select id="f-rendu" onchange="upd()">
+          <option value="real" selected>Réaliste (bardage, couverture)</option>
+          <option value="tech">Technique (traits)</option>
+        </select>
+      </div>
+      <div class="fr" id="r-bard"><label>Bardage</label>
+        <select id="f-bard" onchange="upd()">
+          <option value="sr_vert">Sapin rouge autoclave vert 21×130</option>
+          <option value="sr_brun">Sapin rouge autoclave brun 21×130</option>
+          <option value="ayous125">Ayous 21×125</option>
+          <option value="srn_gris">SRN 20×70 gris (vertical)</option>
+          <option value="douglas_noir">Douglas noir (vertical)</option>
+          <option value="ayous_alea">Ayous 21×45 et 21×90 (vertical)</option>
+        </select>
+      </div>
+      <div class="fr" id="r-couv"><label>Couverture</label>
+        <select id="f-couv" onchange="upd()">
+          <option value="bac">Bac acier gris RAL 7016</option>
+          <option value="shingle_n">Shingle noir</option>
+          <option value="shingle_b">Shingle brun</option>
+          <option value="shingle_v">Shingle vert</option>
+          <option value="tuile_g">Tuiles acier gris RAL 7016</option>
+          <option value="tuile_r">Tuiles acier rouge</option>
+        </select>
+      </div>
+    </div>
+
     <div class="fs" id="s-carport" style="display:none">
       <h3>Carport</h3>
       <div class="fr"><label>Section poteaux</label>
@@ -592,6 +622,281 @@ function dimL(p,x1,y1,x2,y2,label,off=28,col='#3d3d28'){
 // ════════════════════════════════════════════════════════
 // PLAN DE MASSE
 // ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// RENDU RÉALISTE — textures de bardage, couverture, menuiseries
+// Teintes relevées sur les visuels du site abri-cerisier.fr
+// ════════════════════════════════════════════════════════
+const FINITIONS={
+  madrier:     {label:'Madrier épicéa autoclave',          dir:'h', board:0.14,  c:['#c4b886','#8a7f55','#d8ceA2']},
+  sr_vert:     {label:'Sapin rouge autoclave vert 21×130', dir:'h', board:0.13,  c:['#bdb07e','#857a50','#d2c799']},
+  sr_brun:     {label:'Sapin rouge autoclave brun 21×130', dir:'h', board:0.13,  c:['#9e7642','#664826','#b48c57']},
+  ayous125:    {label:'Ayous 21×125',                      dir:'h', board:0.125, c:['#b8916a','#86633f','#caa780']},
+  srn_gris:    {label:'SRN 20×70 gris (vertical ajouré)',  dir:'v', boards:[0.07], gap:0.012, c:['#8f9087','#5c5d57','#a8a9a1']},
+  douglas_noir:{label:'Douglas noir (vertical)',           dir:'v', boards:[0.14,0.11,0.14,0.12], c:['#45463f','#262722','#5f605b']},
+  ayous_alea:  {label:'Ayous 21×45 et 21×90 (vertical)',   dir:'v', boards:[0.09,0.045,0.09,0.09,0.045,0.09,0.045,0.045,0.09], c:['#8a5f34','#5a3b1d','#a2764a']},
+};
+const COUVERTURES={
+  bac:      {label:'Bac acier gris RAL 7016', kind:'bac',     c:['#43474b','#25282b','#62676c']},
+  shingle_n:{label:'Shingle noir',            kind:'shingle', c:['#393637','#1f1d1e','#4d4a4b']},
+  shingle_b:{label:'Shingle brun',            kind:'shingle', c:['#5e4433','#38281d','#775944']},
+  shingle_v:{label:'Shingle vert',            kind:'shingle', c:['#4b5a42','#2c3627','#62735a']},
+  tuile_g:  {label:'Tuiles acier gris 7016',  kind:'tuile',   c:['#43474b','#25282b','#62676c']},
+  tuile_r:  {label:'Tuiles acier rouge',      kind:'tuile',   c:['#7a271d','#4a1410','#9c4136']},
+  epdm:     {label:'EPDM',                    kind:'plat',    c:['#2e2f31','#18191a','#444649']},
+};
+const isReal=()=>{const e=document.getElementById('f-rendu');return !e||e.value!=='tech';};
+function wallFin(d){
+  if(TYPE!=='carport'&&d.sys!=='ossature') return FINITIONS.madrier;
+  return FINITIONS[document.getElementById('f-bard')?.value]||FINITIONS.sr_vert;
+}
+function couvFin(d){
+  if(d.isQuadro) return COUVERTURES.epdm;
+  return COUVERTURES[document.getElementById('f-couv')?.value]||COUVERTURES.bac;
+}
+// Teinte d'une menuiserie bois d'après son libellé
+function menuFin(m,d){
+  const l=m.label.toLowerCase();
+  if(/alu|pvc|baie/.test(l)) return {c:['#3d4146','#222528','#5a5f65'],alu:true};
+  if(/noir/.test(l)) return FINITIONS.douglas_noir;
+  if(/gris/.test(l)) return FINITIONS.srn_gris;
+  if(/brun/.test(l)) return FINITIONS.sr_brun;
+  if(/ayous/.test(l)) return /aléatoire|vertical/.test(l)?FINITIONS.ayous_alea:FINITIONS.ayous125;
+  return d?wallFin(d):FINITIONS.sr_vert; // sans teinte précisée : même bois que le bardage
+}
+function shade(hex,amt){ // amt -1..1
+  const n=parseInt(hex.slice(1,7),16); let r=n>>16,g=(n>>8)&255,b=n&255;
+  const f=v=>Math.max(0,Math.min(255,Math.round(amt<0?v*(1+amt):v+(255-v)*amt)));
+  return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+// Générateur pseudo-aléatoire déterministe (même dessin à chaque rendu)
+function rng(seed){let s=(seed>>>0)||1;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function texDefs(svg){
+  let d=[...svg.children].find(c=>c.tagName==='defs');
+  if(!d){d=svgEl('defs',{});svg.insertBefore(d,svg.firstChild);}
+  return d;
+}
+let TEXN=0;
+function texPat(svg,attrs,build){
+  const id=`${svg.id||'sv'}-tx${++TEXN}`;
+  const p=svgEl('pattern',Object.assign({id,patternUnits:'userSpaceOnUse'},attrs));
+  build(p); texDefs(svg).appendChild(p);
+  return `url(#${id})`;
+}
+// Lames de bardage / madriers. ox,oy = origine (bas du mur) pour caler les lames sur le sol
+function patBoards(svg,f,sc,ox,oy,tone=0){
+  const [b0,dk,lt]=f.c.map(c=>shade(c,tone));
+  if(f.dir==='h'){
+    const bh=Math.max(2.2,f.board*sc), N=3, W=Math.max(90,bh*16), R=rng(Math.round(bh*97)+N);
+    return texPat(svg,{width:W,height:bh*N,x:ox,y:oy-bh*N*Math.ceil(1000/(bh*N))},p=>{
+      for(let i=0;i<N;i++){
+        const y=i*bh, c=shade(b0,(R()-.5)*.10);
+        p.appendChild(svgEl('rect',{x:0,y,width:W,height:bh,fill:c}));
+        if(bh>5) for(let k=0;k<2;k++){ // veinage
+          const gy=y+bh*(.3+.4*R()), a=bh*.18*(R()-.5);
+          p.appendChild(svgEl('path',{d:`M0 ${gy} Q ${W*.25} ${gy+a} ${W*.5} ${gy} T ${W} ${gy}`,stroke:dk,'stroke-width':.35,fill:'none',opacity:.35}));
+        }
+        p.appendChild(svgEl('rect',{x:0,y,width:W,height:Math.max(.35,bh*.09),fill:lt,opacity:.8}));
+        p.appendChild(svgEl('rect',{x:0,y:y+bh-Math.max(.55,bh*.13),width:W,height:Math.max(.55,bh*.13),fill:dk}));
+        const jx=W*(.15+.7*R()); // raccord de lame
+        p.appendChild(svgEl('line',{x1:jx,y1:y,x2:jx,y2:y+bh,stroke:dk,'stroke-width':.5,opacity:.55}));
+      }
+    });
+  }
+  // vertical
+  const ws=f.boards.map(w=>Math.max(1.6,w*sc)), gap=(f.gap||0)*sc, W=ws.reduce((a,b)=>a+b,0)+gap*ws.length;
+  const H=Math.max(60,3*sc), R=rng(Math.round(W*31));
+  return texPat(svg,{width:W,height:H,x:ox,y:oy},p=>{
+    p.appendChild(svgEl('rect',{x:0,y:0,width:W,height:H,fill:gap?'#1e1f1c':dk}));
+    let x=0;
+    ws.forEach(w=>{
+      const c=shade(b0,(R()-.5)*.14);
+      p.appendChild(svgEl('rect',{x,y:0,width:w,height:H,fill:c}));
+      if(w>4){const gx=x+w*(.3+.4*R());p.appendChild(svgEl('line',{x1:gx,y1:0,x2:gx+(R()-.5)*2,y2:H,stroke:dk,'stroke-width':.35,opacity:.35}));}
+      p.appendChild(svgEl('rect',{x,y:0,width:Math.max(.3,w*.08),height:H,fill:lt,opacity:.7}));
+      if(!gap) p.appendChild(svgEl('rect',{x:x+w-Math.max(.45,w*.08),y:0,width:Math.max(.45,w*.08),height:H,fill:dk}));
+      x+=w+gap;
+    });
+  });
+}
+// Couverture vue en élévation (pan vu de côté). rowH = pas apparent des rangs
+function patCouv(svg,cv,sc,ox,oy,penteRad){
+  const [b0,dk,lt]=cv.c, sin=Math.max(.15,Math.sin(penteRad||0.3));
+  if(cv.kind==='bac'||cv.kind==='plat'){
+    const w=Math.max(3,0.25*sc);
+    return texPat(svg,{width:w,height:10,x:ox,y:oy},p=>{
+      p.appendChild(svgEl('rect',{x:0,y:0,width:w,height:10,fill:b0}));
+      if(cv.kind==='bac'){
+        p.appendChild(svgEl('rect',{x:w*.42,y:0,width:Math.max(.6,w*.12),height:10,fill:lt}));
+        p.appendChild(svgEl('rect',{x:w*.54,y:0,width:Math.max(.5,w*.07),height:10,fill:dk}));
+      }
+    });
+  }
+  if(cv.kind==='shingle'){
+    const tw=Math.max(3,0.333*sc), rh=Math.max(1.6,0.143*sc*sin), R=rng(Math.round(tw*13));
+    return texPat(svg,{width:tw*2,height:rh*2,x:ox,y:oy},p=>{
+      for(let r=0;r<2;r++) for(let i=-1;i<3;i++){
+        const x=i*tw+(r?tw/2:0);
+        p.appendChild(svgEl('rect',{x,y:r*rh,width:tw,height:rh,fill:shade(b0,(R()-.5)*.18),stroke:dk,'stroke-width':.4}));
+      }
+    });
+  }
+  // tuiles acier : ondes
+  const tw=Math.max(3,0.185*sc), rh=Math.max(2,0.35*sc*sin);
+  return texPat(svg,{width:tw,height:rh,x:ox,y:oy},p=>{
+    p.appendChild(svgEl('rect',{x:0,y:0,width:tw,height:rh,fill:b0}));
+    p.appendChild(svgEl('path',{d:`M0 ${rh*.15} Q ${tw/2} ${rh*.75} ${tw} ${rh*.15}`,stroke:lt,'stroke-width':Math.max(.5,tw*.08),fill:'none',opacity:.8}));
+    p.appendChild(svgEl('rect',{x:0,y:rh-Math.max(.6,rh*.12),width:tw,height:Math.max(.6,rh*.12),fill:dk}));
+  });
+}
+// Sol : bande de gazon sous la ligne de terre
+function drawGround(svg,x1,x2,gndY){
+  sRect(svg,x1,gndY,x2-x1,5,'#b9cc93','none',0);
+  sLine(svg,x1,gndY,x2,gndY,'#7c8f5c',1.5);
+}
+// Verre : fond bleuté + reflets
+function drawGlass(svg,x,y,w,h,frosted){
+  sRect(svg,x,y,w,h,frosted?'#e6ecee':'#c9dde6','none',0);
+  if(!frosted&&w>4&&h>4){
+    const k=Math.min(w,h);
+    svg.appendChild(svgEl('line',{x1:x+w*.15,y1:y+h*.55,x2:x+w*.15+k*.4,y2:y+h*.55-k*.4,stroke:'#fff','stroke-width':Math.max(.6,k*.06),opacity:.75}));
+    svg.appendChild(svgEl('line',{x1:x+w*.32,y1:y+h*.6,x2:x+w*.32+k*.25,y2:y+h*.6-k*.25,stroke:'#fff','stroke-width':Math.max(.4,k*.035),opacity:.6}));
+  }
+}
+// Menuiserie dessinée (porte, fenêtre, baie, hublot) avec ses options
+function drawMenuReal(svg,m,mx,my,mW,mH,sc,d){
+  const l=m.label.toLowerCase(), f=menuFin(m,d), [b0,dk,lt]=f.c;
+  const fr=Math.max(1.4,0.045*sc); // cadre 4,5 cm
+  if(m.opt==='VBF'||m.opt==='VBP'||m.opt==='VDF'||m.opt==='VDP'){ // volets de part et d'autre
+    const vw=mW/2;
+    [[mx-vw-fr*.5,'L'],[mx+mW+fr*.5,'R']].forEach(([vx])=>{
+      sRect(svg,vx,my,vw,mH,b0,dk,.8);
+      const n=Math.max(2,Math.round(vw/(0.1*sc)));
+      for(let i=1;i<n;i++) sLine(svg,vx+vw*i/n,my,vx+vw*i/n,my+mH,dk,.5);
+      sLine(svg,vx,my+mH*.18,vx+vw,my+mH*.18,dk,.9); sLine(svg,vx,my+mH*.82,vx+vw,my+mH*.82,dk,.9);
+      sLine(svg,vx,my+mH*.82,vx+vw,my+mH*.18,dk,.9); // écharpe en Z
+    });
+  }
+  if(/hublot/.test(l)){
+    const r=mW/2, cx=mx+r, cy=my+r;
+    svg.appendChild(svgEl('circle',{cx,cy,r,fill:dk}));
+    const g=svgEl('circle',{cx,cy,r:r-fr,fill:'#c9dde6'});svg.appendChild(g);
+    svg.appendChild(svgEl('line',{x1:cx-r*.35,y1:cy+r*.1,x2:cx+r*.05,y2:cy-r*.3,stroke:'#fff','stroke-width':Math.max(.6,r*.08),opacity:.75}));
+    return;
+  }
+  sRect(svg,mx,my,mW,mH,f.alu?b0:shade(dk,.1),dk,.8); // dormant
+  const ix=mx+fr, iy=my+fr, iw=mW-fr*2, ih=mH-(m.type==='porte'?fr:fr*2);
+  if(m.type==='fenetre'||/baie/.test(l)){
+    const n=/baie|200|120|panoram/.test(l)&&mW>mH?2:1;
+    for(let i=0;i<n;i++){
+      const px=ix+i*iw/n, pw=iw/n;
+      drawGlass(svg,px+fr*.4,iy+fr*.4,pw-fr*.8,ih-fr*.8,/acidifi/.test(l));
+      if(i>0) sRect(svg,px-fr*.4,iy,fr*.8,ih,f.alu?b0:shade(dk,.1),'none',0);
+    }
+    if(/ouvrante/.test(l)) sLine(svg,ix+iw/2,iy,ix+iw/2,iy+ih,shade(dk,.1),fr*.8);
+    if(m.opt==='115'){ // jardinière
+      const jh=Math.max(2,0.18*sc);
+      sRect(svg,mx-fr,my+mH,mW+fr*2,jh,b0,dk,.8);
+      for(let i=1;i<3;i++) sLine(svg,mx-fr,my+mH+jh*i/3,mx+mW+fr,my+mH+jh*i/3,dk,.4);
+      for(let i=0;i<5;i++) svg.appendChild(svgEl('circle',{cx:mx+mW*(.1+.2*i),cy:my+mH-1,r:Math.max(1.2,jh*.35),fill:i%2?'#6f9a4d':'#89b35f'}));
+    }
+    return;
+  }
+  // Portes : 1 ou 2 vantaux (tierce = 2/3 + 1/3)
+  const leaves=/double/.test(l)||m.lw>=150?[.5,.5]:(/tierce/.test(l)||m.lw>=115?[2/3,1/3]:[1]);
+  const vit=/1\/4/.test(l)?.25:/2\/4|semi/.test(l)?.5:/fenêtre|coulissante|vitrée/.test(l)?.75:0;
+  let x=ix;
+  leaves.forEach((k,i)=>{
+    const w=iw*k;
+    sRect(svg,x,iy,w,ih,patBoards(svg,{dir:'v',boards:[0.1],c:f.c},sc,x,iy),dk,.7);
+    if(vit>0){
+      const gh=ih*vit-fr;
+      sRect(svg,x+fr*.6,iy+fr*.6,w-fr*1.2,gh,shade(dk,.1),'none',0);
+      drawGlass(svg,x+fr,iy+fr,w-fr*2,gh-fr*.8,/acidifi/.test(l));
+    } else if(/ z |"z"|en z/.test(' '+l+' ')){
+      sLine(svg,x,iy+ih*.15,x+w,iy+ih*.15,dk,1); sLine(svg,x,iy+ih*.85,x+w,iy+ih*.85,dk,1);
+      sLine(svg,x,iy+ih*.85,x+w,iy+ih*.15,dk,1);
+    }
+    // poignée
+    const hx=leaves.length===1||i===0?x+w-fr*1.6:x+fr*.6;
+    sRect(svg,hx,iy+ih*.52,Math.max(.8,fr*.5),Math.max(2,ih*.06),'#2b2b2b','none',0);
+    x+=w;
+  });
+}
+
+// Toiture en rendu réaliste (abri / garage)
+function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
+  const rx=baseX-oL, rw=drawW+oL+oR, roofH=g.rH*sc;
+  const fin=wallFin(d), cv=couvFin(d), gndY=baseY+g.wallH*sc;
+  const wallPat=patBoards(svg,fin,sc,baseX,gndY);
+  const rive=shade(fin.c[0],-.18), t=Math.max(3,0.16*sc), cvw=Math.max(1.4,0.05*sc);
+  // Bande de rive + couverture le long d'une ligne de pente (liste de points du bas de rive)
+  const riveBand=pts=>{
+    const up=pts.map(([x,y])=>[x,y-t]).reverse();
+    sPoly(svg,pts.concat(up),rive,shade(rive,-.35),.8);
+    const top=pts.map(([x,y])=>`${x},${y-t}`).join(' ');
+    svg.appendChild(svgEl('polyline',{points:top,fill:'none',stroke:cv.c[1],'stroke-width':cvw,'stroke-linejoin':'round'}));
+  };
+  if(g.roofT==='flat'){
+    const slabH=Math.max(8,0.39*sc);
+    sRect(svg,rx,baseY-slabH,rw,slabH,patBoards(svg,fin,sc,rx,baseY,-.06),shade(rive,-.35),1);
+    sRect(svg,rx-1,baseY-slabH-cvw,rw+2,cvw,cv.c[1],'none',0);
+    return;
+  }
+  if(g.roofT==='triangle'){
+    const ty=baseY-roofH, px=baseX+drawW/2, k=roofH/(drawW/2||1);
+    sPoly(svg,[[baseX,baseY],[px,ty],[baseX+drawW,baseY]],wallPat,shade(rive,-.35),1);
+    riveBand([[rx,baseY+k*oL],[px,ty],[rx+rw,baseY+k*oR]]);
+    sTxtBg(svg,px,baseY-roofH*.3,`${d.pente}°`,8,'#555');
+    return;
+  }
+  if(g.roofT==='trapL'||g.roofT==='trapR'){
+    const ty=baseY-roofH, k=roofH/(drawW||1), L=g.roofT==='trapL';
+    sPoly(svg,L?[[baseX,baseY],[baseX,ty],[baseX+drawW,baseY]]:[[baseX,baseY],[baseX+drawW,baseY],[baseX+drawW,ty]],wallPat,shade(rive,-.35),1);
+    riveBand(L?[[rx,ty-k*oL],[rx+rw,baseY+k*oR]]:[[rx,baseY+k*oL],[rx+rw,ty-k*oR]]);
+    sTxtBg(svg,baseX+drawW*(L?.35:.65),baseY-roofH*.28,`${d.pente}°`,8,'#555');
+    sTxt(svg,L?baseX-5:baseX+drawW+5,ty-t-3,'faîte',7,'#888',L?'end':'start');
+    return;
+  }
+  if(g.roofT==='slope2'||g.roofT==='slope1'){
+    const ty=baseY-roofH, top=g.roofT==='slope1'?ty-Math.max(5,0.12*sc):ty;
+    sRect(svg,rx,top,rw,baseY-top,patCouv(svg,cv,sc,rx,top,d.penteRad),cv.c[1],1);
+    sRect(svg,rx,baseY-Math.max(1.5,0.05*sc),rw,Math.max(1.5,0.05*sc),rive,'none',0); // planche d'égout
+    if(g.roofT==='slope2'){
+      sRect(svg,rx,ty-Math.max(1.5,0.04*sc),rw,Math.max(2.5,0.08*sc),cv.c[1],'none',0); // faîtière
+      sTxt(svg,rx+rw/2,ty-7,'faîte',7,'#555');
+    } else {
+      sRect(svg,rx,top,rw,Math.max(3,0.12*sc),patBoards(svg,fin,sc,rx,ty,-.06),'none',0); // acrotère
+      sTxt(svg,rx+rw/2,top-6,'Acrotère / faîte',7,'#555');
+    }
+    sTxtBg(svg,rx+rw/2,ty+roofH/2,`pente ${d.pente}°`,8,'#555');
+    return;
+  }
+}
+// Bouts de madriers croisés aux angles (vue en élévation)
+function drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc){
+  const fin=FINITIONS.madrier, cw=(0.10+d.wt)*sc, h=gndY-baseY;
+  const pat=patBoards(svg,fin,sc,baseX,gndY-fin.board*sc/2,-.14);
+  sRect(svg,baseX-cw,baseY,cw,h,pat,shade(fin.c[1],-.3),.8);
+  sRect(svg,baseX+drawW,baseY,cw,h,pat,shade(fin.c[1],-.3),.8);
+}
+// Porte de garage dessinée selon son modèle
+function drawGarageDoorReal(svg,x,y,w,h,sc){
+  const t=document.getElementById('f-pgtype').value;
+  const M={PGPH:['sr_vert','h'],PGPV:['sr_vert','v'],PGBH:['sr_brun','h'],PGG:['srn_gris','v'],PGN:['douglas_noir','v'],PGAH:['ayous125','h'],PGAV:['ayous_alea','v']};
+  const fr=Math.max(1.5,0.05*sc);
+  sRect(svg,x-fr,y-fr,w+fr*2,h+fr,'#2f3236','none',0); // huisserie
+  if(M[t]){
+    const f=FINITIONS[M[t][0]];
+    const ff=M[t][1]==='h'&&f.dir==='v'?Object.assign({},f,{dir:'h',board:0.12}):(M[t][1]==='v'&&f.dir==='h'?Object.assign({},f,{dir:'v',boards:[0.12]}):f);
+    sRect(svg,x,y,w,h,patBoards(svg,ff,sc,x,y+h),'#2f3236',.8);
+  } else { // métal / sectionnelle : panneaux nervurés
+    sRect(svg,x,y,w,h,t==='PGM'?'#c7cacc':'#e3e4e2','#555',.8);
+    const n=t==='PGM'?Math.max(6,Math.round(h/(0.1*sc))):4;
+    for(let i=1;i<n;i++) sLine(svg,x,y+h*i/n,x+w,y+h*i/n,'#8b8f93',t==='PGM'?.5:1);
+  }
+  sRect(svg,x+w*.46,y+h*.55,w*.08,Math.max(1.5,0.03*sc),'#222','none',0); // poignée
+}
+
 function drawPlan(svg,d,vw=480,vh=340){
   clr(svg);
   const PAD=70;
@@ -869,6 +1174,12 @@ function drawElev(svg,d,side,vw=320,vh=260){
   const baseY=gndY-wallHpx;
   const wt=d.wt*sc;
 
+  const real=isReal();
+  if(real){
+    drawGround(svg,PAD.l/2,vw-PAD.r/2,gndY);
+    if(d.sys!=='ossature') drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc);
+    sRect(svg,baseX,baseY,drawW,wallHpx,patBoards(svg,wallFin(d),sc,baseX,gndY),'#3a3828',1.2);
+  } else {
   // Ground + hatch
   sLine(svg,PAD.l/2,gndY,vw-PAD.r/2,gndY,'#888',2);
   for(let i=0;i<18;i++) sLine(svg,PAD.l/2+i*14,gndY,PAD.l/2+i*14-10,gndY+12,'#ddd',.5);
@@ -885,6 +1196,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
     const lh=(d.sys==='madrier28'?0.028:0.045)*sc;
     let ly=gndY-lh;
     while(ly>baseY+2){sLine(svg,baseX+2,ly,baseX+drawW-2,ly,'#c8d6e5',.5);ly-=lh;}
+  }
   }
 
   // Roof
@@ -940,12 +1252,15 @@ function drawElev(svg,d,side,vw=320,vh=260){
     const mx=baseX+(m.pos/100)*drawW-mW/2;
     const my=gndY-mH-seuilPx;
     const c=m.type==='fenetre'?'#3498db':'#27ae60';
+    if(real) drawMenuReal(svg,m,mx,my,mW,mH,sc,d);
+    else {
     sRect(svg,mx,my,mW,mH,m.type==='fenetre'?'#d6eaf8':'#d5f5e3',c,1.5);
     if(m.type==='fenetre'){
       sLine(svg,mx+mW/2,my,mx+mW/2,my+mH,c,.7);
       sLine(svg,mx,my+mH/2,mx+mW,my+mH/2,c,.7);
     } else {
       sLine(svg,mx+mW/2,my,mx+mW/2,my+mH,c,.7);
+    }
     }
     // Dimensions label on menuiserie
     sTxtBg(svg,mx+mW/2,my+mH/2,`${m.lw}×${m.lh}`,6,'#555');
@@ -961,9 +1276,12 @@ function drawElev(svg,d,side,vw=320,vh=260){
     const gW=(parseFloat(document.getElementById('f-pglw').value)||237)/100*sc;
     const gH=(parseFloat(document.getElementById('f-pglh').value)||200)/100*sc;
     const gx=baseX+drawW/2-gW/2, gy=gndY-gH;
+    if(real) drawGarageDoorReal(svg,gx,gy,gW,gH,sc);
+    else {
     sRect(svg,gx,gy,gW,gH,'#ecf0f1','#2c3e50',2);
     for(let i=1;i<4;i++) sLine(svg,gx,gy+(gH/4)*i,gx+gW,gy+(gH/4)*i,'#aaa',.5);
     sTxt(svg,gx+gW/2,gy+gH/2,'Porte garage',7,'#555');
+    }
   }
 
   // ── DIMENSION LINES ──────────────────────────────────
@@ -1063,9 +1381,15 @@ function drawCarportElev(svg,d,side,vw,vh){
   const rx=baseX-oL, rw=dW+oL+oR; // roof full width
   const ps=Math.max(6,parseFloat(document.getElementById('f-pot').value)*sc||0.12*sc);
 
+  const real=isReal(), fin=wallFin(d), cv=couvFin(d);
+  const isAlu=document.getElementById('f-pot').value==='0.15';
+  const potC=isAlu?['#4a5056','#2c3035','#68707a']:['#c3b47f','#8a7d50','#d8cc9c'];
+  if(real) drawGround(svg,PAD.l/2,vw-PAD.r/2,gndY);
+  else {
   // Ground + hatch
   sLine(svg,PAD.l/2,gndY,vw-PAD.r/2,gndY,'#888',2);
   for(let i=0;i<18;i++) sLine(svg,PAD.l/2+i*14,gndY,PAD.l/2+i*14-10,gndY+12,'#ddd',.5);
+  }
 
   // Posts — vue face/fond : poteaux d'une rangée ; vue côté : rangées en profondeur
   // Côté adossé vu de face : mur ; vue du côté adossé : le mur cache les poteaux
@@ -1080,8 +1404,15 @@ function drawCarportElev(svg,d,side,vw,vh){
   } else {
     ts.forEach(t=>{
       const px=baseX+(dW-ps)*t;
+      if(real){
+        sRect(svg,px,gndY-hpx,ps,hpx,potC[0],potC[1],.8);
+        sRect(svg,px,gndY-hpx,Math.max(.6,ps*.18),hpx,potC[2],'none',0);
+        sRect(svg,px+ps-Math.max(.6,ps*.18),gndY-hpx,Math.max(.6,ps*.18),hpx,potC[1],'none',0);
+        sRect(svg,px-2,gndY-3,ps+4,3,'#5a5e62','#333',.6); // platine
+      } else {
       sRect(svg,px,gndY-hpx,ps,hpx,'#d5d8dc','#555',1.5);
       sRect(svg,px-2,gndY-3,ps+4,3,'#aaa','#555',.8); // base plate
+      }
     });
   }
   if(isFace&&d.ados!=='non'){
@@ -1096,8 +1427,11 @@ function drawCarportElev(svg,d,side,vw,vh){
   const CLOS={aucune:[],gauche:['gauche'],droite:['droite'],fond:['fond'],gd:['gauche','droite'],gdf:['gauche','droite','fond']};
   const showClos=(CLOS[clos]||[]).includes(side);
   if(showClos&&!wallSide){
+    if(real) sRect(svg,baseX,gndY-hpx,dW,hpx,patBoards(svg,fin,sc,baseX,gndY),'#3a3828',1);
+    else {
     sRect(svg,baseX,gndY-hpx,dW,hpx,'rgba(200,215,230,0.3)','#7f8c8d',1,'5 3');
     sTxt(svg,baseX+dW/2,gndY-hpx/2,'Fermeture bardage',7,'#888');
+    }
   }
 
   // Roof shape — SIMPLIFIED
@@ -1108,17 +1442,27 @@ function drawCarportElev(svg,d,side,vw,vh){
   if(isFlat){
     // Bandeau toit plat : 36 cm au-dessus de la ferme (2,10 → 2,46 m)
     const slabH=Math.max(6,rHpx);
+    if(real){
+      sRect(svg,rx,topY-slabH,rw,slabH,patBoards(svg,fin,sc,rx,topY),'#3a3828',1);
+      sRect(svg,rx-1,topY-slabH-Math.max(1.4,0.04*sc),rw+2,Math.max(1.4,0.04*sc),cv.c[1],'none',0);
+    } else
     sRect(svg,rx,topY-slabH,rw,slabH,'#d5d8dc','#555',1.5);
   } else if(d.toit==='2PANS'){
     if(isFace){
       // Triangle (gable)
       const peak=topY-rHpx;
+      if(real){
+        sPoly(svg,[[rx,topY],[rx+rw/2,peak],[rx+rw,topY]],patBoards(svg,fin,sc,rx,topY),'#3a3828',1);
+        const t=Math.max(3,0.16*sc);
+        sPoly(svg,[[rx,topY],[rx+rw/2,peak],[rx+rw,topY],[rx+rw,topY-t],[rx+rw/2,peak-t],[rx,topY-t]],shade(fin.c[0],-.18),'#3a3828',.8);
+        svg.appendChild(svgEl('polyline',{points:`${rx},${topY-t} ${rx+rw/2},${peak-t} ${rx+rw},${topY-t}`,fill:'none',stroke:cv.c[1],'stroke-width':Math.max(1.4,0.05*sc)}));
+      } else
       sPoly(svg,[[rx,topY],[rx+rw/2,peak],[rx+rw,topY]],'#d5d8dc','#555',1.5);
       sTxt(svg,rx+rw*0.3,topY-rHpx*0.3,`${d.pente}°`,8,'#888');
       sTxt(svg,rx+rw*0.7,topY-rHpx*0.3,`${d.pente}°`,8,'#888');
     } else {
       // Side view: slope rectangle
-      sRect(svg,rx,topY-rHpx,rw,rHpx,'#d5d8dc','#555',1.5);
+      sRect(svg,rx,topY-rHpx,rw,rHpx,real?patCouv(svg,cv,sc,rx,topY-rHpx,d.penteRad):'#d5d8dc',real?cv.c[1]:'#555',1.5);
       sTxt(svg,rx+rw/2,topY-rHpx/2,`pente ${d.pente}°`,8,'#888');
       sTxt(svg,rx+rw/2,topY-rHpx-8,'faîte',7,'#555');
     }
@@ -1143,13 +1487,14 @@ function drawCarportElev(svg,d,side,vw,vh){
                    (orient==='droite'&&side==='gauche')||(orient==='gauche'&&side==='droite');
       const ht=isHigh?topY-rHpx:topY;
       const slabH=Math.max(8,0.39*sc);
-      sRect(svg,rx,ht-slabH,rw,slabH,'#d5d8dc','#555',1.5);
+      sRect(svg,rx,ht-slabH,rw,slabH,real?patBoards(svg,fin,sc,rx,ht):'#d5d8dc',real?'#3a3828':'#555',1.5);
     } else {
       // Right triangle (slope visible)
       const highY=topY-rHpx;
       const lowY=topY;
       const lyL=highL?highY:lowY, lyR=highR?highY:lowY;
-      sPoly(svg,[[rx,lyL],[rx+rw,lyR],[rx+rw,topY],[rx,topY]],'#d5d8dc','#555',1.5);
+      sPoly(svg,[[rx,lyL],[rx+rw,lyR],[rx+rw,topY],[rx,topY]],real?patBoards(svg,fin,sc,rx,topY):'#d5d8dc',real?'#3a3828':'#555',1.5);
+      if(real) svg.appendChild(svgEl('line',{x1:rx,y1:lyL-1,x2:rx+rw,y2:lyR-1,stroke:cv.c[1],'stroke-width':Math.max(1.4,0.05*sc)}));
       sTxt(svg,rx+rw/2,(lyL+lyR)/2-rHpx*0.1,`${d.pente}°`,8,'#888');
       const faiteSide=highL?'start':'end';
       const faiteX=highL?rx+3:rx+rw-3;
@@ -1183,6 +1528,7 @@ function drawCarportElev(svg,d,side,vw,vh){
 // DRAW ROOF (shared between abri and carport)
 // ════════════════════════════════════════════════════════
 function drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw){
+  if(isReal()){drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc);return;}
   const rx=baseX-oL, rw=drawW+oL+oR;
   const roofH=g.rH*sc;
 
@@ -1728,6 +2074,9 @@ function upd(){
   document.getElementById('r-pente').style.display=d.isFlat?'none':'';
   document.getElementById('r-orient').style.display=d.toit==='1PAN'?'':'none';
   updHints(d);
+  const real=isReal();
+  document.getElementById('r-bard').style.display=real&&(TYPE==='carport'||d.sys==='ossature')?'':'none';
+  document.getElementById('r-couv').style.display=real&&!d.isQuadro?'':'none';
 
   drawPlan(document.getElementById('sv-plan'),d,480,340);
   drawElev(document.getElementById('sv-face'),d,'face',380,280);
