@@ -153,6 +153,9 @@
 @media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) {
   body:not(.cer-plan-open) .cer-plan__prix span { display: none; }
   body:not(.cer-plan-open) .cer-plan__prix { justify-content: flex-start; }
+  /* ancré : prix + dessin seulement (les photos sont dans le plein écran) ; jamais plus haut que l'écran, le × reste visible */
+  body:not(.cer-plan-open) .cer-plan__real { display: none; }
+  body:not(.cer-plan-open) .cer-plan__in { max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

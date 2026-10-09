@@ -76,6 +76,8 @@ add_action( 'wp_enqueue_scripts', function () {
 add_filter( 'rocket_delay_js_exclusions', function ( $l ) { $l[] = 'acft-engine'; $l[] = 'cer-configurateur'; $l[] = 'CER_CFG'; return $l; } );
 add_filter( 'rocket_exclude_js', function ( $l ) { $l[] = '(.*)acft-engine(.*).js'; $l[] = '(.*)cer-configurateur(.*).js'; return $l; } );
 add_filter( 'rocket_exclude_defer_js', function ( $l ) { $l[] = 'acft-engine'; $l[] = 'cer-configurateur'; return $l; } );
+// CSS servie telle quelle (version = date du fichier) : une copie minifiée de WP Rocket resterait sur l'ancienne version après une mise à jour
+add_filter( 'rocket_exclude_css', function ( $l ) { $l[] = '/wp-content/plugins/abri-cerisier-fiche-technique/assets/(.*).css'; return $l; } );
 
 /** Dossier des plans. */
 function cer_cfg_upload( $sous = '' ) {
