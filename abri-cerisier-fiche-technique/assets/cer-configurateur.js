@@ -16,7 +16,7 @@
       lar: { sm: 'abd0e3e', sel: '3d0c5fd', num: 'ea2e8b7' }, pro: { sm: '2b198c4', sel: 'f5301a4', num: 'ceb97a0' },
       toit: ['ab05175'], orient: ['65ad968', 'e14f4f0'], pente: ['d345f3d', '316d1b5'], sys: ['3ec5448'], ep: ['5b29cdd'],
       bard: ['cfad244', '6c48ecc', '1e0e5a2', 'fa4ccc4'], couv: ['feabbf9', '3fa0fbb', '42f2a4f'], gout: ['ee8bcb3'],
-      reh: { q: '4cfda5e', n: 'af57fcc' }, plan: ['d85fc32'],
+      reh: { q: '4cfda5e', n: 'af57fcc' }, plan: ['d85fc32'], pign: ['5ed03dc'], profu: ['3869f3f'], soub: ['fd182b9'],
       ext: { q: '2a21884', m: { fond: '332ab45', gauche: 'fb3dce9', droite: '4dbeea3', face: '417e37c' },
         rq: { face: '8e6cf2b', fond: 'f0ec21a', gauche: 'fadfe0f', droite: '8aa219a' },
         rs: { face: '50e0fac', fond: '0a1e6b8', gauche: '3ffcfa1', droite: '95db202' }, type: ['2fdae02', 'fb4fb2c'] },
@@ -28,7 +28,7 @@
       lar: { sm: '54eee0e', sel: 'ae1de82', num: '3ef605e' }, pro: { sm: '24e5c52', sel: 'a1d354f', num: 'ab80f95' },
       toit: ['e0656df'], orient: ['0813bd0', '8eca213'], pente: ['deffd3c', 'ebef2f6'], sys: ['eceeadb'], ep: ['dbbbb52'],
       bard: ['4a06bf9', '2a3b113', '5bfec13', '5a0e9f2'], couv: ['d1ac115', 'a72f0f0', '32350ae'], gout: ['fa9b171'],
-      reh: { q: '1d54ffa', n: '02eefe8' }, plan: ['629bcda'],
+      reh: { q: '1d54ffa', n: '02eefe8' }, plan: ['629bcda'], pign: ['f1d4e6f'], profu: ['d71daf3'], soub: ['478fa40'],
       ext: { q: 'c13ccea', m: { fond: 'fd1f800', gauche: 'dac3caf', droite: '74ec3e5', face: 'ae31213' },
         rq: { face: 'f40cca6', fond: '7c29fac', gauche: '1e23fe8', droite: '5cee052' },
         rs: { face: 'c4b422c', fond: '51bea7d', gauche: 'a7403ef', droite: 'eace337' }, type: ['a326aeb', 'acfbece'] },
@@ -40,7 +40,7 @@
       lar: { sm: '6a0b809', sel: '05254a4', num: '1196d7b' }, pro: { sm: '3d89f71', sel: 'baec4ce', num: '8be1c4f' },
       ados: ['1ce6f02'], toit: ['a14d4e4'], bandeau: ['afcef0a'], orient: ['02a009e', 'ee27fe6'], pente: ['eef52ce', '1604e95'],
       pot: ['25251c8'], espL: ['29ccded'], espP: ['2199535'], reh: { q: 'd292e23', n: ['bff5905', '1049eb0', 'e99494f'] },
-      clos: { q: '71bc1a9', sides: '15b2a59', type: ['9ccc9e2', 'a3d30ce'] }, couv: ['2dc93ac', 'b12bc55'], gout: ['b9ea023']
+      clos: { q: '71bc1a9', sides: '15b2a59', type: ['9ccc9e2', 'a3d30ce'] }, couv: ['2dc93ac', 'b12bc55'], gout: ['b9ea023'], supp: ['75b3e36']
     }
   };
   var M = MAPS[CFG.kind];
@@ -219,6 +219,8 @@
       'f-couv': 'bac', 'f-bard': 'sr_vert', 'f-ext-ferm': 'non', 'f-ext-plan': 'non', 'f-clos': 'aucune', 'f-ados': 'non', 'f-pot': '0.12', 'f-esp': '4',
       'f-pgtype': 'PGM', 'f-pglw': '237', 'f-pglh': '200', 'f-sys': 'madrier28', 'f-clos-type': '', 'f-bandeau': '', 'f-espL': '' };
     var cv = first(M.couv); if (cv) cfg['f-couv'] = T.couv(cv.label);
+    // Sous-face vue d'en dessous (carport) : planchettes, OSB (EPDM), feutre anti-condensation ou bac acier nu
+    cfg['f-sousface'] = cv ? (/planchette/i.test(cv.label) ? 'planchette' : /OSB/i.test(cv.label) ? 'osb' : /feutre/i.test(cv.label) ? 'feutre' : 'non') : '';
     var gt = first(M.gout); if (gt && /^oui/i.test(gt.label)) cfg['f-gout'] = 'oui';
     ST.ext = {};
     if (CFG.kind === 'carport') {
@@ -233,6 +235,9 @@
         var ty = first(M.clos.type); cfg['f-clos-type'] = ty ? T.remplissage(ty.label) : '';
       }
       var bd = first(M.bandeau); if (bd) cfg['f-bandeau'] = T.bandeau(bd.label);
+      // Pieds de poteaux : plots béton, pieds galva à visser (réglables ou non), à sceller ; sinon platine
+      var sp = first(M.supp);
+      cfg['f-supp'] = !sp || /^non/i.test(sp.label) ? 'non' : /b[ée]ton/i.test(sp.label) ? 'plot' : /r[ée]glable/i.test(sp.label) ? 'reglable' : /scell/i.test(sp.label) ? 'scelle' : 'visser';
       s.ext = { face: 0, fond: 0, gauche: 0, droite: 0 };
     } else {
       var sy = first(M.sys), ep = first(M.ep);
@@ -241,6 +246,10 @@
       var bd2 = first(M.bard); if (bd2) cfg['f-bard'] = T.bard(bd2.label);
       s.reh = yes(M.reh.q) ? (num(M.reh.n) || 0) : 0; cfg['f-reh'] = String(s.reh);
       var pl = first(M.plan); cfg['f-plan'] = pl ? T.plan(pl.label) : 'non';
+      // Pignon (classique / biseauté), profilés alu d'angle, soubassement parpaing (+20 cm)
+      var pg = first(M.pign); cfg['f-pignon'] = pg && /biseau/i.test(pg.label) ? 'biseaute' : 'classique';
+      cfg['f-profu'] = yes(M.profu[0]) ? 'oui' : 'non';
+      cfg['f-soub'] = yes(M.soub[0]) ? 'oui' : 'non';
       s.ext = { face: 0, fond: 0, gauche: 0, droite: 0 };
       if (yes(M.ext.q)) {
         ['face', 'fond', 'gauche', 'droite'].forEach(function (k) { s.ext[k] = num(M.ext.m[k]) || 0; });
@@ -365,7 +374,7 @@
     } else {
       rows = [['Dimensions extérieures', fr(d.L) + ' × ' + fr(d.P) + ' m'], ['Dimensions intérieures', fr(d.intL) + ' × ' + fr(d.intP) + ' m'],
         ['Surface intérieure', fr(d.intL * d.intP) + ' m²'], ['Hauteur intérieure', fr(d.hInt) + ' m'],
-        d.rH > 0 ? ['Hauteur au faîtage', fr(d.hExt + d.rH) + ' m'] : null, ['Emprise toiture (hors tout)', fr(d.htL) + ' × ' + fr(d.htP) + ' m']].filter(Boolean);
+        d.rH > 0 ? ['Hauteur au faîtage', fr(d.hExt + d.rH + (d.soub || 0)) + ' m'] : null, ['Emprise toiture (hors tout)', fr(d.htL) + ' × ' + fr(d.htP) + ' m']].filter(Boolean);
     }
     return rows;
   }
@@ -377,6 +386,9 @@
     svg.style.display = ''; empty.style.display = 'none';
     if (!shownOnce) { shownOnce = true; if (memoGet() !== 'min') document.body.classList.remove('cer-plan-min'); }
     svg.setAttribute('data-v', VIEW === 'plan' ? 'plan' : 'vue');
+    ST.scaleBar = true;                                   // barre d'échelle sur chaque vue
+    ST.scale = E.commonScale(L.d, 380, 280);              // les quatre élévations à la même échelle
+    ST.planScale = null;
     if (VIEW === 'plan') { svg.setAttribute('viewBox', '0 0 480 340'); E.drawPlan(svg, L.d, 480, 340); }
     else { svg.setAttribute('viewBox', '0 0 380 280'); E.drawElev(svg, L.d, VIEW, 380, 280); }
     P.querySelector('.cer-plan__dims').innerHTML = dimsList(L).map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
@@ -439,7 +451,7 @@
       }
       var key = m[1] || ('Extension ' + lab.replace(/\s*\(.*$/, '').toLowerCase());
       var v = vals.map(nice).join(', ');
-      if (/^(Largeur|Profondeur)$/.test(key) || /^Extension /.test(key) || /largeur|profondeur/.test(key)) v += ' m';
+      if (/^(Largeur|Profondeur)$/.test(key) || /^Extension /.test(key) || /^Plancher extérieur, /.test(key)) v += ' m';
       if (key === 'Rehausses') v += ' × 13 cm';
       rows.push({ g: m[2], k: key, v: v, p: price });
     });
@@ -447,7 +459,7 @@
     return rows.map(function (r, i) { r.i = i; return r; }).sort(function (a, b) { return (ORDER.indexOf(a.g) - ORDER.indexOf(b.g)) || (a.i - b.i); });
   }
   function polish() {
-    var tot = numTxt((form.querySelector('.field-453ead0 .wapf-calc-text') || {}).textContent);
+    var tot = numTxt((form.querySelector('.blocdimpr1 .wapf-calc-text, .field-453ead0 .wapf-calc-text, .field-d0abad4 .wapf-calc-text') || {}).textContent);
     var base = numTxt((form.querySelector('.field-4a1fc24 .wapf-calc-text, .field-b53e07d .wapf-calc-text, .field-d0aafc5 .wapf-calc-text') || {}).textContent);
     var box = P.querySelector('.cer-plan__prix');
     if (!isNaN(tot) && tot > 0) { box.hidden = false; box.querySelector('strong').innerHTML = money(tot) + '<small>TTC</small>'; } else box.hidden = true;
@@ -501,11 +513,13 @@
     if (sig === IMG_STATE.sig && form.querySelector('input[name="cer_plan[config]"]')) return Promise.resolve(true);
     if (IMG_STATE.busy) return IMG_STATE.busy;
     offscreen();
-    var jobs = [], d = LAST.d;
+    var jobs = [], d = LAST.d, scales = {};
+    ST.scaleBar = true; ST.scale = E.commonScale(d, 380, 280); ST.planScale = null;
     ['plan', 'face', 'gauche', 'droite', 'fond'].forEach(function (v) {
       var svg = document.getElementById('cer-off-' + v);
       if (v === 'plan') { svg.setAttribute('viewBox', '0 0 480 340'); E.drawPlan(svg, d, 480, 340); jobs.push(svgToJpeg(svg, 1440, 1020).then(function (u) { return [v, u]; })); }
       else { svg.setAttribute('viewBox', '0 0 380 280'); E.drawElev(svg, d, v, 380, 280); jobs.push(svgToJpeg(svg, 1330, 980).then(function (u) { return [v, u]; })); }
+      scales[v] = parseFloat(svg.getAttribute('data-sc')) || null; // unités du dessin par mètre : impression à l'échelle dans le devis
     });
     IMG_STATE.busy = Promise.all(jobs).then(function (res) {
       Array.prototype.forEach.call(form.querySelectorAll('input[name^="cer_plan["]'), function (e) { e.remove(); });
@@ -514,7 +528,8 @@
       add('cer_plan[config]', JSON.stringify({
         v: CFG.version || '', kind: CFG.kind, cfg: ST.cfg, ext: ST.ext, site: ST.site,
         menus: ST.menus.map(function (m) { return { preset: m.preset, label: m.siteLabel || m.label, code: m.code, type: m.type, lw: m.lw, lh: m.lh, wall: m.wall, pos: m.pos, seuil: m.seuil, rail: m.rail, opt: m.opt }; }),
-        gdoor: LAST.gdoor, dims: dimsList(LAST), warnings: E.menuWarnings(d)
+        gdoor: LAST.gdoor, dims: dimsList(LAST), warnings: E.menuWarnings(d),
+        scales: scales, vb: { elev: [380, 280], plan: [480, 340] }, d: { L: d.L, P: d.P, htL: d.htL, htP: d.htP, intL: d.intL, intP: d.intP, hInt: d.hInt, hExt: d.hExt, rH: d.rH, soub: d.soub || 0, pente: d.pente, toit: d.toit }
       }));
       IMG_STATE.sig = sig; IMG_STATE.busy = null;
       return true;
