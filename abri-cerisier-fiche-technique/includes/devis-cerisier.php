@@ -423,7 +423,7 @@ function cer_devis_rendre( array $d, $vendor ) {
   <tr><td class="m">Total HT</td><td class="r m"><?= $eur( $d['total_ht'] ) ?></td></tr>
   <tr><td class="m">TVA</td><td class="r m"><?= $eur( $d['total_tva'] ) ?></td></tr>
   <tr class="ttc"><td>Total TTC</td><td class="r"><?= $eur( $d['total_ttc'] ) ?></td></tr>
-<?php if ( ! empty( $d['eco']['montant'] ) ) : ?><tr><td class="petit">dont <?= $e( $d['eco']['libelle'] ) ?></td><td class="r petit"><?= $eur( $d['eco']['montant'] ) ?></td></tr><?php endif; ?>
+<?php if ( ! empty( $d['eco']['montant'] ) ) : ?><tr><td class="petit">dont <?= $e( preg_replace( '/^\s*dont\s+/iu', '', (string) $d['eco']['libelle'] ) ) ?></td><td class="r petit"><?= $eur( $d['eco']['montant'] ) ?></td></tr><?php endif; ?>
 </table>
 <div style="clear:both"></div>
 <table width="100%" class="cond"><tr>
