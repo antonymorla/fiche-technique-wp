@@ -267,6 +267,7 @@ const FINITIONS={
   dibond:      {label:'Dibond (panneaux composite)',       dir:'v', boards:[1.25], gap:0.006, gapC:'#1d1e20', c:['#4a4c50','#35373a','#5c5f63']},
   bac_bandeau: {label:'Bac acier RAL 7016 (bandeau)',      dir:'v', boards:[0.25], c:['#43474b','#25282b','#62676c']},
   sr_vert_v:   {label:'Pin sylvestre vert (vertical)',     dir:'v', boards:[0.13], c:['#bdb07e','#857a50','#d2c799']},
+  ps_vert_ajoure:{label:'Pin sylvestre vert vertical ajouré 20×60', dir:'v', boards:[0.06], gap:0.012, vary:.12, c:['#bdb07e','#857a50','#d2c799']},
   ayous_alea:  {label:'Ayous 21×45 et 21×90 (vertical)',   dir:'v', boards:[0.09,0.045], alea:true, gap:0.006, gapC:'#2b1a0d', c:['#8a5f34','#5a3b1d','#a2764a']},
 };
 const COUVERTURES={
@@ -1429,7 +1430,7 @@ function drawCarportElev(svg,d,side,vw,vh){
   const ps=Math.max(6,parseFloat(fv('f-pot'))*sc||0.12*sc);
 
   const real=isReal(), fin=wallFin(d), cv=couvFin(d);
-  const isAlu=fv('f-pot')==='0.15';
+  const isAlu=fv('f-pot')==='0.15'||fv('f-potalu')==='oui'; // alu 15 × 15 ou bois capoté alu : noir
   const potC=isAlu?['#4a5056','#2c3035','#68707a']:['#c3b47f','#8a7d50','#d8cc9c'];
   if(real) drawGround(svg,PAD.l/2,vw-PAD.r/2,gndY);
   else {

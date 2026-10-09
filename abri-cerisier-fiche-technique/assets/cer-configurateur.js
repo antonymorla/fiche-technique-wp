@@ -102,7 +102,8 @@
     },
     plan: function (l) { return !l || /^non/i.test(l) ? 'non' : /pin/i.test(l) ? 'pin21' : /21\s*mm/i.test(l) ? 'epicea21iso' : 'epicea15'; },
     pot: function (l) { return /19/.test(l) ? 0.19 : /14/.test(l) ? 0.14 : /aluminium 15/i.test(l) ? 0.15 : 0.12; },
-    bandeau: function (l) { return /bac acier|métallique/i.test(l) ? 'bac_bandeau' : /Ayou/i.test(l) ? 'ayous125' : /vertical/i.test(l) ? 'sr_vert_v' : 'sr_vert'; },
+    // bandeaux du carport (options du site) : bac acier, ajouré gris 20×70, ajouré vert 20×60, Ayous aléatoire 21×45 / 21×90
+    bandeau: function (l) { return /bac acier|métallique/i.test(l) ? 'bac_bandeau' : /Ayou/i.test(l) ? 'ayous_alea' : /gris/i.test(l) ? 'srn_gris' : /ajour/i.test(l) ? 'ps_vert_ajoure' : /vertical/i.test(l) ? 'sr_vert_v' : 'sr_vert'; },
     remplissage: function (l) { return /ajour/i.test(l) ? 'ajouree' : /clin/i.test(l) ? 'clin' : 'ossature'; }
   };
   // Code de prix du site → menuiserie du catalogue du moteur (même codes ; « vitrée » du site = 3/4 vitrée)
@@ -227,6 +228,7 @@
     if (CFG.kind === 'carport') {
       var ad = first(M.ados); s.ados = ad && /adoss/i.test(ad.label) ? adosSide : 'non'; cfg['f-ados'] = s.ados;
       var po = first(M.pot); s.sec = po ? T.pot(po.label) : 0.12; cfg['f-pot'] = String(s.sec);
+      cfg['f-potalu'] = po && /alu/i.test(po.label) ? 'oui' : 'non'; // poteau alu ou bois capoté alu : noir
       var eL = first(M.espL), eP = first(M.espP); s.espL = eL && /6/.test(eL.label) ? 6 : 4; s.espP = eP && /6/.test(eP.label) ? 6 : 4;
       cfg['f-esp'] = String(s.espP); cfg['f-espL'] = String(s.espL);
       if (yes(M.reh.q)) { for (var i = 0; i < M.reh.n.length; i++) { var h = num(M.reh.n[i]); if (h) { s.hRehausse = h; break; } } }
