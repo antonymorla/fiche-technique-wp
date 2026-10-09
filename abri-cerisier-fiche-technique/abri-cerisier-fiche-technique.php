@@ -73,6 +73,10 @@ function acft_serve_page() {
 
     $html = file_get_contents( $template );
 
+    // Moteur de dessin partagé avec les configurateurs du site : inséré dans la page (outil autonome, impression comprise)
+    $engine = ACFT_DIR . 'assets/acft-engine.js';
+    $html   = str_replace( '/*@@ACFT_ENGINE@@*/', file_exists( $engine ) ? file_get_contents( $engine ) : '', $html );
+
     // Injecter les variables WP (URL du site, REST API, nonce CSRF)
     $inject = sprintf(
         "<script>window.ACFT={site:'%s',api:'%s',nonce:'%s',version:'%s'};</script>\n",
