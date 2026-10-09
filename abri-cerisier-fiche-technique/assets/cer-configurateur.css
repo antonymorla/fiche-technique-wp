@@ -98,6 +98,10 @@
   body.cer-plan-open .cer-plan__place, body.cer-plan-open .cer-plan__note, body.cer-plan-open .cer-plan__kicker { display: block; }
   body.cer-plan-open .cer-plan__expand { display: none; }
   body.cer-plan-open .cer-plan__title { font-size: 18px; }
+  /* plein écran : le dessin reste visible en haut pendant qu'on règle les portes et fenêtres juste dessous */
+  body.cer-plan-open .cer-plan__vis { position: sticky; top: calc(-12px - env(safe-area-inset-top)); z-index: 3; background: #fff; margin: 0 -16px; padding: 8px 16px 10px; box-shadow: 0 6px 12px -10px rgba(30, 30, 24, .35); }
+  body.cer-plan-open .cer-plan__stage svg { max-height: 40vh; }
+  body.cer-plan-open .cer-plan__place { margin-top: 6px; }
 }
 @media (max-width: 599.98px) { .cer-plan__stage svg { max-height: 24vh; } }
 @media (prefers-reduced-motion: reduce) { .cer-plan, .cer-plan__tabs button { transition: none; } }

@@ -306,12 +306,15 @@
       '<div class="cer-plan__prix" hidden><span>Prix de votre ' + NOUN + '</span><strong></strong></div>' +
       '<div class="cer-plan__head"><div class="cer-plan__heading"><span class="cer-plan__kicker">Votre ' + NOUN + ' sur mesure</span><span class="cer-plan__title"><span class="cer-l">Le plan se dessine avec vos choix</span><span class="cer-s">Votre ' + NOUN + ' en direct</span></span></div>' +
       '<button type="button" class="cer-plan__expand">Agrandir</button><button type="button" class="cer-plan__close" aria-label="Réduire">×</button></div>' +
+      // onglets + dessin : bloc qui reste en haut du plein écran (téléphone) pendant qu'on règle les menuiseries juste dessous
+      '<div class="cer-plan__vis">' +
       '<div class="cer-plan__tabs" role="tablist">' + VIEWS.map(function (v) { return '<button type="button" role="tab" data-v="' + v[0] + '">' + v[1] + '</button>'; }).join('') + '</div>' +
       '<div class="cer-plan__stage"><svg id="cer-sv-main" xmlns="http://www.w3.org/2000/svg"></svg><div class="cer-plan__empty">Choisissez la largeur et la profondeur : le dessin apparaît ici.</div></div>' +
-      '<dl class="cer-plan__dims"></dl>' +
-      '<details class="cer-plan__detail"><summary>Détail de votre configuration</summary><div class="cer-plan__lignes"></div></details>' +
+      '</div>' +
       '<div class="cer-plan__warn"></div>' +
       '<details class="cer-plan__place"><summary>Placer mes portes et fenêtres</summary><div class="cer-plan__places"></div></details>' +
+      '<dl class="cer-plan__dims"></dl>' +
+      '<details class="cer-plan__detail"><summary>Détail de votre configuration</summary><div class="cer-plan__lignes"></div></details>' +
       '<p class="cer-plan__note">Dessin à l\'échelle d\'après votre configuration. Les plans définitifs sont validés avec votre conseiller Abri Cerisier.</p>' +
       '</div>';
     sum.appendChild(P);
@@ -321,14 +324,15 @@
     // Tablette / téléphone : ancré en bas ; × replie en bouton (ou quitte le plein écran) ; « Agrandir » ouvre le plein écran
     var B = document.body;
     fab.addEventListener('click', function () { B.classList.remove('cer-plan-min'); memo(''); draw(); });
-    P.querySelector('.cer-plan__expand').addEventListener('click', function () { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = true; draw(); });
+    var openPlace = function () { if (ST.menus.length) P.querySelector('.cer-plan__place').open = true; };
+    P.querySelector('.cer-plan__expand').addEventListener('click', function () { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = true; openPlace(); draw(); });
     P.querySelector('.cer-plan__close').addEventListener('click', function () {
       if (B.classList.contains('cer-plan-open')) { B.classList.remove('cer-plan-open'); }
       else { B.classList.add('cer-plan-min'); memo('min'); }
     });
     B.classList.add('cer-plan-min'); // replié tant que rien n'est dessiné
     // téléphone / tablette portrait : un appui sur le dessin l'ouvre en plein écran
-    var openFull = function () { if (DOCK.matches && !B.classList.contains('cer-plan-open')) { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = true; draw(); } };
+    var openFull = function () { if (DOCK.matches && !B.classList.contains('cer-plan-open')) { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = true; openPlace(); draw(); } };
     P.querySelector('.cer-plan__stage').addEventListener('click', openFull);
     P.querySelector('.cer-plan__prix').addEventListener('click', openFull);
     // place réservée en bas de page = hauteur réelle du visuel ancré (le bouton « Ajouter au panier » reste accessible)
@@ -378,7 +382,7 @@
     } else {
       rows = [['Dimensions extérieures', fr(d.L) + ' × ' + fr(d.P) + ' m'], ['Dimensions intérieures', fr(d.intL) + ' × ' + fr(d.intP) + ' m'],
         ['Surface intérieure', fr(d.intL * d.intP) + ' m²'], ['Hauteur intérieure', fr(d.hInt) + ' m'],
-        d.rH > 0 ? ['Hauteur au faîtage', fr(d.hExt + d.rH + (d.soub || 0)) + ' m'] : null, ['Emprise toiture (hors tout)', fr(d.htL) + ' × ' + fr(d.htP) + ' m']].filter(Boolean);
+        d.rH > 0 ? ['Hauteur au faîtage', fr(d.hExt + d.rH + (d.base || 0)) + ' m'] : null, ['Emprise toiture (hors tout)', fr(d.htL) + ' × ' + fr(d.htP) + ' m']].filter(Boolean);
     }
     return rows;
   }
@@ -533,7 +537,7 @@
         v: CFG.version || '', kind: CFG.kind, cfg: ST.cfg, ext: ST.ext, site: ST.site,
         menus: ST.menus.map(function (m) { return { preset: m.preset, label: m.siteLabel || m.label, code: m.code, type: m.type, lw: m.lw, lh: m.lh, wall: m.wall, pos: m.pos, seuil: m.seuil, rail: m.rail, opt: m.opt }; }),
         gdoor: LAST.gdoor, dims: dimsList(LAST), warnings: E.menuWarnings(d),
-        scales: scales, vb: { elev: [380, 280], plan: [480, 340] }, d: { L: d.L, P: d.P, htL: d.htL, htP: d.htP, intL: d.intL, intP: d.intP, hInt: d.hInt, hExt: d.hExt, rH: d.rH, soub: d.soub || 0, pente: d.pente, toit: d.toit }
+        scales: scales, vb: { elev: [380, 280], plan: [480, 340] }, d: { L: d.L, P: d.P, htL: d.htL, htP: d.htP, intL: d.intL, intP: d.intP, hInt: d.hInt, hExt: d.hExt, rH: d.rH, soub: d.base || 0, pente: d.pente, toit: d.toit }
       }));
       IMG_STATE.sig = sig; IMG_STATE.busy = null;
       return true;
