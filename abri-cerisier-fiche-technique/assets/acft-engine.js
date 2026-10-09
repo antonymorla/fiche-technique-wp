@@ -1398,6 +1398,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   // ── INTERIOR HEIGHT (centered in wall, smaller) ──
   // place libre : d'abord à mi-hauteur sur la largeur, sinon sous ou au-dessus des ouvertures (fenêtre en bandeau par ex.)
   const boxes=ST.menus.filter(m=>m.wall===side).map(m=>{const cx=(m.pos/100)*drawW, w2=(m.lw/100)*sc/2, y0=((m.seuil||0)/100)*sc; return [cx-w2-30,cx+w2+30,y0-8,y0+(m.lh/100)*sc+8];});
+  if(ST.type==='garage'&&side==='face'){ const gw=(parseFloat(fv('f-pglw'))||237)/100*sc, gh=(parseFloat(fv('f-pglh'))||200)/100*sc; boxes.push([drawW/2-gw/2-30,drawW/2+gw/2+30,-8,gh+8]); } // porte de garage
   let intK=.5, intY=.45;
   outer: for(const ky of [.45,.15,.8,.3]) for(const k of [.5,.25,.75,.12,.88]){
     if(!boxes.some(([a,b,c,e])=>k*drawW>a&&k*drawW<b&&ky*wallHpx>c&&ky*wallHpx<e)){ intK=k; intY=ky; break outer; }
