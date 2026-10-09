@@ -340,3 +340,20 @@
   .cer-plan-on .wapf-field-container[style*="width:33"], .cer-plan-on .wapf-field-container[style*="width: 33"] { width: 100% !important; }
   .cer-plan-on .wapf-field-container[style*="width:33"] .wapf-image-swatch-wrapper, .cer-plan-on .wapf-field-container[style*="width: 33"] .wapf-image-swatch-wrapper { --wapf-cols-m: 3 !important; }
 }
+
+/* Vignettes d'options : jamais moins de 120 px de large (la colonne du formulaire est étroite à côté du visuel) ;
+   les grilles déjà larges de WAPF (2 ou 3 colonnes) sont conservées */
+.cer-plan-on .wapf-swatch--image .wapf-swatch-label { hyphens: manual; -webkit-hyphens: manual; }
+@media (min-width: 768px) {
+  .cer-plan-on .wapf-image-swatch-wrapper { grid-template-columns: repeat(auto-fill, minmax(max(var(--cer-vmin, 120px), calc((100% - 10px * (var(--wapf-cols, 4) - 1)) / var(--wapf-cols, 4))), 1fr)) !important; }
+  /* Type / Matière / Style : une question par ligne, mêmes vignettes que les autres */
+  .cer-plan-on .wapf-field-container[style*="width:33"]:has(.wapf-image-swatch-wrapper),
+  .cer-plan-on .wapf-field-container[style*="width: 33"]:has(.wapf-image-swatch-wrapper) { width: 100% !important; }
+  .cer-plan-on .wapf-field-container[style*="width:33"] .wapf-image-swatch-wrapper,
+  .cer-plan-on .wapf-field-container[style*="width: 33"] .wapf-image-swatch-wrapper { --wapf-cols: 6 !important; }
+  /* deux choix seulement (Matière, Style) : deux questions côte à côte, deux vignettes chacune */
+  .cer-plan-on .wapf-field-container[style*="width:33"]:has(.wapf-image-swatch-wrapper > .wapf-swatch:nth-of-type(2):last-of-type),
+  .cer-plan-on .wapf-field-container[style*="width: 33"]:has(.wapf-image-swatch-wrapper > .wapf-swatch:nth-of-type(2):last-of-type) { width: 50% !important; }
+  .cer-plan-on .wapf-field-container[style*="width:33"] .wapf-image-swatch-wrapper:has(> .wapf-swatch:nth-of-type(2):last-of-type),
+  .cer-plan-on .wapf-field-container[style*="width: 33"] .wapf-image-swatch-wrapper:has(> .wapf-swatch:nth-of-type(2):last-of-type) { --wapf-cols: 2 !important; --cer-vmin: 96px; }
+}

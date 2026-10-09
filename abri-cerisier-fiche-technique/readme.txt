@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.0.3
+Stable tag: 3.0.4
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,9 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.0.4 =
+* Vignettes d'options plus grandes à côté du visuel : jamais moins de 120 px (images de 32 à 110 px pour Type / Matière / Style), libellés sans coupure de mots ; Type sur une ligne, Matière et Style côte à côte
 
 = 3.0.3 =
 * Devis : « dont éco-participation » (le libellé du générateur commence déjà par « Dont », il était doublé)
