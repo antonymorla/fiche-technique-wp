@@ -1,0 +1,152 @@
+/* Visuel en direct des configurateurs Abri Cerisier
+   Ordinateur (≥ 1100 px)          : colonne de droite qui suit le défilement.
+   Tablette paysage (900–1099 px)  : panneau fixe à droite, la page se recale à côté.
+   Tablette portrait et téléphone  : visuel ancré en bas (compact), repliable en bouton, plein écran à la demande. */
+.cer-plan, .cer-plan-fab {
+  --cer-olive: #515136; --cer-olive-dk: #3d3d28; --cer-sable: #f4f2ec; --cer-ligne: #e3dfd3;
+  --cer-texte: #2b2b22; --cer-doux: #77755f; --cer-alerte: #9a3412;
+  box-sizing: border-box;
+}
+.cer-plan *, .cer-plan *::before, .cer-plan *::after { box-sizing: border-box; }
+
+/* ── Panneau ── */
+.cer-plan__in { background: #fff; border: 1px solid var(--cer-ligne); border-radius: 14px; box-shadow: 0 10px 30px rgba(43, 43, 34, .08); padding: 18px 18px 14px; color: var(--cer-texte); }
+.cer-plan__head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+.cer-plan__heading { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.cer-plan__kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--cer-doux); }
+.cer-plan__title { font-size: 19px; line-height: 1.25; font-weight: 600; color: var(--cer-olive-dk); }
+.cer-plan__expand, .cer-plan__close { display: none; flex: 0 0 auto; min-height: 40px; border: 0; cursor: pointer; font: inherit; color: var(--cer-olive-dk); }
+.cer-plan__expand { padding: 0 12px; border-radius: 20px; background: var(--cer-sable); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.cer-plan__close { width: 40px; background: transparent; font-size: 26px; line-height: 1; }
+.cer-plan__tabs { display: flex; gap: 4px; background: var(--cer-sable); border-radius: 10px; padding: 4px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
+.cer-plan__tabs::-webkit-scrollbar { display: none; }
+.cer-plan__tabs button { flex: 1 0 auto; min-height: 36px; padding: 6px 12px; border: 0; border-radius: 7px; background: transparent; color: var(--cer-doux); font: inherit; font-size: 13px; cursor: pointer; transition: background .15s, color .15s; }
+.cer-plan__tabs button.on { background: #fff; color: var(--cer-olive-dk); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.cer-plan__stage { position: relative; background: linear-gradient(180deg, #f8f8f5 0%, #fdfdfb 100%); border: 1px solid #efede6; border-radius: 10px; overflow: hidden; }
+.cer-plan__stage svg { display: block; width: 100%; height: auto; aspect-ratio: 380 / 280; }
+.cer-plan__stage svg[data-v="plan"] { aspect-ratio: 480 / 340; }
+.cer-plan__empty { padding: 48px 20px; text-align: center; color: var(--cer-doux); font-size: 14px; line-height: 1.5; }
+.cer-plan__dims { display: grid; grid-template-columns: 1fr auto; margin: 14px 0 0; font-size: 13.5px; }
+.cer-plan__dims dt, .cer-plan__dims dd { margin: 0; padding: 7px 0; border-bottom: 1px solid #f0eee7; }
+.cer-plan__dims dt { color: var(--cer-doux); }
+.cer-plan__dims dd { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 12px; }
+.cer-plan__warn p { margin: 10px 0 0; padding: 8px 10px; font-size: 12.5px; line-height: 1.4; color: var(--cer-alerte); background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; }
+.cer-plan__place { margin-top: 12px; border-top: 1px solid var(--cer-ligne); padding-top: 10px; }
+.cer-plan__place summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--cer-olive-dk); min-height: 40px; display: flex; align-items: center; list-style: none; }
+.cer-plan__place summary::-webkit-details-marker { display: none; }
+.cer-plan__place summary::after { content: '+'; margin-left: auto; font-size: 20px; font-weight: 400; }
+.cer-plan__place[open] summary::after { content: '−'; }
+.cer-plan__pl { padding: 10px 0; border-bottom: 1px dashed var(--cer-ligne); display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 13px; }
+.cer-plan__pl .n { grid-column: 1 / -1; font-weight: 600; color: var(--cer-texte); }
+.cer-plan__pl label { display: flex; flex-direction: column; gap: 4px; color: var(--cer-doux); }
+.cer-plan__pl select { min-height: 44px; border: 1px solid var(--cer-ligne); border-radius: 8px; padding: 0 8px; background: #fff; font: inherit; font-size: 14px; color: var(--cer-texte); }
+.cer-plan__pl input[type=range] { width: 100%; min-height: 44px; accent-color: var(--cer-olive); }
+.cer-plan__hint { font-size: 13px; color: var(--cer-doux); margin: 8px 0 0; line-height: 1.45; }
+.cer-plan__note { font-size: 11.5px; color: var(--cer-doux); margin: 12px 0 0; line-height: 1.45; }
+.cer-plan-fab { display: none; }
+.cer-plan__title .cer-s { display: none; }
+
+/* Formulaire du site à côté du panneau : petits groupes de choix sur 3 colonnes, libellés sans coupure */
+.cer-plan-on .wapf-field-container[style*="width:33"] .wapf-swatch-wrapper,
+.cer-plan-on .wapf-field-container[style*="width: 33"] .wapf-swatch-wrapper { --wapf-cols: 3; --wapf-cols-t: 3; --wapf-cols-m: 3; }
+.cer-plan-on .wapf-swatch-label { overflow-wrap: normal; word-break: normal; hyphens: auto; }
+
+/* ── Ordinateur ── */
+@media (min-width: 1100px) {
+  .cer-plan-grid { display: grid !important; grid-template-columns: minmax(0, 1fr) clamp(360px, 34vw, 520px); column-gap: 32px; align-items: start; }
+  .cer-plan-grid > *:not(.cer-plan) { grid-column: 1; min-width: 0; }
+  .cer-plan-grid > .cer-plan { grid-column: 2; grid-row: 1 / span 60; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: thin; }
+  .admin-bar .cer-plan-grid > .cer-plan { top: 56px; }
+  .cer-plan-on .wapf-swatch-label { font-size: 15px; line-height: 1.3; }
+}
+
+/* ── Tablette paysage : panneau fixe à droite ── */
+@media (min-width: 900px) and (max-width: 1099.98px) and (orientation: landscape) {
+  body.cer-plan-on { padding-right: clamp(320px, 36vw, 400px); }
+  .cer-plan { position: fixed; top: 0; right: 0; bottom: 0; width: clamp(320px, 36vw, 400px); z-index: 100000; padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); overflow-y: auto; background: #f7f6f2; border-left: 1px solid var(--cer-ligne); }
+  .cer-plan__in { box-shadow: none; padding: 14px; }
+  .cer-plan__title { font-size: 17px; }
+  .cer-plan-on .wapf-swatch-label { font-size: 15px; line-height: 1.3; }
+}
+
+/* ── Tablette portrait et téléphone : visuel ancré en bas ── */
+@media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) {
+  .cer-plan { position: fixed; left: 0; right: 0; bottom: 0; z-index: 100000; padding: 0 8px calc(8px + env(safe-area-inset-bottom)); pointer-events: none; transition: transform .25s ease; }
+  .cer-plan__in { pointer-events: auto; max-width: 720px; margin: 0 auto; padding: 10px 12px 10px; border-radius: 16px; box-shadow: 0 -6px 28px rgba(43, 43, 34, .18); }
+  .cer-plan__head { align-items: center; margin-bottom: 8px; }
+  .cer-plan__kicker { display: none; }
+  .cer-plan__title { font-size: 15px; }
+  .cer-plan__title .cer-l { display: none; } .cer-plan__title .cer-s { display: inline; }
+  body.cer-plan-open .cer-plan__title .cer-l { display: inline; } body.cer-plan-open .cer-plan__title .cer-s { display: none; }
+  .cer-plan__expand, .cer-plan__close { display: block; }
+  .cer-plan__tabs, .cer-plan__dims, .cer-plan__place, .cer-plan__note { display: none; }
+  .cer-plan__stage { cursor: zoom-in; }
+  .cer-plan__stage svg { max-height: 30vh; }
+  .cer-plan__warn p { margin-top: 6px; font-size: 12px; }
+  /* replié : simple bouton */
+  body.cer-plan-min .cer-plan { transform: translateY(115%); }
+  .cer-plan-fab { position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 100001; min-height: 48px; padding: 0 20px; border: 0; border-radius: 24px; background: var(--cer-olive); color: #fff; font: inherit; font-size: 15px; font-weight: 600; box-shadow: 0 8px 22px rgba(43, 43, 34, .3); cursor: pointer; }
+  body.cer-plan-min .cer-plan-fab { display: block; }
+  /* plein écran : toutes les vues, les cotes et le placement */
+  body.cer-plan-open { overflow: hidden; }
+  body.cer-plan-open .cer-plan { top: 0; padding: 0; background: rgba(30, 30, 24, .5); transform: none; }
+  body.cer-plan-open .cer-plan__in { height: 100%; border-radius: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); box-shadow: none; }
+  body.cer-plan-open .cer-plan__stage { cursor: default; }
+  body.cer-plan-open .cer-plan__stage svg { max-height: none; }
+  body.cer-plan-open .cer-plan__tabs { display: flex; }
+  body.cer-plan-open .cer-plan__dims { display: grid; }
+  body.cer-plan-open .cer-plan__place, body.cer-plan-open .cer-plan__note, body.cer-plan-open .cer-plan__kicker { display: block; }
+  body.cer-plan-open .cer-plan__expand { display: none; }
+  body.cer-plan-open .cer-plan__title { font-size: 18px; }
+}
+@media (max-width: 599.98px) { .cer-plan__stage svg { max-height: 24vh; } }
+@media (prefers-reduced-motion: reduce) { .cer-plan, .cer-plan__tabs button { transition: none; } }
+@media print { .cer-plan, .cer-plan-fab { display: none !important; } }
+
+/* ── Blocs « PRIX total » et « Afficher le détail… » du site : remplacés par le panneau (prix en tête, détail à l'agrandissement).
+   Masqués seulement : les champs restent dans le formulaire et partent au panier comme avant. */
+.cer-plan-on .blocdimpr1, .cer-plan-on .blocdimpr { display: none !important; }
+
+/* Prix total en tête du panneau */
+.cer-plan__prix { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 12px 16px; border-radius: 12px; background: var(--cer-olive); color: #fff; }
+.cer-plan__prix[hidden] { display: none !important; }
+.cer-plan__prix span { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; opacity: .85; line-height: 1.3; }
+.cer-plan__prix strong { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cer-plan__prix strong small { font-size: 12px; font-weight: 400; opacity: .85; margin-left: 4px; }
+/* Détail de la configuration (choix et prix, lus dans le configurateur) */
+.cer-plan__detail { margin-top: 12px; border-top: 1px solid var(--cer-ligne); padding-top: 10px; }
+.cer-plan__detail summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--cer-olive-dk); min-height: 40px; display: flex; align-items: center; list-style: none; }
+.cer-plan__detail summary::-webkit-details-marker { display: none; }
+.cer-plan__detail summary::after { content: '+'; margin-left: auto; font-size: 20px; font-weight: 400; }
+.cer-plan__detail[open] summary::after { content: '−'; }
+.cer-plan__lignes { font-size: 13px; }
+.cer-plan__lignes .g { margin: 10px 0 2px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--cer-doux); }
+.cer-plan__lignes .l { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 14px; padding: 7px 0; border-bottom: 1px solid #f0eee7; }
+.cer-plan__lignes .l .k { color: var(--cer-doux); font-size: 12px; }
+.cer-plan__lignes .l .v { grid-column: 1; color: var(--cer-texte); line-height: 1.35; }
+.cer-plan__lignes .l .p { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--cer-olive-dk); }
+.cer-plan__lignes .tot { display: flex; justify-content: space-between; padding: 10px 0 2px; font-weight: 700; font-size: 14px; color: var(--cer-olive-dk); }
+/* Visuel ancré (tablette portrait, téléphone) : le prix remplace le titre dans la barre */
+@media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) {
+  .cer-plan__prix { margin: 0 0 8px; padding: 8px 12px; }
+  .cer-plan__prix span { font-size: 10.5px; }
+  .cer-plan__prix strong { font-size: 19px; }
+  .cer-plan__detail { display: none; }
+  body.cer-plan-open .cer-plan__detail { display: block; }
+}
+/* Visuel ancré : une seule ligne en tête = prix + Agrandir + réduire */
+@media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) {
+  body:not(.cer-plan-open) .cer-plan__in { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 6px; align-items: start; }
+  body:not(.cer-plan-open) .cer-plan__in > * { grid-column: 1 / -1; }
+  body:not(.cer-plan-open) .cer-plan__prix { grid-column: 1; grid-row: 1; }
+  body:not(.cer-plan-open) .cer-plan__head { display: contents; }
+  body:not(.cer-plan-open) .cer-plan__heading { display: none; }
+  body:not(.cer-plan-open) .cer-plan__expand { grid-column: 2; grid-row: 1; margin-top: 3px; }
+  body:not(.cer-plan-open) .cer-plan__close { grid-column: 3; grid-row: 1; }
+  .cer-plan__prix { cursor: zoom-in; }
+  body.cer-plan-open .cer-plan__prix { cursor: default; }
+}
+@media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) {
+  body:not(.cer-plan-open) .cer-plan__prix span { display: none; }
+  body:not(.cer-plan-open) .cer-plan__prix { justify-content: flex-start; }
+}

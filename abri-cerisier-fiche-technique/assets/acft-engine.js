@@ -5,6 +5,8 @@
  */
 window.CerPlan=(function(){
 const ST={type:'abri',menus:[],ext:{},cfg:null};
+// Côtés fermés d'un carport : codes de l'outil interne (gd, gdf…) ou liste « gauche+fond » d'un configurateur
+function closList(){ const v=fv('f-clos'); const L=({aucune:[],gd:['gauche','droite'],gdf:['gauche','droite','fond']})[v]; return L||v.split('+').filter(s=>['gauche','droite','fond'].includes(s)); }
 function fv(id){ if(ST.cfg&&Object.prototype.hasOwnProperty.call(ST.cfg,id)) return String(ST.cfg[id]); const e=document.getElementById(id); return e?e.value:''; }
 
 const WALL_T={madrier28:0.027,madrier45:0.045,ossature:0.135}; // 27mm, 45mm, 135mm
@@ -133,16 +135,24 @@ function calcDims(){
   // nCols = poteaux par rangée (en largeur), nRows = rangées (en profondeur)
   let nPosts=0, nCols=0, nRows=0;
   if(ST.type==='carport'){
-    const esp=parseInt(fv('f-esp'))||4;
-    const espL=(esp===6||toit==='1PAN'||toit==='2PANS')?6:4;
+    const esp=parseInt(fv('f-esp'))||4, espLc=parseInt(fv('f-espL'))||0;
+    const espL=((espLc||esp)===6||toit==='1PAN'||toit==='2PANS')?6:4;
     nCols=Math.ceil(L/espL)+(ados==='non'?1:0);
     nRows=Math.ceil(P/esp)+1;
     nPosts=nCols*nRows;
   }
 
-  return {L:Lext,P:Pext,Lnom:L,Pnom:P,reh,sys,toit,pente,orient,wt,hInt,hExt,rH,
+  const D={L:Lext,P:Pext,Lnom:L,Pnom:P,reh,sys,toit,pente,orient,wt,hInt,hExt,rH,
           ovF,ovB,ovL,ovR,stdOvhg,stdOvhgF,stdOvhgB,stdOvhgL,stdOvhgR,uf,ub,ul,ur,
           htL,htP,intL,intP,nPosts,nCols,nRows,ados,penteRad,isFlat,isQuadro,hasGout};
+  // Configurateur de vente : les cotes affichées et dessinées sont celles du site (ST.site), le reste vient du calcul ci-dessus
+  if(ST.site){
+    const s=ST.site;
+    ['L','P','intL','intP','htL','htP','hInt','nPosts','nCols','nRows'].forEach(k=>{ if(s[k]!=null&&!isNaN(s[k])) D[k]=s[k]; });
+    if(s.hInt!=null) D.hExt=ST.type==='carport'?D.hInt:D.hInt+D.wt*0.5;
+    if(s.ov){ ['F','B','L','R'].forEach(k=>{ if(s.ov[k]!=null) D['ov'+k]=s.ov[k]; }); D.stdOvhg=D.ovF; }
+  }
+  return D;
 }
 
 // ════════════════════════════════════════════════════════
@@ -234,6 +244,9 @@ const FINITIONS={
   ayous125:    {label:'Ayous 21×125',                      dir:'h', board:0.125, c:['#b8916a','#86633f','#caa780']},
   srn_gris:    {label:'SRN 20×70 gris (vertical ajouré)',  dir:'v', boards:[0.07], gap:0.012, c:['#8f9087','#5c5d57','#a8a9a1']},
   douglas_noir:{label:'Douglas noir (vertical)',           dir:'v', boards:[0.14,0.11,0.14,0.12], c:['#45463f','#262722','#5f605b']},
+  dibond:      {label:'Dibond (panneaux composite)',       dir:'v', boards:[0.6], gap:0.006, gapC:'#1d1e20', c:['#4a4c50','#35373a','#5c5f63']},
+  bac_bandeau: {label:'Bac acier RAL 7016 (bandeau)',      dir:'v', boards:[0.25], c:['#43474b','#25282b','#62676c']},
+  sr_vert_v:   {label:'Pin sylvestre vert (vertical)',     dir:'v', boards:[0.13], c:['#bdb07e','#857a50','#d2c799']},
   ayous_alea:  {label:'Ayous 21×45 et 21×90 (vertical)',   dir:'v', boards:[0.09,0.045], alea:true, gap:0.006, gapC:'#2b1a0d', c:['#8a5f34','#5a3b1d','#a2764a']},
 };
 const COUVERTURES={
@@ -885,7 +898,7 @@ function drawPlanCarport(svg,d,wx,wy,drawW,drawP,wt,sc){
     sTxt(svg,mx+mw/2,wy-16,'MUR',6,'#777');
   }
   // Fermetures (côtés bardés)
-  const CL=({aucune:[],gauche:['gauche'],droite:['droite'],fond:['fond'],gd:['gauche','droite'],gdf:['gauche','droite','fond']})[fv('f-clos')]||[];
+  const CL=closList();
   if(CL.includes('gauche')&&d.ados!=='gauche') sLine(svg,wx+ps/2,wy,wx+ps/2,wy+drawP,'#5c3d1e',3);
   if(CL.includes('droite')&&d.ados!=='droite') sLine(svg,wx+drawW-ps/2,wy,wx+drawW-ps/2,wy+drawP,'#5c3d1e',3);
   if(CL.includes('fond')) sLine(svg,wx,wy+ps/2,wx+drawW,wy+ps/2,'#5c3d1e',3);
@@ -1229,7 +1242,7 @@ function drawCarportElev(svg,d,side,vw,vh){
   // Côté adossé vu de face : mur ; vue du côté adossé : le mur cache les poteaux
   const wallSide=(side==='gauche'&&d.ados==='gauche')||(side==='droite'&&d.ados==='droite');
   // Vue « en 3D » : à travers un côté ouvert, on voit le côté fermé (ou le mur d'adossement) d'en face, derrière les poteaux
-  const CLOSALL=({aucune:[],gauche:['gauche'],droite:['droite'],fond:['fond'],gd:['gauche','droite'],gdf:['gauche','droite','fond']})[fv('f-clos')]||[];
+  const CLOSALL=closList();
   const behind=({face:'fond',fond:'face',gauche:'droite',droite:'gauche'})[side];
   if(!wallSide&&!CLOSALL.includes(side)){
     if(d.ados===behind){
@@ -1270,11 +1283,11 @@ function drawCarportElev(svg,d,side,vw,vh){
   const np=ts.length;
 
   // Closures
-  const clos=fv('f-clos');
-  const CLOS={aucune:[],gauche:['gauche'],droite:['droite'],fond:['fond'],gd:['gauche','droite'],gdf:['gauche','droite','fond']};
-  const showClos=(CLOS[clos]||[]).includes(side);
+  const showClos=closList().includes(side);
+  // Remplissage des fermetures : type choisi dans le configurateur (ajouré / madrier clin / ossature bardée), sinon le bardage
+  const ct=fv('f-clos-type'), cfin=ct==='ajouree'?extFin(d,'ajouree'):(ct==='clin'?FINITIONS.sr_vert:fin);
   if(showClos&&!wallSide){
-    if(real) sRect(svg,baseX,gndY-hpx,dW,hpx,patBoards(svg,fin,sc,baseX,gndY),'#3a3828',1);
+    if(real) sRect(svg,baseX,gndY-hpx,dW,hpx,patBoards(svg,cfin,sc,baseX,gndY),'#3a3828',1);
     else {
     sRect(svg,baseX,gndY-hpx,dW,hpx,'rgba(200,215,230,0.3)','#7f8c8d',1,'5 3');
     sTxt(svg,baseX+dW/2,gndY-hpx/2,'Fermeture bardage',7,'#888');
@@ -1324,7 +1337,8 @@ function drawCarportElev(svg,d,side,vw,vh){
     // Bandeau toit plat : 36 cm au-dessus de la ferme (2,10 → 2,46 m)
     const slabH=Math.max(6,rHpx);
     if(real){
-      sRect(svg,rx,topY-slabH,rw,slabH,patBoards(svg,fin,sc,rx,topY),'#3a3828',1);
+      const bf=FINITIONS[fv('f-bandeau')]||fin;
+      sRect(svg,rx,topY-slabH,rw,slabH,patBoards(svg,bf,sc,rx,topY),'#3a3828',1);
       sRect(svg,rx-1,topY-slabH-Math.max(1.4,0.04*sc),rw+2,Math.max(1.4,0.04*sc),cv.c[1],'none',0);
     } else
     sRect(svg,rx,topY-slabH,rw,slabH,'#d5d8dc','#555',1.5);
@@ -1715,8 +1729,8 @@ function wallTopAt(g,xm){
 }
 // Contrôles des menuiseries : dépassement du mur, chevauchements, zone de coulissement, prix, côtés ouverts du carport
 function menuWarnings(d){
-  const W=[], CLOS={aucune:[],gauche:['gauche'],droite:['droite'],fond:['fond'],gd:['gauche','droite'],gdf:['gauche','droite','fond']};
-  const closed=ST.type==='carport'?(CLOS[fv('f-clos')]||[]):null;
+  const W=[];
+  const closed=ST.type==='carport'?closList():null;
   const box=m=>{const w=(m.wall==='face'||m.wall==='fond')?d.L:d.P, c=m.pos/100*w;
     return {w,x0:c-m.lw/200,x1:c+m.lw/200,y0:(m.seuil||0)/100,y1:((m.seuil||0)+m.lh)/100};};
   ST.menus.forEach((m,i)=>{
