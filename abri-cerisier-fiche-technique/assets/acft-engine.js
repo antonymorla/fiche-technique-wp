@@ -582,7 +582,7 @@ function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
   }
   if(g.roofT==='triangle'){
     const ty=baseY-roofH, px=baseX+drawW/2, k=roofH/(drawW/2||1);
-    sPoly(svg,[[baseX,baseY],[px,ty],[baseX+drawW,baseY]],wallPat,shade(rive,-.35),1);
+    sPoly(svg,[[baseX,baseY],[px,ty],[baseX+drawW,baseY]],wallPat,'none',0);
     // Pignon d'ossature 2 pans (vignettes du site) : classique = lames horizontales et montant central ;
     // biseauté = lames à 45° en V de part et d'autre du montant. Tous les autres pignons : lames horizontales.
     if(d.sys==='ossature'){
@@ -599,7 +599,7 @@ function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
   }
   if(g.roofT==='trapL'||g.roofT==='trapR'){
     const ty=baseY-roofH, k=roofH/(drawW||1), L=g.roofT==='trapL';
-    sPoly(svg,L?[[baseX,baseY],[baseX,ty],[baseX+drawW,baseY]]:[[baseX,baseY],[baseX+drawW,baseY],[baseX+drawW,ty]],wallPat,shade(rive,-.35),1);
+    sPoly(svg,L?[[baseX,baseY],[baseX,ty],[baseX+drawW,baseY]]:[[baseX,baseY],[baseX+drawW,baseY],[baseX+drawW,ty]],wallPat,'none',0);
 
     riveBand(L?[[rx,ty-k*oL],[rx+rw,baseY+k*oR]]:[[rx,baseY+k*oL],[rx+rw,ty-k*oR]]);
     sTxtBg(svg,baseX+drawW*(L?.35:.65),baseY-roofH*.28,`${d.pente}°`,8,'#555');
@@ -678,21 +678,45 @@ function gableBoards(svg,fin,pts,dir,sc){
   for(let o=-R+sp*.5;o<=R;o+=sp) g.appendChild(svgEl('line',{x1:cx+nx*o-ux*R,y1:cy+ny*o-uy*R,x2:cx+nx*o+ux*R,y2:cy+ny*o+uy*R,stroke:fin.c[2]||fin.c[0],'stroke-width':Math.max(.4,0.006*sc),opacity:.35}));
 }
 // Profilés aluminium d'angle (option « profil U ») : coiffent les abouts des madriers aux angles
-function drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc){
-  const oss=d.sys==='ossature', cw=oss?Math.max(2,0.05*sc):0.10*sc, h=gndY-baseY, hl=Math.max(.6,cw*.18);
-  [oss?baseX:baseX-cw, oss?baseX+drawW-cw:baseX+drawW].forEach(x=>{
-    sRect(svg,x,baseY,cw,h,'#c4c8cc','#868b90',.7);
-    sRect(svg,x+hl,baseY,hl,h,'#e2e4e6','none',0);
-    sRect(svg,x+cw-hl*2,baseY,hl,h,'#9da2a7','none',0);
+function drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
+  const oss=d.sys==='ossature', cw=oss?Math.max(2,0.05*sc):0.10*sc, hl=Math.max(.6,cw*.18);
+  top=top||{L:[baseY,0],R:[baseY,0]};
+  [['L',oss?baseX:baseX-cw],['R',oss?baseX+drawW-cw:baseX+drawW]].forEach(([k,x])=>{
+    const [ty,sl]=top[k], out=k==='L'?x:x+cw, inn=k==='L'?x+cw:x; // bord extérieur / intérieur du profilé
+    const tOut=ty-sl*(oss?0:cw), tIn=ty;
+    sPoly(svg,[[x,gndY],[x,k==='L'?tOut:tIn],[x+cw,k==='L'?tIn:tOut],[x+cw,gndY]],'#c4c8cc','#868b90',.7);
+    sRect(svg,x+hl,Math.max(tOut,tIn),hl,gndY-Math.max(tOut,tIn),'#e2e4e6','none',0);
+    sRect(svg,x+cw-hl*2,Math.max(tOut,tIn),hl,gndY-Math.max(tOut,tIn),'#9da2a7','none',0);
   });
 }
-// Bouts de madriers croisés aux angles (vue en élévation)
-function drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc){
-  // Les madriers dépassent de 10 cm au-delà des murs extérieurs (« débordement madriers 10 cm de chaque côté »)
-  const fin=FINITIONS.madrier, cw=0.10*sc, h=gndY-baseY;
+// Angles en madrier, vus en élévation (vignettes du site) : les madriers de la façade dépassent de 10 cm de chaque côté,
+// et devant eux on voit le bout des madriers du mur perpendiculaire (leur épaisseur), rang par rang.
+// Le tout monte jusqu'en haut du mur perpendiculaire : côté haut d'un 1 pan, jusque sous la rive, en suivant la pente.
+// top = {L:[y du haut à l'aplomb du mur, montée en px par px vers l'extérieur], R:[…]}
+function cornerTops(g,baseY,drawW,sc){
+  const k=g.rH*sc/(drawW||1), top={L:[baseY,0],R:[baseY,0]};
+  if(g.roofT==='trapL') top.L=[baseY-g.rH*sc,k];
+  if(g.roofT==='trapR') top.R=[baseY-g.rH*sc,k];
+  return top;
+}
+function drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
+  const fin=FINITIONS.madrier, cw=0.10*sc;
+  top=top||{L:[baseY,0],R:[baseY,0]};
   const pat=patBoards(svg,fin,sc,baseX,gndY-fin.board*sc/2,-.14);
-  sRect(svg,baseX-cw,baseY,cw,h,pat,shade(fin.c[1],-.3),.8);
-  sRect(svg,baseX+drawW,baseY,cw,h,pat,shade(fin.c[1],-.3),.8);
+  [['L',baseX,-1],['R',baseX+drawW,1]].forEach(([k,x0,dir])=>{
+    const [ty,sl]=top[k], xo=x0+dir*cw;
+    sPoly(svg,[[x0,gndY],[x0,ty],[xo,ty-sl*cw],[xo,gndY]],pat,shade(fin.c[1],-.3),.8);
+  });
+}
+function drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,top){ // à dessiner après le mur et le pignon
+  const fin=FINITIONS.madrier, bh=Math.max(2.2,fin.board*sc), we=Math.max(1.8,(d.wt||0.028)*sc);
+  const eg=shade(fin.c[2],.04), dk=shade(fin.c[1],-.25);
+  [['L',baseX],['R',baseX+drawW-we]].forEach(([k,xi])=>{
+    const ty=top[k][0];
+    sRect(svg,xi,ty,we,gndY-ty,eg,dk,.6); // bois de bout
+    for(let y=gndY-bh;y>ty+1;y-=bh) sLine(svg,xi,y,xi+we,y,dk,.7); // un trait par rang de madrier
+    if(we>=4) for(let y=gndY-bh*.5;y>ty+2;y-=bh) svg.appendChild(svgEl('ellipse',{cx:xi+we*.5,cy:y,rx:we*.28,ry:bh*.22,fill:'none',stroke:shade(fin.c[1],.1),'stroke-width':.35,opacity:.6})); // cernes
+  });
 }
 // Porte de garage dessinée selon son modèle (vignettes du site : huisserie métal gris clair, poignée carrée noire)
 function drawGarageDoorReal(svg,x,y,w,h,sc){
@@ -1132,9 +1156,8 @@ function drawElev(svg,d,side,vw=320,vh=260){
   const real=isReal();
   if(real){
     drawGround(svg,PAD.l/2,vw-PAD.r/2,solY);
-    if(d.sys!=='ossature') drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc);
-    sRect(svg,baseX,baseY,drawW,wallHpx,patBoards(svg,wallFin(d),sc,baseX,gndY),'#3a3828',1.2);
-    if(fv('f-profu')==='oui') drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc);
+    if(d.sys!=='ossature') drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
+    sRect(svg,baseX,baseY,drawW,wallHpx,patBoards(svg,wallFin(d),sc,baseX,gndY),'none',0); // contour tracé après le pignon : mur et pignon d'un seul tenant
   } else {
   // Ground + hatch
   sLine(svg,PAD.l/2,solY,vw-PAD.r/2,solY,'#888',2);
@@ -1163,6 +1186,16 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
   // Roof
   drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
+  if(real){ // contour du mur, pignon compris (les lames de façade montent sans coupure jusqu'à la rive)
+    const rh=g.rH*sc, X1=baseX, X2=baseX+drawW;
+    const pts=g.roofT==='triangle'?[[X1,gndY],[X1,baseY],[X1+drawW/2,baseY-rh],[X2,baseY],[X2,gndY]]
+      :g.roofT==='trapL'?[[X1,gndY],[X1,baseY-rh],[X2,baseY],[X2,gndY]]
+      :g.roofT==='trapR'?[[X1,gndY],[X1,baseY],[X2,baseY-rh],[X2,gndY]]
+      :[[X1,gndY],[X1,baseY],[X2,baseY],[X2,gndY]];
+    sPoly(svg,pts,'none','#3a3828',1.2);
+  }
+  if(real&&d.sys!=='ossature'&&fv('f-profu')!=='oui') drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
+  if(real&&fv('f-profu')==='oui') drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc)); // profilés alu : coiffent les angles
 
   // Poteaux de soutien (débord > 50 cm)
   // Un seul poteau à l'extrémité, hauteur = du sol au dessous du toit à ce point
