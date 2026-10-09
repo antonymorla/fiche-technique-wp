@@ -332,3 +332,8 @@
   .cer-plan-on .wapf-image-swatch-wrapper:has(> div.wapf-swatch:nth-of-type(4):last-child) { --wapf-cols-m: 2 !important; } /* 4 choix : 2 × 2 */
   .cer-plan-on .wapf-image-swatch-wrapper:has(> div.wapf-swatch:nth-of-type(2):last-child) { --wapf-cols-m: 2 !important; }
 }
+@media (max-width: 767.98px) {
+  /* questions en tiers de largeur (Type / Matière / Style des menuiseries…) : l'une sous l'autre sur téléphone */
+  .cer-plan-on .wapf-field-container[style*="width:33"], .cer-plan-on .wapf-field-container[style*="width: 33"] { width: 100% !important; }
+  .cer-plan-on .wapf-field-container[style*="width:33"] .wapf-image-swatch-wrapper, .cer-plan-on .wapf-field-container[style*="width: 33"] .wapf-image-swatch-wrapper { --wapf-cols-m: 3 !important; }
+}
