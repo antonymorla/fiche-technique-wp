@@ -283,6 +283,8 @@
 .cer-plan__realmain .z { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
 .cer-plan__realmain img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; }
 .cer-plan__realmain figcaption { font-size: 12.5px; color: var(--cer-texte); margin-top: 6px; font-weight: 500; }
+.cer-plan__realw { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--cer-doux); }
+.cer-plan__realw span { color: var(--cer-olive-dk); font-weight: 600; }
 .cer-plan__realth { display: flex; gap: 6px; margin-top: 8px; }
 .cer-plan__realth button { flex: 1 1 0; padding: 0; border: 2px solid transparent; border-radius: 8px; background: none; cursor: pointer; overflow: hidden; }
 .cer-plan__realth button.on { border-color: var(--cer-olive); }
