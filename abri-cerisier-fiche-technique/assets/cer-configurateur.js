@@ -198,7 +198,8 @@
       return r2(base + e); // QUADRO
     };
     o.htL = ht(s.Lr, eL); o.htP = ht(s.Pr, eP);
-    var base = s.sys === 'ossature' ? 2 : (s.toit === 'QUADRO' ? 2.12 : 2.08);
+    // Formule du site (hauteur_interieur) : la règle QUADRO s'applique avant celle de l'ossature (le QUADRO ne pose pas la question du système)
+    var base = s.toit === 'QUADRO' ? 2.12 : (s.sys === 'ossature' ? 2 : 2.08);
     var nReh = s.reh || 0;
     o.hInt = r2((CFG.kind === 'garage' ? (nReh + 2) * 0.13 : nReh * 0.13) + base);
     var stdL = Math.max(0, (o.htL - o.L - eL) / 2), stdP = Math.max(0, (o.htP - o.P - eP) / 2);
@@ -241,7 +242,8 @@
       s.ext = { face: 0, fond: 0, gauche: 0, droite: 0 };
     } else {
       var sy = first(M.sys), ep = first(M.ep);
-      s.sys = sy && /ossature/i.test(sy.label) ? 'ossature' : (ep && /45/.test(ep.label) ? 'madrier45' : 'madrier28');
+      // Le QUADRO est toujours en ossature bois (le site ne pose pas la question : système constructif = 2 dans ses formules)
+      s.sys = s.toit === 'QUADRO' || (sy && /ossature/i.test(sy.label)) ? 'ossature' : (ep && /45/.test(ep.label) ? 'madrier45' : 'madrier28');
       cfg['f-sys'] = s.sys;
       var bd2 = first(M.bard); if (bd2) cfg['f-bard'] = T.bard(bd2.label);
       s.reh = yes(M.reh.q) ? (num(M.reh.n) || 0) : 0; cfg['f-reh'] = String(s.reh);

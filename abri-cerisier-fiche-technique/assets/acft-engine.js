@@ -162,6 +162,8 @@ function calcDims(){
     if(s.hInt!=null) D.hExt=ST.type==='carport'?D.hInt:D.hInt+D.wt*0.5;
     if(s.ov){ ['F','B','L','R'].forEach(k=>{ if(s.ov[k]!=null) D['ov'+k]=s.ov[k]; }); D.stdOvhg=D.ovF; }
   }
+  // QUADRO : hauteur hors tout du site (2,50 abri / 2,60 garage) + 13 cm par rehausse, recalculée sur la hauteur retenue
+  if(isQuadro&&ST.type!=='carport') D.rH=Math.max(0,(ST.type==='garage'?2.60:2.50)+reh*0.13-D.hExt);
   // Carport à pentes : la ferme repose sur l'entrait au droit des poteaux bas, la rive passe au-dessus ;
   // faîtage = haut de la rive côté haut, débord compris (pente réelle conservée)
   if(ST.type==='carport'&&(toit==='1PAN'||toit==='2PANS')){
@@ -260,9 +262,9 @@ const FINITIONS={
   sr_vert:     {label:'Sapin rouge autoclave vert 21×130', dir:'h', board:0.13,  c:['#bdb07e','#857a50','#d2c799']},
   sr_brun:     {label:'Sapin rouge autoclave brun 21×130', dir:'h', board:0.13,  c:['#9e7642','#664826','#b48c57']},
   ayous125:    {label:'Ayous 21×125',                      dir:'h', board:0.125, c:['#b8916a','#86633f','#caa780']},
-  srn_gris:    {label:'SRN 20×70 gris (vertical ajouré)',  dir:'v', boards:[0.07], gap:0.012, c:['#8f9087','#5c5d57','#a8a9a1']},
-  douglas_noir:{label:'Douglas noir (vertical)',           dir:'v', boards:[0.14,0.11,0.14,0.12], c:['#45463f','#262722','#5f605b']},
-  dibond:      {label:'Dibond (panneaux composite)',       dir:'v', boards:[0.6], gap:0.006, gapC:'#1d1e20', c:['#4a4c50','#35373a','#5c5f63']},
+  srn_gris:    {label:'SRN 20×70 gris (vertical ajouré)',  dir:'v', boards:[0.07], gap:0.012, vary:.26, screws:true, c:['#8f9087','#5c5d57','#a8a9a1']},
+  douglas_noir:{label:'Douglas noir (vertical ajouré)',    dir:'v', boards:[0.07], gap:0.012, gapC:'#0d0d0c', vary:.18, screws:true, c:['#3c3d38','#1f201c','#56574f']},
+  dibond:      {label:'Dibond (panneaux composite)',       dir:'v', boards:[1.25], gap:0.006, gapC:'#1d1e20', c:['#4a4c50','#35373a','#5c5f63']},
   bac_bandeau: {label:'Bac acier RAL 7016 (bandeau)',      dir:'v', boards:[0.25], c:['#43474b','#25282b','#62676c']},
   sr_vert_v:   {label:'Pin sylvestre vert (vertical)',     dir:'v', boards:[0.13], c:['#bdb07e','#857a50','#d2c799']},
   ayous_alea:  {label:'Ayous 21×45 et 21×90 (vertical)',   dir:'v', boards:[0.09,0.045], alea:true, gap:0.006, gapC:'#2b1a0d', c:['#8a5f34','#5a3b1d','#a2764a']},
@@ -277,8 +279,9 @@ const COUVERTURES={
   epdm:     {label:'EPDM',                    kind:'plat',    c:['#2e2f31','#18191a','#444649']},
 };
 const isReal=()=>fv('f-rendu')!=='tech';
+function flatTopH(d){ return d.isQuadro?Math.max(0,d.rH):0.39; }
 function wallFin(d){
-  if(ST.type!=='carport'&&d.sys!=='ossature') return FINITIONS.madrier;
+  if(ST.type!=='carport'&&d.sys!=='ossature'&&!d.isQuadro) return FINITIONS.madrier; // QUADRO : toujours en ossature bardée
   return FINITIONS[fv('f-bard')]||FINITIONS.sr_vert;
 }
 function couvFin(d){
@@ -350,16 +353,18 @@ function patBoards(svg,f,sc,ox,oy,tone=0){
   // Aléatoire : suite pseudo-aléatoire (toujours la même) de lames de largeurs différentes, teintes plus contrastées
   const Ra=rng(4242), seq=f.alea?Array.from({length:24},()=>f.boards[Math.floor(Ra()*f.boards.length)]):f.boards;
   const ws=seq.map(w=>Math.max(1.6,w*sc)), gap=f.gap?Math.max(.45,f.gap*sc):0, W=ws.reduce((a,b)=>a+b,0)+gap*ws.length;
-  const H=Math.max(60,3*sc), R=rng(Math.round(W*31));
+  const sp=0.6*sc, H=f.screws?Math.ceil(Math.max(60,3*sc)/sp)*sp:Math.max(60,3*sc), R=rng(Math.round(W*31));
   return texPat(svg,{width:W,height:H,x:ox,y:oy},p=>{
     p.appendChild(svgEl('rect',{x:0,y:0,width:W,height:H,fill:gap?(f.gapC||'#1e1f1c'):dk}));
     let x=0;
     ws.forEach(w=>{
-      const c=shade(b0,(R()-.5)*(f.alea?.34:.14));
+      const c=shade(b0,(R()-.5)*(f.vary||(f.alea?.34:.14)));
       p.appendChild(svgEl('rect',{x,y:0,width:w,height:H,fill:c}));
       if(w>4){const gx=x+w*(.3+.4*R());p.appendChild(svgEl('line',{x1:gx,y1:0,x2:gx+(R()-.5)*2,y2:H,stroke:dk,'stroke-width':.35,opacity:.35}));}
-      p.appendChild(svgEl('rect',{x,y:0,width:Math.max(.3,w*.08),height:H,fill:lt,opacity:.7}));
-      if(!gap) p.appendChild(svgEl('rect',{x:x+w-Math.max(.45,w*.08),y:0,width:Math.max(.45,w*.08),height:H,fill:dk}));
+      const ed=Math.min(w*.08,Math.max(.6,0.012*sc)); // arêtes des lames (fines même sur un grand panneau)
+      p.appendChild(svgEl('rect',{x,y:0,width:Math.max(.3,ed),height:H,fill:lt,opacity:.7}));
+      if(!gap) p.appendChild(svgEl('rect',{x:x+w-Math.max(.45,ed),y:0,width:Math.max(.45,ed),height:H,fill:dk}));
+      if(f.screws&&w>2.5) for(let y=sp*.5;y<H;y+=sp) p.appendChild(svgEl('circle',{cx:x+w*.5,cy:y,r:Math.max(.3,0.005*sc),fill:dk,opacity:.85})); // vis sur les tasseaux (tous les 60 cm)
       x+=w+gap;
     });
   });
@@ -568,6 +573,12 @@ function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
     const top=pts.map(([x,y])=>`${x},${y-t}`).join(' ');
     svg.appendChild(svgEl('polyline',{points:top,fill:'none',stroke:cv.c[1],'stroke-width':cvw,'stroke-linejoin':'round'}));
   };
+  if(g.roofT==='flat'&&d.isQuadro){ // QUADRO (photos et vignettes du site) : le bardage monte d'un seul tenant, couvertine noire fine
+    const qh=Math.max(2,d.rH*sc), cw=Math.max(1.6,0.035*sc);
+    sRect(svg,baseX,baseY-qh,drawW,qh+Math.max(1,0.02*sc),wallPat,'none',0); // recouvre le haut du mur : aucun raccord visible
+    sRect(svg,baseX-Math.max(.8,0.01*sc),baseY-qh-cw,drawW+Math.max(1.6,0.02*sc),cw,'#1f2022','none',0);
+    return;
+  }
   if(g.roofT==='flat'){
     const slabH=Math.max(8,0.39*sc);
     sRect(svg,rx,baseY-slabH,rw,slabH,patBoards(svg,fin,sc,rx,baseY,-.06),shade(rive,-.35),1);
@@ -706,6 +717,17 @@ function drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
   [['L',baseX,-1],['R',baseX+drawW,1]].forEach(([k,x0,dir])=>{
     const [ty,sl]=top[k], xo=x0+dir*cw;
     sPoly(svg,[[x0,gndY],[x0,ty],[xo,ty-sl*cw],[xo,gndY]],pat,shade(fin.c[1],-.3),.8);
+  });
+}
+// Ossature bardée (photos du site) : une planche verticale d'environ 10 cm couvre chaque angle, sur toute la hauteur du mur
+// (côté haut d'un 1 pan : jusque sous la rive, coupée suivant la pente)
+function drawOssatureCorners(svg,d,baseX,drawW,gndY,sc,top){
+  const fin=wallFin(d), cw=Math.max(2,0.10*sc), c=shade(fin.c[0],.07), dk=shade(fin.c[1],-.25), lt=fin.c[2]||fin.c[0];
+  [['L',baseX],['R',baseX+drawW-cw]].forEach(([k,x])=>{
+    const [ty,sl]=top[k], tl=k==='L'?ty:ty+sl*cw, tr=k==='L'?ty+sl*cw:ty; // haut côté gauche / droit de la planche
+    sPoly(svg,[[x,gndY],[x,tl],[x+cw,tr],[x+cw,gndY]],c,dk,.7);
+    sRect(svg,k==='L'?x+cw-Math.max(.6,0.012*sc):x,Math.max(tl,tr),Math.max(.6,0.012*sc),gndY-Math.max(tl,tr),dk,'none',0); // ombre côté bardage
+    sLine(svg,k==='L'?x+Math.max(.5,0.01*sc):x+cw-Math.max(.5,0.01*sc),Math.max(tl,tr),k==='L'?x+Math.max(.5,0.01*sc):x+cw-Math.max(.5,0.01*sc),gndY,lt,.5); // arête éclairée
   });
 }
 function drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,top){ // à dessiner après le mur et le pignon
@@ -1116,7 +1138,7 @@ function elevFit(d,side,vw,vh){
   }
   const g=getElevGeom(d,side), hasMenus=ST.menus.some(m=>m.wall===side), hasHT=(g.ovhgL+g.ovhgR)>0.01;
   const PAD={t:25,b:hasMenus?(hasHT?80:65):(hasHT?55:45),l:55,r:50};
-  const maxH=g.wallH+(g.roofT==='flat'?0.39:(g.roofT==='edge'?0.2:g.rH))+(d.soub||0);
+  const maxH=g.wallH+(g.roofT==='flat'?flatTopH(d):(g.roofT==='edge'?0.2:g.rH))+(d.soub||0);
   return Math.min((vw-PAD.l-PAD.r)/(g.w+g.ovhgL+g.ovhgR),(vh-PAD.t-PAD.b-8)/maxH);
 }
 // Échelle commune aux quatre élévations : toutes les vues à la même échelle
@@ -1140,7 +1162,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
 
   const soub=d.soub||0;
-  const maxH=g.wallH+(g.roofT==='flat'?0.39:(g.roofT==='edge'?0.2:g.rH))+soub;
+  const maxH=g.wallH+(g.roofT==='flat'?flatTopH(d):(g.roofT==='edge'?0.2:g.rH))+soub;
   const totW=g.w+g.ovhgL+g.ovhgR;
   const sc=ST.scale||Math.min(avW/totW,(avH-8)/maxH);
   svg.setAttribute('data-sc',sc);
@@ -1156,7 +1178,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   const real=isReal();
   if(real){
     drawGround(svg,PAD.l/2,vw-PAD.r/2,solY);
-    if(d.sys!=='ossature') drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
+    if(d.sys!=='ossature'&&!d.isQuadro) drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
     sRect(svg,baseX,baseY,drawW,wallHpx,patBoards(svg,wallFin(d),sc,baseX,gndY),'none',0); // contour tracé après le pignon : mur et pignon d'un seul tenant
   } else {
   // Ground + hatch
@@ -1191,10 +1213,12 @@ function drawElev(svg,d,side,vw=320,vh=260){
     const pts=g.roofT==='triangle'?[[X1,gndY],[X1,baseY],[X1+drawW/2,baseY-rh],[X2,baseY],[X2,gndY]]
       :g.roofT==='trapL'?[[X1,gndY],[X1,baseY-rh],[X2,baseY],[X2,gndY]]
       :g.roofT==='trapR'?[[X1,gndY],[X1,baseY],[X2,baseY-rh],[X2,gndY]]
+      :(g.roofT==='flat'&&d.isQuadro)?[[X1,gndY],[X1,baseY-d.rH*sc],[X2,baseY-d.rH*sc],[X2,gndY]]
       :[[X1,gndY],[X1,baseY],[X2,baseY],[X2,gndY]];
     sPoly(svg,pts,'none','#3a3828',1.2);
   }
-  if(real&&d.sys!=='ossature'&&fv('f-profu')!=='oui') drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
+  if(real&&d.sys==='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawOssatureCorners(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
+  if(real&&d.sys!=='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
   if(real&&fv('f-profu')==='oui') drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc)); // profilés alu : coiffent les angles
 
   // Poteaux de soutien (débord > 50 cm)
@@ -1247,8 +1271,9 @@ function drawElev(svg,d,side,vw=320,vh=260){
     const off=Math.max(2,0.06*sc);
     pipesFor(side,d).forEach(p=>{
       const L=p.end==='L';
-      if(p.onEave) downpipe(svg,L?baseX+off:baseX+drawW-off,runY!=null?runY:baseY,solY,sc);
-      else { const s=endY[p.end]; downpipe(svg,L?baseX-off:baseX+drawW+off,s?s.y:baseY,solY,sc,s?s.x:null); }
+      const yTop=d.isQuadro?baseY-d.rH*sc+Math.max(3,0.12*sc):baseY; // QUADRO : gargouille sous la couvertine
+      if(p.onEave) downpipe(svg,L?baseX+off:baseX+drawW-off,runY!=null?runY:yTop,solY,sc);
+      else { const s=endY[p.end]; downpipe(svg,L?baseX-off:baseX+drawW+off,s?s.y:yTop,solY,sc,s?s.x:null); }
     });
   }
 
@@ -1296,8 +1321,8 @@ function drawElev(svg,d,side,vw=320,vh=260){
   drawExtElev(svg,d,side,baseX,solY,sc,real,g.w);
 
   // ── DIMENSION LINES ──────────────────────────────────
-  const roofTopY=baseY-(g.roofT==='flat'?0.39*sc:(g.roofT==='edge'?0:g.rH*sc));
-  const hTot=g.wallH+(g.roofT==='flat'?0.39:(g.roofT==='edge'?0:g.rH));
+  const roofTopY=baseY-(g.roofT==='flat'?flatTopH(d)*sc:(g.roofT==='edge'?0:g.rH*sc));
+  const hTot=g.wallH+(g.roofT==='flat'?flatTopH(d):(g.roofT==='edge'?0:g.rH));
   const hasRise=g.rH>0&&g.roofT!=='flat'&&g.roofT!=='edge';
 
   // ── BOTTOM DIMENSION CHAINS (layered, well spaced) ──
@@ -1370,9 +1395,13 @@ function drawElev(svg,d,side,vw=320,vh=260){
   drawScaleBar(svg,sc);
 
   // ── INTERIOR HEIGHT (centered in wall, smaller) ──
-  const busy=ST.menus.filter(m=>m.wall===side).map(m=>[(m.pos/100)*drawW-(m.lw/100)*sc/2-30,(m.pos/100)*drawW+(m.lw/100)*sc/2+30]);
-  const intK=[.5,.25,.75,.12,.88].find(k=>!busy.some(([a,b])=>k*drawW>a&&k*drawW<b))??.5;
-  sTxtBg(svg,baseX+drawW*intK,gndY-wallHpx*0.45,g.roofT==='edge'?`int. sous faîte ${(d.hInt+d.rH).toFixed(2)} m`:`int. ${d.hInt.toFixed(2)} m`,7,'#3498db');
+  // place libre : d'abord à mi-hauteur sur la largeur, sinon sous ou au-dessus des ouvertures (fenêtre en bandeau par ex.)
+  const boxes=ST.menus.filter(m=>m.wall===side).map(m=>{const cx=(m.pos/100)*drawW, w2=(m.lw/100)*sc/2, y0=((m.seuil||0)/100)*sc; return [cx-w2-30,cx+w2+30,y0-8,y0+(m.lh/100)*sc+8];});
+  let intK=.5, intY=.45;
+  outer: for(const ky of [.45,.15,.8,.3]) for(const k of [.5,.25,.75,.12,.88]){
+    if(!boxes.some(([a,b,c,e])=>k*drawW>a&&k*drawW<b&&ky*wallHpx>c&&ky*wallHpx<e)){ intK=k; intY=ky; break outer; }
+  }
+  sTxtBg(svg,baseX+drawW*intK,gndY-wallHpx*intY,g.roofT==='edge'?`int. sous faîte ${(d.hInt+d.rH).toFixed(2)} m`:`int. ${d.hInt.toFixed(2)} m`,7,'#3498db');
 
 }
 
