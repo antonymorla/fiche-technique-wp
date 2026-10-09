@@ -711,10 +711,13 @@ function drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
 // et devant eux on voit le bout des madriers du mur perpendiculaire (leur épaisseur), rang par rang.
 // Le tout monte jusqu'en haut du mur perpendiculaire : côté haut d'un 1 pan, jusque sous la rive, en suivant la pente.
 // top = {L:[y du haut à l'aplomb du mur, montée en px par px vers l'extérieur], R:[…]}
-function cornerTops(g,baseY,drawW,sc){
+// Vue côté égout (slope1 / slope2) : le débord du toit, côté spectateur, descend sous le haut du mur ;
+// les angles s'arrêtent au bas du toit pour passer derrière lui.
+function cornerTops(g,baseY,drawW,sc,d){
   const k=g.rH*sc/(drawW||1), top={L:[baseY,0],R:[baseY,0]};
   if(g.roofT==='trapL') top.L=[baseY-g.rH*sc,k];
   if(g.roofT==='trapR') top.R=[baseY-g.rH*sc,k];
+  if((g.roofT==='slope1'||g.roofT==='slope2')&&d){ const ey=baseY+(g.ovhgTop||0)*Math.tan(d.penteRad||0)*sc; top.L=[ey,0]; top.R=[ey,0]; }
   return top;
 }
 function drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
@@ -1186,7 +1189,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   const real=isReal();
   if(real){
     drawGround(svg,PAD.l/2,vw-PAD.r/2,solY);
-    if(d.sys!=='ossature'&&!d.isQuadro) drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
+    if(d.sys!=='ossature'&&!d.isQuadro) drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
     sRect(svg,baseX,baseY,drawW,wallHpx,patBoards(svg,wallFin(d),sc,baseX,gndY),'none',0); // contour tracé après le pignon : mur et pignon d'un seul tenant
   } else {
   // Ground + hatch
@@ -1233,12 +1236,13 @@ function drawElev(svg,d,side,vw=320,vh=260){
       :g.roofT==='trapL'?[[X1,gndY],[X1,baseY-rh],[X2,baseY],[X2,gndY]]
       :g.roofT==='trapR'?[[X1,gndY],[X1,baseY],[X2,baseY-rh],[X2,gndY]]
       :(g.roofT==='flat'&&d.isQuadro)?[[X1,gndY],[X1,baseY-d.rH*sc],[X2,baseY-d.rH*sc],[X2,gndY]]
+      :(g.roofT==='slope1'||g.roofT==='slope2')?[[X1,gndY],[X1,cornerTops(g,baseY,drawW,sc,d).L[0]],[X2,cornerTops(g,baseY,drawW,sc,d).L[0]],[X2,gndY]] // côté égout : s'arrête au bas du toit
       :[[X1,gndY],[X1,baseY],[X2,baseY],[X2,gndY]];
     sPoly(svg,pts,'none','#3a3828',1.2);
   }
-  if(real&&d.sys==='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawOssatureCorners(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
-  if(real&&d.sys!=='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc));
-  if(real&&fv('f-profu')==='oui') drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc)); // profilés alu : coiffent les angles
+  if(real&&d.sys==='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawOssatureCorners(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
+  if(real&&d.sys!=='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
+  if(real&&fv('f-profu')==='oui') drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d)); // profilés alu : coiffent les angles
 
   // Poteaux de soutien (débord > 50 cm)
   // Un seul poteau à l'extrémité, hauteur = du sol au dessous du toit à ce point
@@ -1277,6 +1281,14 @@ function drawElev(svg,d,side,vw=320,vh=260){
     const ry=roofYat(drawW+oR);
     sRect(svg,baseX+drawW+oR-postW,ry,postW,solY-ry,postCol,postStroke,1);
     if(real) sRect(svg,baseX+drawW+oR-postW,ry,Math.max(.6,postW*.18),solY-ry,'#d2c799','none',0);
+  }
+  // Extension face au spectateur (vue côté égout) : ses deux poteaux d'angle, devant le mur, dans l'alignement de la façade et du fond
+  if((g.roofT==='slope1'||g.roofT==='slope2')&&(g.ovhgTop||0)>0.50){
+    const ey=baseY+g.ovhgTop*Math.tan(d.penteRad||0)*sc;
+    [baseX,baseX+drawW-postW].forEach(x=>{
+      sRect(svg,x,ey,postW,solY-ey,postCol,postStroke,1);
+      if(real) sRect(svg,x,ey,Math.max(.6,postW*.18),solY-ey,'#d2c799','none',0);
+    });
   }
 
   // Gouttière : côté égout seulement (rien sur le côté haut d'un 1 pan), descente au coin jusqu'au sol
