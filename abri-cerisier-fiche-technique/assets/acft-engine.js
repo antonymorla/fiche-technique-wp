@@ -628,6 +628,22 @@ function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
 }
 // Gouttière anthracite et descente (vignette du site) : section demi-ronde au bout d'un égout, ou longueur d'égout vue de face
 const GOUT_C=['#2f3236','#141517','#5a5e63'];
+// Côtés d'égout (là où sont les gouttières) : bas de chaque pente. 2 pans : faîtage de l'avant vers l'arrière, égouts à gauche et à droite ;
+// 1 pan et toit plat : côté vers lequel descend la pente choisie dans le configurateur.
+function eaveSides(d){ return d.toit==='2PANS'?['gauche','droite']:[fv('f-orient')||'droite']; }
+// Voisins gauche / droite de chaque vue (vue de l'extérieur)
+const VIEW_N={face:['gauche','droite'],fond:['droite','gauche'],gauche:['face','fond'],droite:['fond','face']};
+// Descentes visibles dans la vue V : une par gouttière, à l'angle avant (côtés) ou gauche (avant / fond) de son mur d'égout.
+// onEave : la vue regarde le mur d'égout ; sinon la descente est vue de profil, au bord de la vue.
+function pipesFor(V,d){
+  const [l,r]=VIEW_N[V], out=[];
+  eaveSides(d).forEach(E=>{
+    const C=(E==='gauche'||E==='droite')?'face':'gauche';
+    if(E===V){ if(C===l) out.push({end:'L',onEave:true}); else if(C===r) out.push({end:'R',onEave:true}); }
+    else if(C===V){ if(E===l) out.push({end:'L',onEave:false}); else if(E===r) out.push({end:'R',onEave:false}); }
+  });
+  return out;
+}
 function gutterSec(svg,x,y,sc,dir){ // x, y : bout bas de la rive ; dir -1 = égout à gauche, +1 = à droite
   const gw=Math.max(3,0.12*sc), gh=Math.max(2.4,0.09*sc), x0=dir<0?x-gw*.25:x-gw*.75;
   svg.appendChild(svgEl('path',{d:`M${x0},${y} h${gw} v${gh*.3} a${gw/2},${gh*.7} 0 0 1 ${-gw},0 z`,fill:GOUT_C[0],stroke:GOUT_C[1],'stroke-width':.6}));
@@ -1189,13 +1205,18 @@ function drawElev(svg,d,side,vw=320,vh=260){
   if(fv('f-gout')==='oui'&&g.roofT!=='edge'){
     const kk=g.rH*sc/((g.roofT==='triangle'?drawW/2:drawW)||1);
     const dropE=(g.ovhgTop||0)*Math.tan(d.penteRad||0)*sc;
-    const ends=[];
-    if(g.roofT==='triangle') ends.push([baseX-oL,baseY+kk*oL,-1],[baseX+drawW+oR,baseY+kk*oR,1]);
-    else if(g.roofT==='trapL') ends.push([baseX+drawW+oR,baseY+kk*oR,1]);
-    else if(g.roofT==='trapR') ends.push([baseX-oL,baseY+kk*oL,-1]);
-    ends.forEach(([x,y,dir],i)=>{ const s=gutterSec(svg,x,y,sc,dir); if(i===0) downpipe(svg,dir<0?baseX-Math.max(2,0.06*sc):baseX+drawW+Math.max(2,0.06*sc),s.y,solY,sc,s.x); });
-    if(g.roofT==='slope1'||g.roofT==='slope2'){ const yb=gutterRun(svg,baseX-oL,baseX+drawW+oR,baseY+dropE,sc); downpipe(svg,baseX+Math.max(2,0.06*sc),yb,solY,sc); }
-    if(g.roofT==='flat') downpipe(svg,baseX+Math.max(2,0.06*sc),baseY,solY,sc); // toit plat : gouttière intégrée derrière le bandeau
+    const endY={}; let runY=null;
+    if(g.roofT==='triangle'){ endY.L=gutterSec(svg,baseX-oL,baseY+kk*oL,sc,-1); endY.R=gutterSec(svg,baseX+drawW+oR,baseY+kk*oR,sc,1); }
+    else if(g.roofT==='trapL') endY.R=gutterSec(svg,baseX+drawW+oR,baseY+kk*oR,sc,1);
+    else if(g.roofT==='trapR') endY.L=gutterSec(svg,baseX-oL,baseY+kk*oL,sc,-1);
+    if(g.roofT==='slope1'||g.roofT==='slope2') runY=gutterRun(svg,baseX-oL,baseX+drawW+oR,baseY+dropE,sc);
+    // toit plat : gouttière intégrée derrière le bandeau, seule la descente se voit
+    const off=Math.max(2,0.06*sc);
+    pipesFor(side,d).forEach(p=>{
+      const L=p.end==='L';
+      if(p.onEave) downpipe(svg,L?baseX+off:baseX+drawW-off,runY!=null?runY:baseY,solY,sc);
+      else { const s=endY[p.end]; downpipe(svg,L?baseX-off:baseX+drawW+off,s?s.y:baseY,solY,sc,s?s.x:null); }
+    });
   }
 
   // Menuiseries
@@ -1457,6 +1478,8 @@ function drawCarportElev(svg,d,side,vw,vh){
   const isFlat=d.toit==='TOIT_PLAT'||d.toit==='QUADRO';
   // Gouttière (option ; incluse sur le toit plat) : cachée derrière le bandeau d'égout, seule la descente se voit (poteau d'angle)
   const gout=fv('f-gout')==='oui', dpL=baseX-Math.max(2,0.05*sc), dpR=baseX+dW+Math.max(2,0.05*sc);
+  let cpRun=null; const cpEnd={}; // départ des descentes : sous le bandeau d'égout vu de face, ou au bout de la rive vue de profil
+  const inset=Math.max(3,0.08*sc);
   const bh=Math.max(3,CP_ENTRAIT*sc), rv=Math.max(4,CP_RIVE*sc), th=Math.max(1.6,0.1*sc), pw=Math.max(2,0.12*sc);
   const tgA=Math.tan(d.penteRad||0);
   // Sous-face de la toiture vue d'en dessous (côté haut d'un 1 pan) : bac acier nervuré + pannes, ou planchettes, OSB, feutre
@@ -1516,7 +1539,7 @@ function drawCarportElev(svg,d,side,vw,vh){
     } else
     sRect(svg,rx,topY-slabH,rw,slabH,'#d5d8dc','#555',1.5);
     kneeBraces();
-    if(!wallSide) downpipe(svg,dpL,topY,gndY,sc); // gouttière intégrée derrière le bandeau
+    cpRun=topY; cpEnd.L={x:rx+inset,y:topY}; cpEnd.R={x:rx+rw-inset,y:topY}; // gouttière incluse, derrière le bandeau
   } else if(d.toit==='2PANS'){
     if(isFace){
       // Ferme : entrait, jambettes au quart, diagonales en V depuis le milieu de l'entrait, rives
@@ -1527,7 +1550,7 @@ function drawCarportElev(svg,d,side,vw,vh){
       const xl=cx-(cx-rx)*.22, xr=cx+(rx+rw-cx)*.22;
       member(cx,topY-bh,xl,yAt(xl)+rv*.9,th); member(cx,topY-bh,xr,yAt(xr)+rv*.9,th);
       rive([[rx,eaveY],[cx,peak],[rx+rw,eaveY]]);
-      if(gout&&!wallSide) downpipe(svg,dpL,eaveY+rv,gndY,sc,rx+Math.max(3,0.08*sc));
+      cpEnd.L={x:rx+inset,y:eaveY+rv}; cpEnd.R={x:rx+rw-inset,y:eaveY+rv};
       sTxt(svg,rx+rw*0.3,yAt(rx+rw*0.3)-6,`${d.pente}°`,8,'#888');
       sTxt(svg,rx+rw*0.7,yAt(rx+rw*0.7)-6,`${d.pente}°`,8,'#888');
     } else {
@@ -1536,7 +1559,7 @@ function drawCarportElev(svg,d,side,vw,vh){
       sRect(svg,rx,topY-rHpx,rw,eaveY-(topY-rHpx),real?patCouv(svg,cv,sc,rx,topY-rHpx,d.penteRad):'#d5d8dc',real?cv.c[1]:'#555',1.5);
       sabliere(); kneeBraces();
       beam(rx,eaveY,rw,rv); // bandeau d'égout : cache le bac acier et la gouttière
-      if(gout&&!wallSide) downpipe(svg,dpL,eaveY+rv,gndY,sc);
+      cpRun=eaveY+rv;
       sTxtBg(svg,rx+rw/2,topY-rHpx/2,`pente ${d.pente}°`,8,'#888');
       sTxt(svg,rx+rw/2,topY-rHpx-8,'faîte',7,'#555');
     }
@@ -1574,7 +1597,7 @@ function drawCarportElev(svg,d,side,vw,vh){
         sRect(svg,rx,highY,rw,lowY-highY,real?patCouv(svg,cv,sc,rx,highY,d.penteRad):'#d5d8dc',real?cv.c[1]:'#555',1.5);
         sabliere(); kneeBraces();
         beam(rx,lowY,rw,rv); // bandeau d'égout : cache le bac acier et la gouttière
-        if(gout&&!wallSide) downpipe(svg,dpL,lowY+rv,gndY,sc);
+        cpRun=lowY+rv;
         sTxtBg(svg,rx+rw/2,(highY+lowY)/2,`pente ${d.pente}° vers vous`,8,'#888');
         sTxt(svg,rx+rw/2,highY-7,'faîte (au fond)',7,'#555');
       }
@@ -1589,12 +1612,20 @@ function drawCarportElev(svg,d,side,vw,vh){
       vert(xm,yAt(xm)+rv*.9,topY-bh,pw); // montant
       member(highL?xp+ps:xp,topY-bh,xd,yAt(xd)+rv*.9,th); // diagonale
       rive([[xs,lyL],[xe,lyR]]);
-      if(gout&&!wallSide) downpipe(svg,highL?dpR:dpL,(highL?lyR:lyL)+rv,gndY,sc,(highL?xe:xs)+(highL?-1:1)*Math.max(3,0.08*sc)); // sortie sous le bandeau
+      cpEnd[highL?'R':'L']={x:(highL?xe:xs)+(highL?-1:1)*inset,y:(highL?lyR:lyL)+rv}; // sortie sous le bandeau
       sTxt(svg,rx+rw/2,(lyL+lyR)/2-8,`${d.pente}°`,8,'#888');
       sTxt(svg,highL?rx+3:rx+rw-3,Math.min(lyL,lyR)-6,'faîte',7,'#555',highL?'start':'end');
     }
   }
 
+  // Descentes de gouttière (gouttière derrière le bandeau) : bas de chaque pente, le long du poteau d'angle avant
+  if((gout||isFlat)&&!wallSide){
+    pipesFor(side,d).forEach(p=>{
+      const x=p.end==='L'?dpL:dpR;
+      if(p.onEave){ if(cpRun!=null) downpipe(svg,x,cpRun,gndY,sc); }
+      else { const e=cpEnd[p.end]; if(e) downpipe(svg,x,e.y,gndY,sc,e.x); }
+    });
+  }
   // Dim lines
   dimL(svg,baseX,gndY,baseX+dW,gndY,`${viewW.toFixed(2)} m`,22);
   // Gauche : hauteur faîtage (haut du bandeau / faîte) ; droite : hauteur sous ferme
