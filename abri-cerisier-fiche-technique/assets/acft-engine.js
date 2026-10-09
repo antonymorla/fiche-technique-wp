@@ -1569,7 +1569,9 @@ function drawCarportElev(svg,d,side,vw,vh){
     }
     return 'bac';
   };
-  const wood=potC;
+  const wood=['#c3b47f','#8a7d50','#d8cc9c']; // charpente toujours en bois (lamellé-collé avec les poteaux alu), seuls les poteaux sont noirs
+  // Pas de jambes de force (règle d'Antony) sur les carports QUADRO et avec poteaux alu ou capotés alu : charpente en lamellé-collé
+  const noBraces=isAlu||d.toit==='QUADRO';
   const piece=(pts)=>sPoly(svg,pts,real?wood[0]:'#d5d8dc',real?wood[1]:'#555',real?.7:1);
   const beam=(x,y,w,h)=>{piece([[x,y],[x+w,y],[x+w,y+h],[x,y+h]]); if(real) sRect(svg,x,y,w,Math.max(.5,h*.18),wood[2],'none',0);};
   const member=(x1,y1,x2,y2,tk)=>{ // pièce inclinée d'épaisseur tk
@@ -1582,7 +1584,7 @@ function drawCarportElev(svg,d,side,vw,vh){
     if(real) svg.appendChild(svgEl('polyline',{points:pts.map(([x,y])=>`${x},${y+rv*.5}`).join(' '),fill:'none',stroke:wood[1],'stroke-width':.5,opacity:.7}));
   };
   const kneeBraces=()=>{ // jambes de force à 45° entre poteaux et entrait / sablière
-    if(wallSide||CLOSALL.includes(side)) return;
+    if(wallSide||CLOSALL.includes(side)||noBraces) return;
     const kb=Math.min(0.5*sc,hpx*.25);
     ts.forEach((t,i)=>{
       const px=baseX+(dW-ps)*t;
@@ -1590,8 +1592,16 @@ function drawCarportElev(svg,d,side,vw,vh){
       if(i<ts.length-1) member(px+ps,topY+kb,px+ps+kb,topY,Math.max(1.6,0.08*sc));
     });
   };
-  const sabliere=()=>beam(isFace?baseX:rx,topY-bh,isFace?dW:rw,bh); // entrait (face) ou sablière (côté)
-  const postTop=(x,yTop)=>{ if(!wallSide) beam(x,yTop,ps,topY-bh-yTop); }; // poteau prolongé jusqu'à la rive
+  const sabliere=()=>{ // entrait (face) ou sablière (côté) ; lamellé-collé avec les poteaux alu : lamelles visibles
+    const x=isFace?baseX:rx, w=isFace?dW:rw;
+    beam(x,topY-bh,w,bh);
+    if(noBraces&&real) for(let k=1;k<4;k++) sLine(svg,x,topY-bh+bh*k/4,x+w,topY-bh+bh*k/4,wood[1],.4);
+  };
+  const postTop=(x,yTop)=>{ // poteau prolongé jusqu'à la rive (noir s'il est en alu ou capoté alu)
+    if(wallSide) return;
+    if(isAlu&&real){ sRect(svg,x,yTop,ps,topY-bh-yTop,potC[0],potC[1],.8); sRect(svg,x,yTop,Math.max(.6,ps*.18),topY-bh-yTop,potC[2],'none',0); }
+    else beam(x,yTop,ps,topY-bh-yTop);
+  };
 
   if(isFlat){
     // Bandeau toit plat : 36 cm au-dessus de la ferme (2,10 → 2,46 m)
