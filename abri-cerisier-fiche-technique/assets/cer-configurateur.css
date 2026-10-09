@@ -154,3 +154,181 @@
   body:not(.cer-plan-open) .cer-plan__prix span { display: none; }
   body:not(.cer-plan-open) .cer-plan__prix { justify-content: flex-start; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Refonte du formulaire (version test, avec ?apercu=plan) : étapes en cartes, textes à taille
+   raisonnable, options en cartes homogènes avec coche et prix en pastille, oui / non en pilules.
+   Le formulaire du site (WAPF) n'est pas modifié : seulement sa présentation.
+   ════════════════════════════════════════════════════════════════════════════ */
+.cer-plan-on form.cart {
+  --cf-olive: #515136; --cf-olive-dk: #3d3d28; --cf-sable: #f5f3ee; --cf-sable2: #ece9e0; --cf-ligne: #e4e0d5;
+  --cf-texte: #23251b; --cf-doux: #77755f;
+  font-size: 15px; line-height: 1.45; color: var(--cf-texte); counter-reset: cfstep;
+}
+/* Étapes : cartes blanches numérotées */
+.cer-plan-on .wapf-section.TITRE, .cer-plan-on .wapf-section.TITRE2 {
+  background: #fff !important; border: 1px solid var(--cf-ligne) !important; border-radius: 16px !important;
+  padding: 22px 22px 16px !important; margin: 0 0 14px !important; box-shadow: 0 1px 2px rgba(35, 37, 27, .04);
+  counter-increment: cfstep;
+}
+.cer-plan-on form.cart .wapf-field-label { font-size: 15px !important; font-weight: 600 !important; color: var(--cf-texte); line-height: 1.35; margin: 0 0 10px; }
+.cer-plan-on form.cart .sTITRE .wapf-field-label { font-size: 14px !important; font-weight: 500 !important; color: var(--cf-doux); }
+.cer-plan-on form.cart .wapf-field-label.cer-step-h { display: flex; align-items: center; gap: 12px; font-size: 17.5px !important; font-weight: 600 !important; color: var(--cf-olive-dk); margin-bottom: 14px; }
+.cer-plan-on form.cart .wapf-field-label.cer-step-h::before {
+  content: counter(cfstep); flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--cf-olive); color: #fff; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+}
+.cer-plan-on form.cart .wapf-field-description { font-size: 13px; color: var(--cf-doux); line-height: 1.45; margin-top: 8px; }
+.cer-plan-on form.cart .wapf-field-container { margin-bottom: 16px; }
+.cer-plan-on form.cart .wapf-field-container .wapf-field-container:last-child { margin-bottom: 4px; }
+
+/* Options avec image : cartes homogènes, coche de sélection */
+.cer-plan-on .wapf-image-swatch-wrapper { gap: 10px !important; }
+.cer-plan-on .wapf-swatch--image { position: relative; border-radius: 12px; }
+.cer-plan-on .wapf-swatch--image.apf-pick-box, .cer-plan-on .wapf-swatch--image .apf-pick-box {
+  border: 1.5px solid var(--cf-ligne) !important; border-radius: 12px; background: #fff; padding: 8px 8px 10px; height: 100%;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.cer-plan-on .wapf-swatch--image:hover.apf-pick-box, .cer-plan-on .wapf-swatch--image:hover .apf-pick-box { border-color: #c9c3b2 !important; box-shadow: 0 6px 16px rgba(35, 37, 27, .08); transform: translateY(-1px); }
+.cer-plan-on .wapf-swatch--image.wapf-checked.apf-pick-box, .cer-plan-on .wapf-swatch--image.wapf-checked .apf-pick-box {
+  border-color: var(--cf-olive) !important; box-shadow: inset 0 0 0 1px var(--cf-olive), 0 6px 16px rgba(81, 81, 54, .14); background: #fbfaf6;
+}
+.cer-plan-on .wapf-swatch--image.wapf-checked::after {
+  content: '✓'; position: absolute; top: 7px; right: 7px; z-index: 2; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--cf-olive); color: #fff; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+}
+.cer-plan-on .wapf-swatch--image img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 8px; background: var(--cf-sable); }
+.cer-plan-on form.cart .wapf-swatch-label { font-size: 13.5px !important; line-height: 1.3; margin-top: 8px; color: var(--cf-texte); }
+/* Prix des options : pastille « +480 € » / « Inclus » */
+.cer-plan-on form.cart .wapf-pricing-hint.cer-pill {
+  display: inline-block; margin: 5px 0 0; padding: 2px 9px; border-radius: 999px; background: var(--cf-sable2);
+  color: var(--cf-olive-dk); font-size: 12px; font-weight: 600; line-height: 1.5; white-space: nowrap;
+}
+.cer-plan-on form.cart .wapf-pricing-hint.cer-pill--0 { background: transparent; color: var(--cf-doux); font-weight: 500; padding: 0; }
+
+/* Choix sans image (oui / non, sur-mesure…) : pilules */
+.cer-plan-on .wapf-swatch-wrapper:not(.wapf-image-swatch-wrapper), .cer-plan-on .wapf-radios { display: flex !important; flex-wrap: wrap; gap: 8px; }
+.cer-plan-on .wapf-swatch--text, .cer-plan-on .wapf-radio label.wapf-input-label {
+  display: inline-flex !important; align-items: center; gap: 6px; min-height: 44px; padding: 9px 18px !important;
+  border: 1.5px solid var(--cf-ligne) !important; border-radius: 999px !important; background: #fff !important;
+  color: var(--cf-texte) !important; font-size: 14px !important; font-weight: 500; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.cer-plan-on .wapf-swatch--text:hover, .cer-plan-on .wapf-radio label.wapf-input-label:hover { border-color: #c9c3b2 !important; }
+.cer-plan-on .wapf-swatch--text.wapf-checked, .cer-plan-on .wapf-radio.wapf-checked label.wapf-input-label {
+  background: var(--cf-olive) !important; border-color: var(--cf-olive) !important; color: #fff !important;
+}
+.cer-plan-on .wapf-radio .wapf-custom { display: none !important; }
+.cer-plan-on .wapf-radio .wapf-pricing-hint.cer-pill, .cer-plan-on .wapf-swatch--text .wapf-pricing-hint.cer-pill { margin: 0; }
+.cer-plan-on .wapf-swatch--text.wapf-checked .cer-pill, .cer-plan-on .wapf-radio.wapf-checked .cer-pill { background: rgba(255, 255, 255, .18); color: #fff; }
+
+/* Guides comparatifs : un simple lien */
+.cer-plan-on .cerisier-toggle { margin-bottom: 8px !important; }
+.cer-plan-on .cerisier-toggle .wapf-swatch--text, .cer-plan-on .cerisier-toggle .wapf-choice label {
+  min-height: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important;
+  color: var(--cf-olive) !important; font-size: 13px !important; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.cer-plan-on .cerisier-toggle .wapf-swatch--text::before { content: 'ⓘ'; margin-right: 6px; text-decoration: none; display: inline-block; }
+
+/* Listes et nombres */
+.cer-plan-on form.cart select.wapf-input, .cer-plan-on form.cart input.wapf-input[type=number], .cer-plan-on form.cart input.wapf-input[type=text] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 48px; padding: 0 40px 0 14px; border: 1.5px solid var(--cf-ligne) !important;
+  border-radius: 12px !important; background: #fff; font-size: 15px; color: var(--cf-texte); box-shadow: none;
+}
+.cer-plan-on form.cart select.wapf-input {
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23515136' stroke-width='1.8'/%3E%3C/svg%3E") no-repeat right 14px center;
+}
+.cer-plan-on form.cart select.wapf-input:focus, .cer-plan-on form.cart input.wapf-input:focus { border-color: var(--cf-olive) !important; outline: none; box-shadow: 0 0 0 3px rgba(81, 81, 54, .12); }
+/* Dimensions : − / + autour de la liste */
+.cer-plan-on .cer-stepper { display: flex; align-items: stretch; gap: 6px; }
+.cer-plan-on .cer-stepper select.wapf-input { flex: 1 1 auto; text-align: center; text-align-last: center; padding: 0 12px; background-image: none !important; font-weight: 600; }
+.cer-plan-on .cer-stepper__b {
+  flex: 0 0 48px; height: 48px; border: 0; border-radius: 12px; background: var(--cf-sable2); color: var(--cf-olive-dk);
+  font-size: 22px; line-height: 1; cursor: pointer; transition: background .15s;
+}
+.cer-plan-on .cer-stepper__b:hover { background: #dfdbcf; }
+.cer-plan-on .cer-stepper__b:active { transform: scale(.96); }
+
+/* Menuiseries : ajout et suppression */
+.cer-plan-on form.cart .wapf-add-clone {
+  display: inline-flex !important; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px;
+  border: 1.5px dashed var(--cf-olive) !important; border-radius: 12px !important; background: #fff !important; color: var(--cf-olive-dk) !important;
+  font-size: 14px !important; font-weight: 600 !important; letter-spacing: 0 !important; text-transform: none !important;
+}
+.cer-plan-on form.cart .wapf-add-clone::before { content: '+'; font-size: 20px; font-weight: 400; }
+.cer-plan-on form.cart .wapf-add-clone:first-letter { text-transform: uppercase; }
+.cer-plan-on form.cart .wapf-del-clone { background: transparent !important; border: 0 !important; color: #9a3412 !important; font-size: 13px !important; text-decoration: underline; text-transform: none !important; padding: 4px 0 !important; }
+
+/* Panier : pas de quantité (un configurateur = un ouvrage), bouton principal */
+.cer-plan-on form.cart .quantity { display: none !important; }
+.cer-plan-on form.cart .single_add_to_cart_button {
+  width: 100% !important; min-height: 56px; border-radius: 14px !important; background: var(--cf-olive) !important; border-color: var(--cf-olive) !important;
+  font-size: 16px !important; font-weight: 600 !important; letter-spacing: .02em !important; text-transform: none !important;
+}
+.cer-plan-on form.cart .single_add_to_cart_button:hover { background: var(--cf-olive-dk) !important; }
+
+/* Panneau : variation du prix et réalisations */
+.cer-plan__prix { position: relative; }
+.cer-plan__delta { position: absolute; right: 12px; top: -12px; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: #fff; background: #2f6f3e; box-shadow: 0 4px 12px rgba(0, 0, 0, .18); animation: cerDelta .25s ease-out; transition: opacity .5s, transform .5s; pointer-events: none; }
+.cer-plan__delta.down { background: #8a4b2a; }
+.cer-plan__delta.out { opacity: 0; transform: translateY(-6px); }
+@keyframes cerDelta { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cer-plan__real { margin-top: 14px; }
+.cer-plan__real:empty { display: none; }
+.cer-plan__realh { font-size: 14px; font-weight: 600; color: var(--cer-olive-dk); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.cer-plan__realh span { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #fff; background: var(--cer-olive); padding: 2px 8px; border-radius: 999px; }
+.cer-plan__realmain { margin: 0; }
+.cer-plan__realmain .z { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.cer-plan__realmain img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; }
+.cer-plan__realmain figcaption { font-size: 12.5px; color: var(--cer-texte); margin-top: 6px; font-weight: 500; }
+.cer-plan__realth { display: flex; gap: 6px; margin-top: 8px; }
+.cer-plan__realth button { flex: 1 1 0; padding: 0; border: 2px solid transparent; border-radius: 8px; background: none; cursor: pointer; overflow: hidden; }
+.cer-plan__realth button.on { border-color: var(--cer-olive); }
+.cer-plan__realth img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.cer-plan__realn { font-size: 11.5px; color: var(--cer-doux); margin: 6px 0 0; line-height: 1.4; }
+.cer-plan__realn a { color: var(--cer-olive); font-weight: 600; }
+.cer-lb { position: fixed; inset: 0; z-index: 200000; background: rgba(20, 20, 16, .88); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; cursor: zoom-out; }
+.cer-lb img { max-width: 100%; max-height: 82vh; border-radius: 10px; }
+.cer-lb p { color: #fff; margin: 12px 0 0; font-size: 14px; text-align: center; }
+.cer-lb button { position: absolute; top: 12px; right: 16px; width: 44px; height: 44px; border: 0; background: rgba(255, 255, 255, .15); color: #fff; font-size: 26px; border-radius: 50%; cursor: pointer; }
+
+/* Téléphone : cartes plus compactes, 3 vignettes par ligne */
+@media (max-width: 767.98px) {
+  .cer-plan-on .wapf-section.TITRE, .cer-plan-on .wapf-section.TITRE2 { padding: 16px 14px 10px !important; border-radius: 14px !important; margin-bottom: 12px !important; }
+  .cer-plan-on .wapf-image-swatch-wrapper { --wapf-cols-m: 3 !important; gap: 8px !important; }
+  .cer-plan-on .wapf-swatch--image.apf-pick-box, .cer-plan-on .wapf-swatch--image .apf-pick-box { padding: 6px 6px 8px; }
+  .cer-plan-on form.cart .wapf-swatch-label { font-size: 12.5px !important; }
+  .cer-plan-on form.cart .wapf-field-label.cer-step-h { font-size: 16px !important; gap: 10px; }
+  .cer-plan-on form.cart .wapf-field-label.cer-step-h::before { flex-basis: 26px; width: 26px; height: 26px; font-size: 13px; }
+  .cer-plan-on .wapf-swatch--text, .cer-plan-on .wapf-radio label.wapf-input-label { padding: 8px 14px !important; font-size: 13.5px !important; }
+  .cer-plan__real { display: none; }
+  body.cer-plan-open .cer-plan__real { display: block; }
+}
+
+/* Ajustements après essai */
+.cer-plan-on .wapf-radio input[type=radio], .cer-plan-on .wapf-swatch--text input[type=radio] { position: absolute !important; opacity: 0 !important; width: 1px; height: 1px; pointer-events: none; }
+/* « Comparer les options » : en haut à droite de la carte, à côté du titre de l'étape */
+.cer-plan-on .wapf-section.TITRE, .cer-plan-on .wapf-section.TITRE2 { position: relative; }
+.cer-plan-on .wapf-section > .cerisier-toggle { position: absolute !important; top: 25px; right: 22px; width: auto !important; margin: 0 !important; z-index: 1; }
+.cer-plan-on .wapf-section:has(> .cerisier-toggle) .cer-step-h { padding-right: 170px; }
+.cer-plan-on .stepper-fix { display: none; }
+@media (max-width: 767.98px) {
+  .cer-plan-on .wapf-section > .cerisier-toggle { top: -11px; right: 12px; background: #fff; padding: 0 6px; }
+  .cer-plan-on .wapf-section:has(> .cerisier-toggle) .cer-step-h { padding-right: 0; }
+  .cer-plan-on .cer-stepper { gap: 4px; }
+  .cer-plan-on .cer-stepper__b { flex: 0 0 38px; height: 46px; font-size: 20px; }
+  .cer-plan-on .cer-stepper select.wapf-input { flex: 1 1 0; min-width: 0; width: auto; padding: 0 2px; font-size: 16px; }
+}
+/* boutons − / + : le thème impose largeur et marges aux boutons */
+.cer-plan-on .cer-stepper__b { min-width: 0 !important; padding: 0 !important; margin: 0 !important; width: 48px; box-shadow: none !important; }
+.cer-plan-on .cer-stepper select.wapf-input { min-width: 0 !important; margin: 0 !important; }
+@media (max-width: 767.98px) {
+  .cer-plan-on .cer-stepper__b { width: 36px !important; flex: 0 0 36px !important; }
+  .cer-plan-on .cer-stepper select.wapf-input { padding: 0 2px !important; }
+  .cer-plan-on .wapf-section > .cerisier-toggle { top: 19px; right: 14px; padding: 0; background: transparent; }
+  .cer-plan-on .wapf-section:has(> .cerisier-toggle) .cer-step-h { padding-right: 104px; }
+  .cer-plan-on .cerisier-toggle .wapf-swatch--text { font-size: 12px !important; }
+}
+@media (max-width: 767.98px) {
+  .cer-plan-on .wapf-image-swatch-wrapper:has(> div.wapf-swatch:nth-of-type(4):last-child) { --wapf-cols-m: 2 !important; } /* 4 choix : 2 × 2 */
+  .cer-plan-on .wapf-image-swatch-wrapper:has(> div.wapf-swatch:nth-of-type(2):last-child) { --wapf-cols-m: 2 !important; }
+}
