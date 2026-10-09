@@ -3,8 +3,8 @@
  * Configurateurs de vente Abri Cerisier (abri, garage, carport) : visuel en direct, plans joints au panier.
  *
  * - Sur les 3 fiches configurateur, ajoute le panneau « Votre abri en direct » (moteur de dessin du générateur de plan).
- * - Mode « test » : actif seulement avec ?apercu=plan dans l'adresse (les visiteurs ne voient rien de changé).
- *   Mode « tous » : actif pour tout le monde. Mode « off » : rien.
+ * - Mode « tous » (défaut) : actif pour tout le monde. Mode « test » : seulement avec ?apercu=plan dans l'adresse.
+ *   Mode « off » : rien. Réglage : Réglages → Fiche Technique → Configurateurs de vente.
  * - À l'ajout au panier, les vues dessinées (JPEG) et la configuration lue sont enregistrées en fichiers
  *   (uploads/cer-plans/…), jamais dans la session ; la façade sert de vignette au panier ; les plans suivent la commande.
  */
@@ -24,7 +24,7 @@ function cer_cfg_mode() {
 	if ( defined( 'CER_CFG_MODE' ) ) {
 		return CER_CFG_MODE;
 	}
-	return get_option( 'cer_cfg_mode', 'test' );
+	return get_option( 'cer_cfg_mode', 'tous' );
 }
 
 function cer_cfg_actif_ici() {
@@ -50,7 +50,10 @@ function cer_cfg_assets() {
 	if ( defined( 'CER_CFG_URL' ) ) {
 		return [ CER_CFG_URL, CER_CFG_DIR ];
 	}
-	return [ plugins_url( 'assets/', dirname( __FILE__ ) . '/abri-cerisier-fiche-technique.php' ), dirname( __DIR__ ) . '/assets/' ];
+	if ( defined( 'ACFT_URL' ) ) {
+		return [ ACFT_URL . 'assets/', ACFT_DIR . 'assets/' ];
+	}
+	return [ plugins_url( 'assets/', dirname( __DIR__ ) . '/abri-cerisier-fiche-technique.php' ), dirname( __DIR__ ) . '/assets/' ];
 }
 
 add_action( 'wp_enqueue_scripts', function () {
@@ -58,8 +61,8 @@ add_action( 'wp_enqueue_scripts', function () {
 	if ( ! $kind ) {
 		return;
 	}
-	if ( ! defined( 'DONOTCACHEPAGE' ) ) {
-		define( 'DONOTCACHEPAGE', true ); // version test : jamais en cache
+	if ( 'test' === cer_cfg_mode() && ! defined( 'DONOTCACHEPAGE' ) ) {
+		define( 'DONOTCACHEPAGE', true ); // version test (?apercu=plan) : jamais en cache
 	}
 	list( $url, $dir ) = cer_cfg_assets();
 	$v = function ( $f ) use ( $dir ) { return CER_CFG_VERSION . '-' . ( file_exists( $dir . $f ) ? filemtime( $dir . $f ) : 0 ); };

@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
- * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF). Accessible sur une URL cachée configurable.
- * Version:           2.7.0
+ * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
+ * Version:           3.0.0
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,12 +18,21 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '2.7.0' );
+define( 'ACFT_VERSION',  '3.0.0' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
 define( 'ACFT_PLUGIN',   plugin_basename( __FILE__ ) );
 define( 'ACFT_GITHUB',   'antonymorla/fiche-technique-wp' );
+
+// Configurateurs de vente (visuel en direct, plans joints au panier) et devis Cerisier.
+// Réglage : Réglages → Fiche Technique → « Configurateurs de vente » (désactivé / test / tous les visiteurs).
+if ( ! function_exists( 'cer_cfg_produits' ) ) {
+    require_once ACFT_DIR . 'includes/configurateurs.php';
+}
+if ( ! function_exists( 'cer_devis_pdf' ) ) {
+    require_once ACFT_DIR . 'includes/devis-cerisier.php';
+}
 
 /* ═══════════════════════════════════════════════════════════════
    1. RÉÉCRITURE D'URL – slug caché
@@ -515,6 +524,9 @@ add_action( 'admin_menu', function() {
 } );
 
 add_action( 'admin_init', function() {
+    register_setting( 'acft_group', 'cer_cfg_mode', [
+        'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'tous'; },
+    ] );
     register_setting( 'acft_group', 'acft_slug', [
         'sanitize_callback' => function( $v ) {
             $v = sanitize_title( $v );
@@ -573,6 +585,17 @@ function acft_settings_page() {
                         </td>
                     </tr>
                 </table>
+            </div>
+            <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
+                <h2 style="margin-top:0">Configurateurs de vente</h2>
+                <p>Visuel en direct sur les configurateurs abri, garage et carport, plans joints au panier et devis Cerisier avec plans à l'échelle (l'ancien devis reste utilisé au moindre doute).</p>
+                <?php $mode = function_exists( 'cer_cfg_mode' ) ? cer_cfg_mode() : 'tous'; ?>
+                <?php if ( defined( 'CER_CFG_MODE' ) ) : ?><p><em>Réglage imposé par le code (CER_CFG_MODE = <?php echo esc_html( CER_CFG_MODE ); ?>).</em></p><?php endif; ?>
+                <fieldset>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="tous" <?php checked( $mode, 'tous' ); ?> /> Tous les visiteurs</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="test" <?php checked( $mode, 'test' ); ?> /> Test : seulement avec <code>?apercu=plan</code> dans l'adresse</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="off" <?php checked( $mode, 'off' ); ?> /> Désactivé (configurateurs et devis d'origine)</label>
+                </fieldset>
                 <?php submit_button( 'Enregistrer' ); ?>
             </div>
         </form>

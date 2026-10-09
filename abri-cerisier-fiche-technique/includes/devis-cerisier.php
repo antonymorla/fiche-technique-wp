@@ -16,6 +16,15 @@ defined( 'ABSPATH' ) || exit;
 
 add_filter( 'wqg_quote_pdf', 'cer_devis_pdf', 20, 2 );
 
+// Essais de l'équipe : avec le cookie cer_essai_devis, pas de mail « Un de vos clients a généré un devis » (Bérénice n'est pas dérangée)
+add_filter( 'pre_wp_mail', function ( $retour, $atts ) {
+	if ( isset( $_COOKIE['cer_essai_devis'] ) && 'sans-mail' === $_COOKIE['cer_essai_devis'] // phpcs:ignore
+		&& 0 === strpos( (string) ( $atts['subject'] ?? '' ), 'Un de vos clients a généré un devis' ) ) {
+		return true;
+	}
+	return $retour;
+}, 10, 2 );
+
 function cer_devis_pdf( $pdf, $client ) {
 	if ( null !== $pdf || ! function_exists( 'WC' ) || ! WC()->cart || ! function_exists( 'cer_cfg_produits' ) ) {
 		return $pdf;
