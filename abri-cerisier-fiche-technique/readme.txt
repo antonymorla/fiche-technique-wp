@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.0.8
+Stable tag: 3.0.9
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,10 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.0.9 =
+* PRIX : une dimension sur-mesure hors des bornes du champ (ex. profondeur sous 2 m, sans prix dans les grilles) n'affiche plus de prix : le panneau indique « Profondeur : 2 m minimum » et le navigateur le signale dès la saisie. Le panier la refuse (minimum posé dans les champs WAPF le 12/10/2026, réglable dans « Minimum »)
+* Le prix du panneau est tenu à jour même quand le dessin ne peut pas se faire (jamais un ancien prix affiché)
 
 = 3.0.8 =
 * PRIX : une question masquée par les conditions du formulaire (ex. extension saisie puis « NON ») gardait sa valeur et le formulaire la comptait encore dans le prix affiché, alors que le panier l'ignore (garage 7,5 × 3 affiché 9 659 € au lieu de 8 196,50 €). Ses saisies sont désormais effacées : prix affiché = prix du panier

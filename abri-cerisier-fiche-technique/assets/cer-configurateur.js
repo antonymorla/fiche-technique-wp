@@ -617,7 +617,7 @@
     if (!P) return;
     var L = LAST, svg = P.querySelector('#cer-sv-main'), empty = P.querySelector('.cer-plan__empty');
     Array.prototype.forEach.call(P.querySelectorAll('.cer-plan__tabs button'), function (b) { b.classList.toggle('on', b.getAttribute('data-v') === VIEW); });
-    if (!L) { svg.style.display = 'none'; empty.style.display = ''; P.querySelector('.cer-plan__dims').innerHTML = ''; return; }
+    if (!L) { svg.style.display = 'none'; empty.style.display = ''; P.querySelector('.cer-plan__dims').innerHTML = ''; try { polish(); } catch (e) { if (window.console) console.warn('[Cerisier prix]', e); } return; } // prix tenu à jour même sans dessin (jamais un ancien prix)
     svg.style.display = ''; empty.style.display = 'none';
     if (!shownOnce) { shownOnce = true; if (memoGet() !== 'min') document.body.classList.remove('cer-plan-min'); }
     svg.setAttribute('data-v', VIEW === 'plan' ? 'plan' : 'vue');
@@ -707,6 +707,22 @@
     var tot = numTxt((form.querySelector('.blocdimpr1 .wapf-calc-text, .field-453ead0 .wapf-calc-text, .field-d0abad4 .wapf-calc-text') || {}).textContent);
     var base = numTxt((form.querySelector('.field-4a1fc24 .wapf-calc-text, .field-b53e07d .wapf-calc-text, .field-d0aafc5 .wapf-calc-text') || {}).textContent);
     var box = P.querySelector('.cer-plan__prix');
+    // Saisie hors des bornes du champ (ex. profondeur sur-mesure sous 2 m, sans prix dans les grilles) : le panier la refuse,
+    // donc aucun prix affiché ; on dit quoi corriger.
+    var hors = Array.prototype.filter.call(form.querySelectorAll('input[type=number]'), function (i) {
+      var c = i.closest('.wapf-field-container');
+      return c && !c.classList.contains('wapf-hide') && !c.closest('.wapf-hide') && i.value !== '' && i.validity && (i.validity.rangeUnderflow || i.validity.rangeOverflow);
+    });
+    if (hors.length) {
+      var i0 = hors[0], lab = ((i0.closest('.wapf-field-container').querySelector('.wapf-field-label') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+      var enM = /\(m\)|\ben m\b|poteaux/i.test(lab), bas = i0.validity.rangeUnderflow;
+      var msg = (lab.replace(/\s*\(m\)\s*/i, ' ').replace(/\s+en m\s*$/i, '').trim() || 'Dimension') + ' : ' + String(+(bas ? i0.min : i0.max)).replace('.', ',') + (enM ? ' m' : '') + (bas ? ' minimum' : ' maximum');
+      box.hidden = false; var st = box.querySelector('strong'); st.textContent = msg; st.className = 'cer-plan__borne';
+      var p = document.createElement('p'); p.className = 'cer-plan__hint'; p.textContent = msg + '. Corrigez la valeur pour voir le prix.';
+      var lg = P.querySelector('.cer-plan__lignes'); lg.innerHTML = ''; lg.appendChild(p);
+      PREV_TOT = null; return;
+    }
+    box.querySelector('strong').className = '';
     if (tot > 200000) { if (window.console) console.warn('[Cerisier] total improbable, non affiché :', tot); tot = NaN; } // garde-fou : au-delà de toute grille du site
     if (!isNaN(tot) && tot > 0) { box.hidden = false; box.querySelector('strong').innerHTML = money(tot) + '<small>TTC</small>'; } else box.hidden = true;
     deltaPrix(tot);
@@ -824,7 +840,10 @@
     form = document.querySelector('form.cart');
     if (!form || !form.querySelector('.wapf-wrapper, .wapf-field-group')) return;
     build();
-    form.addEventListener('change', function () { schedule(); });
+    form.addEventListener('change', function (e) { // saisie hors bornes : message du navigateur tout de suite, pas seulement au clic « Ajouter au panier »
+      var t = e.target; if (e.isTrusted && t && t.type === 'number' && t.validity && (t.validity.rangeUnderflow || t.validity.rangeOverflow) && t.reportValidity) t.reportValidity();
+      schedule();
+    });
     form.addEventListener('input', function () { schedule(250); });
     form.addEventListener('click', function (e) { if (e.target.closest('.wapf-add-clone, .wapf-del-clone, .wapf-swatch, label')) schedule(200); });
     new MutationObserver(function () { schedule(300); }).observe(form, { childList: true, subtree: true });

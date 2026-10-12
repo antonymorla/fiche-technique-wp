@@ -117,6 +117,7 @@
 .cer-plan__prix span { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; opacity: .85; line-height: 1.3; }
 .cer-plan__prix strong { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cer-plan__prix strong small { font-size: 12px; font-weight: 400; opacity: .85; margin-left: 4px; }
+.cer-plan__prix strong.cer-plan__borne { font-size: 15px; font-weight: 600; white-space: normal; text-align: right; line-height: 1.3; } /* saisie hors bornes : message à la place du prix */
 /* Détail de la configuration (choix et prix, lus dans le configurateur) */
 .cer-plan__detail { margin-top: 12px; border-top: 1px solid var(--cer-ligne); padding-top: 10px; }
 .cer-plan__detail summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--cer-olive-dk); min-height: 40px; display: flex; align-items: center; list-style: none; }
