@@ -1478,19 +1478,47 @@ function drawCarportElev(svg,d,side,vw,vh){
   // Vue « en 3D » : à travers un côté ouvert, on voit le côté fermé (ou le mur d'adossement) d'en face, derrière les poteaux
   const CLOSALL=closList();
   const behind=({face:'fond',fond:'face',gauche:'droite',droite:'gauche'})[side];
+  // Remplissage des fermetures : type choisi dans le configurateur (ajouré / madrier clin / ossature bardée), sinon le bardage
+  const ct=fv('f-clos-type'), cfin=ct==='ajouree'?extFin(d,'ajouree'):(ct==='clin'?FINITIONS.sr_vert:fin);
+  // Haut d'une fermeture dans cette vue (règle d'Antony) : elle ferme jusqu'en haut, sous la rive ou le bandeau (acrotère),
+  // entre les poteaux d'extrémité — pignon compris sur un 2 pans, pente comprise sur un 1 pan
+  const closTop=()=>{
+    const tg=Math.tan(d.penteRad||0), rvv=Math.max(4,CP_RIVE*sc), x0=baseX, x1=baseX+dW, y0=gndY-hpx;
+    if(d.toit==='TOIT_PLAT'||d.toit==='QUADRO') return [[x0,y0],[x1,y0]];
+    if(d.toit==='2PANS'){
+      if(isFace){
+        const peak=y0-rHpx, cx=rx+rw/2, eaveY=peak+(rw/2)*tg;
+        const yAt=x=>x<cx?eaveY-(eaveY-peak)*(x-rx)/(cx-rx||1):eaveY-(eaveY-peak)*(rx+rw-x)/(rx+rw-cx||1);
+        return [[x0,yAt(x0)+rvv],[cx,peak+rvv],[x1,yAt(x1)+rvv]];
+      }
+      const eaveY=gndY-(d.hExt+d.rH-(d.L/2+d.ovL)*tg)*sc; return [[x0,eaveY+rvv],[x1,eaveY+rvv]];
+    }
+    const o=fv('f-orient'); let hL=false, hR=false;
+    if(isFace){ const fG=o==='droite', fD=o==='gauche'; if(side==='face'){hL=fG;hR=fD;} else {hL=fD;hR=fG;} }
+    else { const fF=o==='fond', fB=o==='face'; if(side==='gauche'){hL=fF;hR=fB;} else {hL=fB;hR=fF;} }
+    const highY=y0-rHpx, lowY=highY+((o==='droite'||o==='gauche')?d.L+d.ovL+d.ovR:d.P+d.ovF+d.ovB)*sc*tg;
+    if(!hL&&!hR){
+      const isHigh=(o==='fond'&&side==='face')||(o==='face'&&side==='fond')||(o==='droite'&&side==='gauche')||(o==='gauche'&&side==='droite');
+      const y=(isHigh?highY:lowY)+rvv; return [[x0,y],[x1,y]];
+    }
+    const lyL=hL?highY:lowY, lyR=hR?highY:lowY, yAt=x=>lyL+(lyR-lyL)*(x-rx)/(rw||1);
+    return [[x0,yAt(x0)+rvv],[x1,yAt(x1)+rvv]];
+  };
+  const closPoly=()=>[[baseX,gndY]].concat(closTop(),[[baseX+dW,gndY]]);
   if(!wallSide&&!CLOSALL.includes(side)){
     if(d.ados===behind){
       sRect(svg,baseX,gndY-hpx,dW,hpx,'#d9d9d9','#888',.8);
       for(let x=baseX;x<baseX+dW;x+=10) sLine(svg,x,gndY,Math.min(x+10,baseX+dW),gndY-10,'#c4c4c4',.5);
-    } else if(CLOSALL.includes(behind)){
-      if(real) sRect(svg,baseX,gndY-hpx,dW,hpx,patBoards(svg,fin,sc,baseX,gndY,-.3),'#2b2a20',.8);
-      else sRect(svg,baseX,gndY-hpx,dW,hpx,'rgba(200,215,230,0.2)','#9aa5ad',.8,'3 3');
+    } else if(CLOSALL.includes(behind)){ // fermeture d'en face, vue à travers le côté ouvert : même hauteur, jusqu'en haut
+      if(real) sPoly(svg,closPoly(),patBoards(svg,cfin,sc,baseX,gndY,-.3),'#2b2a20',.8);
+      else sPoly(svg,closPoly(),'rgba(200,215,230,0.2)','#9aa5ad',.8,'3 3');
       sTxtBg(svg,baseX+dW/2,gndY-hpx*0.8,`fermeture ${behind} (au fond)`,6,'#777');
     }
   }
   let ts;
   if(isFace) ts=carportColsT(d);
   else {const nr=d.nRows; ts=[]; for(let i=0;i<nr;i++) ts.push(nr>1?i/(nr-1):0.5);}
+  let drawPosts=()=>{};
   if(wallSide){
     sRect(svg,baseX,gndY-hpx,dW,hpx,'#e5e5e5','#555',1.2);
     for(let x=baseX;x<baseX+dW;x+=10) sLine(svg,x,gndY,Math.min(x+10,baseX+dW),gndY-10,'#bbb',.5);
@@ -1527,7 +1555,7 @@ function drawCarportElev(svg,d,side,vw,vh){
       if(real) sRect(svg,px-2,gndY-3,ps+4,3,'#5a5e62','#333',.6); // platine
       else sRect(svg,px-2,gndY-3,ps+4,3,'#aaa','#555',.8);
     };
-    ts.forEach(t=>{
+    drawPosts=()=>ts.forEach(t=>{
       const px=baseX+(dW-ps)*t, ph=hpx-fl;
       if(real){
         sRect(svg,px,gndY-hpx,ps,ph,potC[0],potC[1],.8);
@@ -1538,6 +1566,7 @@ function drawCarportElev(svg,d,side,vw,vh){
       }
       foot(px);
     });
+    drawPosts();
   }
   if(isFace&&d.ados!=='non'){
     const mw=Math.max(6,0.20*sc), mx=d.ados==='gauche'?baseX-mw:baseX+dW;
@@ -1546,26 +1575,7 @@ function drawCarportElev(svg,d,side,vw,vh){
   }
   const np=ts.length;
 
-  // Closures
   const showClos=closList().includes(side);
-  // Remplissage des fermetures : type choisi dans le configurateur (ajouré / madrier clin / ossature bardée), sinon le bardage
-  const ct=fv('f-clos-type'), cfin=ct==='ajouree'?extFin(d,'ajouree'):(ct==='clin'?FINITIONS.sr_vert:fin);
-  if(showClos&&!wallSide){
-    if(real) sRect(svg,baseX,gndY-hpx,dW,hpx,patBoards(svg,cfin,sc,baseX,gndY),'#3a3828',1);
-    else {
-    sRect(svg,baseX,gndY-hpx,dW,hpx,'rgba(200,215,230,0.3)','#7f8c8d',1,'5 3');
-    sTxt(svg,baseX+dW/2,gndY-hpx/2,'Fermeture bardage',7,'#888');
-    }
-    // Menuiseries posées sur un côté fermé
-    ST.menus.filter(m=>m.wall===side).forEach(m=>{
-      const mW=(m.lw/100)*sc, mH=Math.min((m.lh/100)*sc,hpx-(m.seuil||0)/100*sc-2);
-      const mx=baseX+(m.pos/100)*dW-mW/2, my=gndY-mH-(m.seuil||0)/100*sc;
-      if(isSliding(m)) drawSlide(svg,m,mx,my,mW,mH,sc,real);
-      if(real) drawMenuReal(svg,m,mx,my,mW,mH,sc,d);
-      else sRect(svg,mx,my,mW,mH,m.type==='fenetre'?'#d6eaf8':'#d5f5e3',m.type==='fenetre'?'#3498db':'#27ae60',1.5);
-      sTxtBg(svg,mx+mW/2,my+mH/2,`${m.lw}×${m.lh}`,6,'#555');
-    });
-  }
 
   // ── Charpente apparente et toiture (d'après les vues du configurateur du site) ──
   // Rives et bandeau de 26 cm : ils cachent le bac acier ; entrait / sablière de 16 cm ; jambes de force aux poteaux
@@ -1724,6 +1734,27 @@ function drawCarportElev(svg,d,side,vw,vh){
     }
   }
 
+  // Fermeture de ce côté (règles d'Antony) : entre les poteaux, du sol jusqu'en haut (sous la rive / le bandeau, pignon compris) ;
+  // elle cache la charpente de ce côté, les poteaux restent visibles devant
+  if(showClos&&!wallSide){
+    const poly=closPoly();
+    if(real&&ct==='ajouree') sPoly(svg,poly,'#3b392f','none',0); // claire-voie : l'ombre de l'intérieur derrière les lames, pas la charpente
+    if(real) sPoly(svg,poly,patBoards(svg,cfin,sc,baseX,gndY),'#3a3828',1);
+    else { sPoly(svg,poly,'rgba(200,215,230,0.3)','#7f8c8d',1,'5 3'); sTxt(svg,baseX+dW/2,gndY-hpx/2,'Fermeture bardage',7,'#888'); }
+    drawPosts();
+    // 1 pan vu de profil : le poteau du côté haut monte jusqu'à la rive
+    const tp=closTop();
+    if(d.toit==='1PAN'&&Math.abs(tp[0][1]-tp[tp.length-1][1])>2){ const hiL=tp[0][1]<tp[tp.length-1][1]; postTop(hiL?baseX:baseX+dW-ps,(hiL?tp[0][1]:tp[tp.length-1][1])); }
+    // Menuiseries posées sur un côté fermé
+    ST.menus.filter(m=>m.wall===side).forEach(m=>{
+      const mW=(m.lw/100)*sc, mH=Math.min((m.lh/100)*sc,hpx-(m.seuil||0)/100*sc-2);
+      const mx=baseX+(m.pos/100)*dW-mW/2, my=gndY-mH-(m.seuil||0)/100*sc;
+      if(isSliding(m)) drawSlide(svg,m,mx,my,mW,mH,sc,real);
+      if(real) drawMenuReal(svg,m,mx,my,mW,mH,sc,d);
+      else sRect(svg,mx,my,mW,mH,m.type==='fenetre'?'#d6eaf8':'#d5f5e3',m.type==='fenetre'?'#3498db':'#27ae60',1.5);
+      sTxtBg(svg,mx+mW/2,my+mH/2,`${m.lw}×${m.lh}`,6,'#555');
+    });
+  }
   // Descentes de gouttière (gouttière derrière le bandeau) : bas de chaque pente, le long du poteau d'angle avant
   if((gout||isFlat)&&!wallSide){
     pipesFor(side,d).forEach(p=>{
