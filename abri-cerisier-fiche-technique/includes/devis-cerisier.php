@@ -53,14 +53,26 @@ function cer_devis_pdf( $pdf, $client ) {
 	}
 }
 
-/** Nombre au format du site (« 1 234,50 ») ou texte d'indication « (+168,00 €) » → float. */
+/**
+ * Nombre au format du site → float : « 1 234,50 », « (+168,00 €) », mais aussi le total brut des calculs WAPF
+ * « 8730.288 € » (point décimal, 3 décimales). Le séparateur décimal est le DERNIER signe (virgule ou point) ;
+ * un point seul n'est jamais un séparateur de milliers (le 09/10/2026, « 8730.288 » était lu 8 730 288).
+ */
 function cer_devis_num( $t ) {
 	$t = html_entity_decode( wp_strip_all_tags( (string) $t ), ENT_QUOTES, 'UTF-8' );
-	if ( ! preg_match( '/-?[\d\s\x{202F}\x{00A0}.]*\d(?:,\d+)?/u', $t, $m ) ) {
+	if ( ! preg_match( '/-?[\d\s\x{202F}\x{00A0}.,]*\d/u', $t, $m ) ) {
 		return null;
 	}
 	$n = preg_replace( '/[\s\x{202F}\x{00A0}]/u', '', $m[0] );
-	$n = str_replace( ',', '.', preg_replace( '/\.(?=\d{3}(\D|$))/', '', $n ) );
+	$c = strrpos( $n, ',' );
+	$p = strrpos( $n, '.' );
+	if ( false !== $c && false !== $p ) {
+		$n = $c > $p ? str_replace( ',', '.', str_replace( '.', '', $n ) ) : str_replace( ',', '', $n );
+	} elseif ( false !== $c ) {
+		$n = substr_count( $n, ',' ) > 1 ? str_replace( ',', '', $n ) : str_replace( ',', '.', $n );
+	} elseif ( false !== $p && substr_count( $n, '.' ) > 1 ) {
+		$n = str_replace( '.', '', $n );
+	}
 	return is_numeric( $n ) ? (float) $n : null;
 }
 

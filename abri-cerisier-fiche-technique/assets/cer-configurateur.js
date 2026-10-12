@@ -613,7 +613,16 @@
   }
   // Prix et détail de la configuration lus dans le configurateur du site (ses blocs du haut sont masqués)
   var money = function (v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; };
-  var numTxt = function (t) { var v = parseFloat(String(t || '').replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3})/g, '').replace(',', '.')); return isNaN(v) ? NaN : v; };
+  // Montant affiché par le site → nombre : « 1 234,50 € », « (+168,00 €) », et le total brut des calculs WAPF « 8730.288 € »
+  // (point décimal, 3 décimales). Le séparateur décimal est le DERNIER signe ; un point seul n'est jamais un séparateur de milliers
+  // (le 09/10/2026, « 8730.288 » était lu 8 730 288 € : prix de carport à plusieurs millions dans le panneau).
+  var numTxt = function (t) {
+    var s = String(t || '').replace(/[^\d,.-]/g, ''), c = s.lastIndexOf(','), p = s.lastIndexOf('.');
+    if (c >= 0 && p >= 0) s = c > p ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+    else if (c >= 0) s = s.split(',').length > 2 ? s.replace(/,/g, '') : s.replace(',', '.');
+    else if (p >= 0 && s.split('.').length > 2) s = s.replace(/\./g, '');
+    var v = parseFloat(s); return isNaN(v) ? NaN : v;
+  };
   var LABELS = [
     [/^Largeur \(m\)/i, 'Largeur', 'Dimensions'], [/^Profondeur \(m\)/i, 'Profondeur', 'Dimensions'],
     [/^Largeur sur-mesure/i, 'Largeur sur mesure', 'Dimensions'], [/^profondeur sur-mesure/i, 'Profondeur sur mesure', 'Dimensions'],
@@ -676,6 +685,7 @@
     var tot = numTxt((form.querySelector('.blocdimpr1 .wapf-calc-text, .field-453ead0 .wapf-calc-text, .field-d0abad4 .wapf-calc-text') || {}).textContent);
     var base = numTxt((form.querySelector('.field-4a1fc24 .wapf-calc-text, .field-b53e07d .wapf-calc-text, .field-d0aafc5 .wapf-calc-text') || {}).textContent);
     var box = P.querySelector('.cer-plan__prix');
+    if (tot > 200000) { if (window.console) console.warn('[Cerisier] total improbable, non affiché :', tot); tot = NaN; } // garde-fou : au-delà de toute grille du site
     if (!isNaN(tot) && tot > 0) { box.hidden = false; box.querySelector('strong').innerHTML = money(tot) + '<small>TTC</small>'; } else box.hidden = true;
     deltaPrix(tot);
     var rows = detailRows(), html = '', g = '';
