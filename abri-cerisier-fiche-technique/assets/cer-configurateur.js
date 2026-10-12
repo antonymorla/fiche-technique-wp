@@ -786,9 +786,32 @@
 
   // ── Mise à jour (après chaque choix, avec un léger délai) ──
   var tmr = null, imgTmr = null;
+  // Questions masquées par les conditions du formulaire : leurs saisies sont effacées. Le serveur les ignore au panier, alors que le
+  // formulaire continuait de les compter dans le prix affiché (ex. extension saisie puis « NON » : surface de toiture et pose gonflées,
+  // garage 7,5 × 3 affiché 9 659 € au lieu de 8 196,50 €). Les listes déroulantes ne comptent pas et restent telles quelles.
+  var purges = 0; // au plus 3 passes de suite (si le formulaire remettait une valeur par défaut, pas de boucle)
+  function purgeMasques() {
+    var fait = false;
+    Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-container'), function (c) {
+      if (!c.classList.contains('wapf-hide') && !c.closest('.wapf-hide')) return;
+      Array.prototype.forEach.call(c.querySelectorAll('input'), function (i) {
+        if (i.type === 'hidden' || i.type === 'button' || i.type === 'submit') return;
+        if (i.type === 'radio' || i.type === 'checkbox') {
+          if (!i.checked) return;
+          i.checked = false; var sw = i.closest('.wapf-swatch, label'); if (sw) sw.classList.remove('wapf-checked');
+          i.dispatchEvent(new Event('change', { bubbles: true })); fait = true;
+        } else if (i.value !== '') {
+          i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); fait = true;
+        }
+      });
+    });
+    return fait;
+  }
   function schedule(ms, keepPlace) {
     clearTimeout(tmr);
     tmr = setTimeout(function () {
+      try { if (purges < 3 && purgeMasques()) { purges++; schedule(150, keepPlace); return; } } catch (e) { if (window.console) console.warn('[Cerisier masqués]', e); }
+      purges = 0;
       try { read(); } catch (e) { LAST = null; if (window.console) console.warn('[Cerisier plan]', e); }
       draw();
       try { habiller(); } catch (e) { if (window.console) console.warn('[Cerisier habillage]', e); }

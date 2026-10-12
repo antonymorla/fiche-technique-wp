@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.0.7
+Stable tag: 3.0.8
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,9 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.0.8 =
+* PRIX : une question masquée par les conditions du formulaire (ex. extension saisie puis « NON ») gardait sa valeur et le formulaire la comptait encore dans le prix affiché, alors que le panier l'ignore (garage 7,5 × 3 affiché 9 659 € au lieu de 8 196,50 €). Ses saisies sont désormais effacées : prix affiché = prix du panier
 
 = 3.0.7 =
 * Carport : une fermeture se dessine entre les poteaux (toujours visibles devant) et monte jusqu'en haut, sous la rive ou le bandeau (pignon fermé sur un 2 pans, pente suivie sur un 1 pan) ; la fermeture d'en face, vue à travers un côté ouvert, aussi
