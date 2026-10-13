@@ -593,6 +593,11 @@
     [0, 1, 2, 3, 4, 5, 6].map(function (i) { return '<rect class="l" x="50" y="' + (150 - (i + 1) * 13) + '" width="160" height="12" rx="1.5" fill="#bdb07e" stroke="#857a50" style="animation-delay:' + (i * 0.16) + 's"/>'; }).join('') +
     '<polygon class="l" points="36,61 130,12 224,61 210,61 130,26 50,61" fill="#43474b" style="animation-delay:1.2s"/></svg><span>Construction de votre abri en 3D…</span>';
   function voir3D() {
+    if (!E.ST.cfg) { // rien à montrer tant que les dimensions ne sont pas choisies : on le dit sous le bouton au lieu de ne rien faire
+      var bar = document.querySelector('.cer-plan__3d'), msg = bar && (bar.querySelector('.cer3d-msg') || bar.appendChild(document.createElement('p')));
+      if (msg) { msg.className = 'cer3d-msg'; msg.style.cssText = 'flex-basis:100%;margin:2px 4px 0;font-size:13px;color:#6b5a2e'; msg.textContent = 'Choisissez d\u2019abord les dimensions : la vue 3D montrera alors votre projet.'; clearTimeout(msg.t); msg.t = setTimeout(function () { msg.remove(); }, 6000); }
+      return;
+    }
     var w = document.createElement('div'); w.className = 'cer3d-attente';
     w.innerHTML = '<style>.cer3d-attente{position:fixed;inset:0;z-index:100000;background:rgba(207,219,228,.97);display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;font:500 16px Jost,Futura,Arial,sans-serif;color:#2b2b22}' +
       '@keyframes cer3dA{0%,8%{opacity:0;transform:translateY(-14px)}18%,86%{opacity:1;transform:none}100%{opacity:0}}.cer3d-attente .l{opacity:0;animation:cer3dA 3.2s ease-out infinite;transform-box:fill-box}</style>' + ATTENTE;

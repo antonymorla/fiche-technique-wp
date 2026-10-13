@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.9
+Stable tag: 3.2.10
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,9 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.10 =
+* « Voir en 3D » avant d'avoir choisi les dimensions : un message sous le bouton (« Choisissez d'abord les dimensions… ») au lieu de ne rien faire, sur les trois configurateurs.
 
 = 3.2.9 =
 * CARPORT EN 3D pour tous les visiteurs (validé par Antony le 13/10/2026), dans le dossier mairie de l'équipe et dans le devis (deux vues 3D). Charpente relevée sur nos carports posés :
