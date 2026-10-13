@@ -828,7 +828,7 @@
   var V3 = { sig: '', urls: null, refus: '' };
   function ajout3d() { if (V3.urls) V3.urls.forEach(function (u, i) { var x = document.createElement('input'); x.type = 'hidden'; x.name = 'cer_plan[vues][3d' + (i + 1) + ']'; x.value = u; form.appendChild(x); }); }
   function vues3d(sig, bouton) {
-    if (V3.sig === sig || V3.refus === sig || CFG.kind === 'carport' || !window.CER_3D || !window.CER_3D.vue3d) return Promise.resolve();
+    if (V3.sig === sig || V3.refus === sig || !window.CER_3D || !window.CER_3D.vue3d) return Promise.resolve();
     var lib = bouton && bouton.textContent; if (bouton) bouton.textContent = 'Préparation des vues 3D…';
     var charge = window.CerVue3D ? Promise.resolve(window.CerVue3D) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = window.CER_3D.vue3d; s.onload = function () { window.CerVue3D ? res(window.CerVue3D) : rej(); }; s.onerror = rej; document.head.appendChild(s); });
     var fait = charge.then(function (V) { return V.vuesDevis ? V.vuesDevis() : null; });
@@ -1176,7 +1176,7 @@
     // Ajout au panier : les vues doivent être jointes et à jour
     form.addEventListener('submit', function (e) {
       if (!LAST) return;
-      var sg = signature(), v3ok = V3.sig === sg || V3.refus === sg || CFG.kind === 'carport' || !window.CER_3D;
+      var sg = signature(), v3ok = V3.sig === sg || V3.refus === sg || !window.CER_3D;
       if (sg === IMG_STATE.sig && form.querySelector('input[name="cer_plan[config]"]') && v3ok) return;
       e.preventDefault(); e.stopImmediatePropagation();
       var sub = e.submitter;

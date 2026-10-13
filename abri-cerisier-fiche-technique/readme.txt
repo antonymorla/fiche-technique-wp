@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.8
+Stable tag: 3.2.9
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,16 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.9 =
+* CARPORT EN 3D pour tous les visiteurs (validé par Antony le 13/10/2026), dans le dossier mairie de l'équipe et dans le devis (deux vues 3D). Charpente relevée sur nos carports posés :
+  * 2 pans : ferme à poinçon à chaque rangée de poteaux (entrait, arbalétriers sous les pannes, poinçon jusqu'à la faîtière, deux contrefiches) ;
+  * 1 pan : ferme à chaque rangée (entrait, poteau haut d'une seule pièce jusqu'à l'arbalétrier, jambe de force, montant sur un poteau intermédiaire) ; adossé, l'arbalétrier repose sur le mur ;
+  * côtés d'égout sans bandeau, gouttière apparente ; rives de 26 cm sur les côtés en pente ; planche au faîte du 1 pan (sauf contre le mur).
+* PLANS 2D DU CARPORT alignés sur la 3D : ferme à poinçon, ferme 1 pan, gouttière apparente, plus de « bandeau d'égout ».
+* TOIT PLAT DE L'ABRI (règle d'Antony) : bandeau droit de 26 cm (2 lames), 39 cm seulement si la pente de 5 % n'y tient pas (plus de 4,20 m dans le sens de la pente) ; pente à l'intérieur du bandeau, gouttière cachée derrière le bandeau bas, seule la descente se voit. Même hauteur dans le plan 2D. Carport toit plat : 36 cm, inchangé.
+* VUE 3D : les bouts de madriers ne sortent plus plus clairs que les lames (le reflet du ciel est réglé pareil sur toutes les pièces) ; la hauteur compte dans le cadrage.
+* DOSSIER MAIRIE : si la vue 3D ne peut pas se faire sur l'appareil, un cadre « photomontage à coller » remplace l'insertion, quel que soit l'ouvrage.
 
 = 3.2.8 =
 * TOIT PLAT (règle d'Antony) : la couverture a toujours une pente, 5 % au moins, vers le côté choisi ; le bandeau (3 lames de 13 cm) la cache, effet toit plat ; gouttière du côté bas si elle est prise ; au-delà d'environ 4,8 m de profondeur (chute plus grande que le bandeau), bandeaux de côté en pente et bandeau haut plus haut.

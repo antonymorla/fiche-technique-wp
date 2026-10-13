@@ -351,7 +351,7 @@
     var b = corps(2, 'Photos de votre terrain', 'Facultatif mais demandé par la plupart des mairies. Vous pourrez aussi les ajouter à la main au dossier.',
       '<div class="ph"><label>Photo proche : l\'endroit où sera posé ' + leA() + '<input type="file" accept="image/*,.heic,.heif" data-k="proche">' + (D.photos.proche ? '<img src="' + D.photos.proche + '">' : '') + '</label>' +
       '<label>Photo lointaine : le terrain dans son environnement, depuis la rue<input type="file" accept="image/*,.heic,.heif" data-k="loin">' + (D.photos.loin ? '<img src="' + D.photos.loin + '">' : '') + '</label></div>' +
-      '<p class="info" style="margin-top:12px">' + (sans3d() ? 'Le document d\'insertion est à compléter par un photomontage du carport sur une photo du terrain : un cadre vous attend dans le dossier, un conseiller Abri Cerisier peut vous aider.' : 'Pour le document d\'insertion, nous utilisons ' + (window.CerVue3D && window.CerVue3D.montage ? 'votre montage photo réalisé dans la vue 3D.' : 'une vue 3D de votre projet. Pour un montage sur une photo de votre jardin : « Voir en 3D » puis « Sur une photo de mon jardin ».')) + '</p>' +
+      '<p class="info" style="margin-top:12px">' + ('Pour le document d\'insertion, nous utilisons ' + (window.CerVue3D && window.CerVue3D.montage ? 'votre montage photo réalisé dans la vue 3D.' : 'une vue 3D de votre projet. Pour un montage sur une photo de votre jardin : « Voir en 3D » puis « Sur une photo de mon jardin ».')) + '</p>' +
       '<div class="act"><button type="button" class="sec" data-a="retour">Retour</button><button type="button" data-a="suite">Créer mon dossier PDF</button></div>');
     b.querySelectorAll('input[type=file]').forEach(function (inp) {
       inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; if (!f) return; reduire(f, 1800).then(function (url) { D.photos[inp.dataset.k] = url; etape3(); }); });
@@ -402,7 +402,7 @@
     var pr = projet(), I = {};
     Promise.all([situation(14, 1100, 760).then(function (u) { I.sit1 = u; }), situation(17, 1100, 760).then(function (u) { I.sit2 = u; })])
       .then(function () { etat('Plans et façades…'); return Promise.all(['face', 'droite', 'gauche', 'fond'].map(function (s) { return vueMoteur(s, 380, 280).then(function (u) { I[s] = u; }); }).concat([vueMoteur('plan', 480, 340).then(function (u) { I.plan = u; })])); })
-      .then(function () { if (sans3d()) { I.insertion = null; return; } etat('Vue 3D du projet…'); fermerTemp(); return charger3D().then(function (V) { return V.capture(); }).then(function (u) { I.insertion = u; }, function () { I.insertion = null; }); })
+      .then(function () { etat('Vue 3D du projet…'); fermerTemp(); return charger3D().then(function (V) { return V.capture(); }).then(function (u) { I.insertion = u; }, function () { I.insertion = null; }); })
       .then(function () { rouvrir(); etat('Mise en page du PDF…'); return logo().then(function (l) { I.logo = l; return jspdf(); }); })
       .then(function (J) { var doc = construirePdf(J, pr, I); var nom = 'dossier-mairie-' + (D.client.nom || 'abri').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.pdf';
         // téléphone : un téléchargement lancé en fin de calcul est bloqué (iPhone surtout) ; le client touche lui-même le lien,
@@ -552,10 +552,10 @@
     entete(P_(4) + ' (vue de dessus)', 'Vue de dessus : murs, débords de toiture, extensions et menuiseries.');
     image(I.plan, M, 26, Wp - 2 * M, 165); suivante();
     // 6. insertion
-    if (!I.insertion && sans3d()) { // carport : pas de vue 3D, cadre pour le photomontage
+    if (!I.insertion) { // vue 3D impossible sur cet appareil : cadre pour le photomontage
       entete(P_(5), 'Photomontage du projet sur une photo du terrain, à compléter.');
       doc.setDrawColor(190); doc.setLineDash([2, 2], 0); doc.rect(M, 26, Wp - 2 * M, 165); doc.setLineDash([], 0); doc.setFontSize(11); doc.setTextColor(120);
-      doc.text('Photomontage à coller ici : le carport dessiné sur une photo du terrain.', Wp / 2, 108, { align: 'center' }); doc.setTextColor(0); suivante();
+      doc.text('Photomontage à coller ici : le projet dessiné sur une photo du terrain.', Wp / 2, 108, { align: 'center' }); doc.setTextColor(0); suivante();
     } else {
       entete(P_(5), window.CerVue3D && window.CerVue3D.montage ? 'Montage du projet sur une photo du terrain.' : 'Vue du projet. Pour un montage sur photo : configurateur, « Voir en 3D », « Sur une photo de mon jardin ».');
       image(I.insertion, M, 26, Wp - 2 * M, 165); suivante();
@@ -572,14 +572,11 @@
   }
 
   // ───────── boutons dans le panneau du configurateur ─────────
-  function sans3d() { return ((window.CER_CFG || {}).kind || E.ST.type) === 'carport'; } // type déclaré par la page : connu avant que le moteur ne lise le formulaire
   function boutons() {
     var vis = document.querySelector('.cer-plan__vis'); if (!vis || vis.querySelector('.cer-plan__3d')) return !!vis;
-    if (sans3d() && !C().mairie) return true; // carport vu par un visiteur : aucun bouton
     var d = document.createElement('div'); d.className = 'cer-plan__3d';
     d.innerHTML = '<style>.cer-plan__3d{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}.cer-plan__3d button{flex:1 1 140px;border:0;border-radius:22px;padding:10px 14px;font:600 14px Jost,Futura,Arial,sans-serif;cursor:pointer;background:#515136;color:#fff}.cer-plan__3d button.sec{background:#f1efe7;color:#2b2b22}</style>' +
-      // carport : pas encore de modèle 3D (poteaux, bandeaux, charpente) : seul le dossier mairie est proposé
-      (sans3d() ? '' : '<button type="button" data-a="3d">Voir en 3D</button>') + (C().mairie ? '<button type="button" class="sec" data-a="mairie">Mon dossier mairie (PDF)</button>' : ''); // dossier : l'équipe connectée (réglage)
+      '<button type="button" data-a="3d">Voir en 3D</button>' + (C().mairie ? '<button type="button" class="sec" data-a="mairie">Mon dossier mairie (PDF)</button>' : ''); // dossier : l'équipe connectée (réglage)
     vis.appendChild(d);
     d.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; if (b.dataset.a === '3d') voir3D(); else ouvrir(); });
     return true;
