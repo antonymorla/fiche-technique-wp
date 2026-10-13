@@ -393,7 +393,7 @@ window.CerVue3D = (function () {
     var platH = null;
     var X0 = -L / 2 - d.ovL, X1 = L / 2 + d.ovR, ZF = P / 2 + d.ovF, ZB = -P / 2 - d.ovB, ep = 0.07, a = Math.atan(tan);
     var cv = E.couvFin(d), matCouv = new THREE.MeshStandardMaterial({ roughness: cv.kind === 'bac' || cv.kind === 'tuile' ? 0.45 : 0.92, metalness: cv.kind === 'bac' || cv.kind === 'tuile' ? 0.35 : 0 });
-    var matSous = new THREE.MeshStandardMaterial({ roughness: 0.9 });
+    var matSous = new THREE.MeshStandardMaterial({ roughness: 0.9 }); matCouv.cerReflet = true;
     var rotCouv = (d.toit === '2PANS' || (d.toit === '1PAN' && (orient === 'droite' || orient === 'gauche')));
     // couverture : texture des modèles SketchUp (dossier « 4• Textures » : shingles, tuiles, bac acier), sinon motif du moteur
     var kCouv = Object.keys(E.COUVERTURES).filter(function (k) { return E.COUVERTURES[k] === cv; })[0], TC = TOITS[kCouv];
@@ -426,6 +426,7 @@ window.CerVue3D = (function () {
       gout.push(orient === 'droite' ? { axe: 'z', e: X1, s: 1 } : { axe: 'z', e: X0, s: -1 });
     } else if (d.toit === '1PAN') {
       panZ(ZB, ZF, orient === 'face' ? a : -a);
+      if (carport) [X0 - 0.015, X1 + 0.015].forEach(function (x) { var r = massif(0.028, 0.26, (ZF - ZB) / Math.cos(a), 'z', M.bard); r.rotation.x = orient === 'face' ? a : -a; r.position.set(x, sous(0, (ZF + ZB) / 2) - 0.03, (ZF + ZB) / 2); G.add(r); });
       gout.push(orient === 'face' ? { axe: 'x', e: ZF, s: 1 } : { axe: 'x', e: ZB, s: -1 });
     } else if (quadro) {
       // QUADRO : murs jusqu'en haut (acrotère), membrane EPDM juste sous l'acrotère (relevé de 5 cm au point haut), pente vers le fond, couvertine noire
@@ -446,45 +447,39 @@ window.CerVue3D = (function () {
       // évacuation : un tuyau traverse l'acrotère au fond, au ras de la membrane, puis un coude et la descente le long du mur
       gout.push({ t: 'quadro', y: avecExt ? top - 0.03 : bas + 0.03 });
     } else {
-      // toit plat (règle d'Antony) : la couverture a toujours une pente, 5 % au moins, vers le côté choisi ; les murs ayant tous la même hauteur,
-      // c'est la charpente qui la donne (12 cm au-dessus du mur côté bas). Le bandeau (3 lames de 13 cm) cache la couverture : effet toit plat.
-      // Tant que la chute tient dans le bandeau, bandeaux horizontaux ; au-delà (grande profondeur), bandeaux de côté en pente et bandeau haut plus haut.
-      var hb = carport ? 0.36 : 0.39, eb = 0.027, MB2 = matMotif(E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
-      var u0 = dirZ ? ZB : X0, u1 = dirZ ? ZF : X1, span = u1 - u0, chute = 0.05 * span, bas0 = 0.12;
-      var horiz = chute <= hb - 0.03 - bas0, hHaut = horiz ? y0t + hb - 0.03 : y0t + bas0 + chute, hBasC = hHaut - chute;
+      // toit plat (règles d'Antony) : le bandeau reste droit sur les quatre côtés, coupé d'équerre, le toit paraît plat ; la pente
+      // (5 % au moins, vers le côté choisi) est à l'intérieur du bandeau, et la gouttière est cachée derrière le bandeau bas : seule la descente se voit.
+      // Bandeau de l'abri : deux lames de 13 cm (26 cm), trois (39 cm) seulement si la pente ne tient pas dans deux (même règle que le plan) ;
+      // carport : 36 cm, trois lames (nos poses)
+      var eb = 0.027, MB2 = matMotif(E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
+      var u0 = dirZ ? ZB : X0, u1 = dirZ ? ZF : X1, span = u1 - u0, hb = carport ? 0.36 : (E.flatTopH ? E.flatTopH(d) : 0.26);
+      var hHaut = y0t + hb - 0.02, hBasC = Math.max(y0t + 0.03, hHaut - 0.05 * span), chute = hHaut - hBasC;
       platH = function (x, z) { var u = dirZ ? z : x, t = sgn > 0 ? (u - u0) / span : (u1 - u) / span; return hHaut - chute * Math.max(0, Math.min(1, t)); };
       var uHaut = sgn > 0 ? u0 : u1, uBas = sgn > 0 ? u1 : u0, v0 = dirZ ? X0 : ZB, v1 = dirZ ? X1 : ZF, ang = Math.atan(chute / span);
-      // couverture : du bandeau haut jusqu'à 3 cm au-delà du bord bas (elle se déverse dans la gouttière), entre les bandeaux de côté
-      var ca = uHaut + sgn * eb, cb = uBas + sgn * 0.03, lc = Math.abs(cb - ca) / Math.cos(ang), cm = (ca + cb) / 2, ec = 0.03, wc = v1 - v0 - 2 * eb;
+      // couverture : du bandeau haut jusqu'à 12 cm du bandeau bas (la gouttière cachée est là), entre les bandeaux de côté
+      var ca = uHaut + sgn * eb, cb = uBas - sgn * (eb + 0.12), lc = Math.abs(cb - ca) / Math.cos(ang), cm = (ca + cb) / 2, ec = 0.03, wc = v1 - v0 - 2 * eb;
       var cvr = dirZ ? boite(wc, ec, lc, [matSous, matSous, matCouv, matSous, matSous, matSous]) : boite(lc, ec, wc, [matSous, matSous, matCouv, matSous, matSous, matSous]);
       if (dirZ) cvr.rotation.x = sgn > 0 ? ang : -ang; else cvr.rotation.z = sgn > 0 ? -ang : ang;
       var ym = platH(dirZ ? 0 : cm, dirZ ? cm : 0) - ec / 2; cvr.position.set(dirZ ? (v0 + v1) / 2 : cm, ym, dirZ ? cm : (v0 + v1) / 2); G.add(cvr);
-      // sous-face des débords
+      // sous-face
       var sf = boite(X1 - X0, 0.02, ZF - ZB, [matSous, matSous, matSous, matSous, matSous, matSous]); sf.position.set((X0 + X1) / 2, y0t + 0.01, (ZF + ZB) / 2); G.add(sf);
-      // bandeaux : haut (horizontal), bas (sous le bord de la couverture), côtés (horizontaux ou en pente)
-      var planche = function (lg, h, u, yb) { var m = dirZ ? boite(v1 - v0, h, eb, MB2) : boite(eb, h, v1 - v0, MB2); m.position.set(dirZ ? (v0 + v1) / 2 : u, yb + h / 2, dirZ ? u : (v0 + v1) / 2); G.add(m); };
-      var hTop = Math.max(y0t + hb, hHaut + 0.03);
-      planche(v1 - v0, hTop - y0t, uHaut + sgn * eb / 2, y0t);
-      planche(v1 - v0, Math.max(0.06, hBasC - 0.008 - y0t), uBas - sgn * eb / 2, y0t);
-      [v0 + eb / 2, v1 - eb / 2].forEach(function (v) { // côté : trapèze du haut du mur jusqu'au-dessus de la couverture
-        var sh = new THREE.Shape(), hi = horiz ? y0t + hb : hHaut + 0.03, lo = horiz ? y0t + hb : hBasC + 0.03, a0 = sgn > 0 ? u0 : u1, a1 = sgn > 0 ? u1 : u0;
-        sh.moveTo(0, 0); sh.lineTo(span, 0); sh.lineTo(span, lo - y0t); sh.lineTo(0, hi - y0t); sh.closePath();
-        var geo = new THREE.ExtrudeGeometry(sh, { depth: eb, bevelEnabled: false }); geo.translate(0, 0, -eb / 2);
-        var uv = geo.attributes.uv; for (var ui = 0; ui < uv.count; ui++) uv.setXY(ui, uv.getX(ui), uv.getY(ui)); // mètres : même échelle que les autres planches
-        var m = new THREE.Mesh(geo, MB2); m.castShadow = m.receiveShadow = true;
-        // x local (0 → span) part du côté haut ; le mesh est tourné pour suivre l'axe de la pente
-        if (dirZ) { m.rotation.y = sgn > 0 ? -Math.PI / 2 : Math.PI / 2; m.position.set(v, y0t, a0); }
-        else { m.rotation.y = sgn > 0 ? 0 : Math.PI; m.position.set(a0, y0t, v); }
-        G.add(m);
-      });
-      if (fv('f-gout') === 'oui') gout.push(dirZ ? { axe: 'x', e: uBas + sgn * 0.03, s: sgn } : { axe: 'z', e: uBas + sgn * 0.03, s: sgn });
+      // les quatre bandeaux, droits et de même hauteur
+      var travers = function (u) { var m = dirZ ? boite(v1 - v0, hb, eb, MB2) : boite(eb, hb, v1 - v0, MB2); m.position.set(dirZ ? (v0 + v1) / 2 : u, y0t + hb / 2, dirZ ? u : (v0 + v1) / 2); G.add(m); };
+      var long = function (v) { var m = dirZ ? boite(eb, hb, span, MB2) : boite(span, hb, eb, MB2); m.position.set(dirZ ? v : (u0 + u1) / 2, y0t + hb / 2, dirZ ? (u0 + u1) / 2 : v); G.add(m); };
+      travers(uHaut + sgn * eb / 2); travers(uBas - sgn * eb / 2); long(v0 + eb / 2); long(v1 - eb / 2);
+      if (fv('f-gout') === 'oui') gout.push({ t: 'platBas', dirZ: dirZ, sgn: sgn, e: uBas, y: y0t });
     }
     var TOIT = G.children.slice(nToit0);
     // ── carport (règles d'Antony, mêmes cotes que les vues du moteur) : poteaux sur la grille du configurateur et pieds galva,
-    // sablières et entraits de 16 cm, fermes, jambes de force à 45° (aucune sur QUADRO ni avec poteaux alu ou capotés alu),
-    // bandeau d'égout de 26 cm qui cache la couverture et la gouttière, côtés fermés jusqu'en haut, mur de la maison si adossé
+    // sablières et entraits de 16 cm, jambes de force à 45° (aucune sur QUADRO ni avec poteaux alu ou capotés alu), côtés fermés jusqu'en haut,
+    // mur de la maison si adossé. Charpente relevée sur nos carports posés (13/10/2026) :
+    //  · 2 pans : à chaque rangée de poteaux une ferme à poinçon (entrait, arbalétriers sous les pannes, poinçon jusqu'à la faîtière, deux contrefiches) ;
+    //    rives de 26 cm en façade et au fond seulement, qui suivent la pente ; côtés d'égout sans bandeau, la gouttière reste apparente
+    //  · 1 pan (photo d'Antony du 13/10/2026) : une ferme à chaque rangée de poteaux aussi : entrait, poteau haut d'une seule pièce jusqu'à
+    //    l'arbalétrier, jambe de force du poteau haut vers l'arbalétrier, arbalétrier sous les pannes ; rives sur les côtés en pente,
+    //    planche au faîte (sauf contre le mur) ; égout sans bandeau
     if (carport) {
-      var ps = Math.max(0.09, parseFloat(fv('f-pot')) || 0.12), alu = fv('f-pot') === '0.15' || fv('f-potalu') === 'oui', EN = 0.16, sansJ = alu || quadro;
+      var ps = Math.max(0.09, parseFloat(fv('f-pot')) || 0.12), alu = fv('f-pot') === '0.15' || fv('f-potalu') === 'oui', EN = 0.16, sansJ = alu || quadro, PH0 = 0.15;
       var cols = E.carportColsT ? E.carportColsT(d) : [0, 1], nr = Math.max(2, d.nRows || 2), cxs = cols.map(function (t) { return -L / 2 + ps / 2 + (L - ps) * t; }), czs = [];
       for (var ri = 0; ri < nr; ri++) czs.push(-P / 2 + ps / 2 + (P - ps) * ri / (nr - 1));
       var ados = d.ados && d.ados !== 'non' ? d.ados : '', clos = (E.closList ? E.closList() : []).filter(function (k) { return k !== ados; });
@@ -492,48 +487,69 @@ window.CerVue3D = (function () {
         var dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, lg = Math.hypot(dx, dy, dz), m2 = massif(ep2, lg, h2);
         var v = new THREE.Vector3(dx, dy, dz).normalize(); m2.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v);
         m2.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); G.add(m2); return m2; };
-      // poteaux et pieds galva
+      var un = d.toit === '1PAN', deux = d.toit === '2PANS', lgX = orient === 'droite' || orient === 'gauche', ca = Math.cos(a);
+      // arbalétriers sous les pannes (15 cm), posés sur l'entrait au droit des poteaux bas (2 pans : les deux files d'égout)
+      var su = function (u) { return lgX ? sous(u, 0) : sous(0, u); }; // 1 pan : la hauteur ne dépend que de la position dans la pente
+      // 1 pan : file de poteaux basse et file haute ; adossé avec une seule file, l'autre côté repose sur le mur (pas de poteau)
+      var uPot = lgX ? cxs : czs, sP = orient === 'droite' || orient === 'face' ? 1 : -1, demi = (lgX ? L : P) / 2;
+      var uMin = Math.min.apply(null, uPot), uMax = Math.max.apply(null, uPot), uBas = sP > 0 ? uMax : uMin, uHaut = sP > 0 ? uMin : uMax;
+      if (un && uPot.length < 2) { if ((uPot[0] > 0) === (sP > 0)) uHaut = null; else uBas = null; }
+      var dPan = PH0 / ca, hA = Math.max(0.1, Math.min(0.22, ((deux ? sous(L / 2 - ps / 2, 0) : su(uBas != null ? uBas : sP * demi)) - dPan - hE - EN) * ca));
+      var ua = function (u) { return su(u) - dPan - hA / ca; }; // 1 pan : dessous de l'arbalétrier
+      var hautNom = lgX ? (orient === 'droite' ? 'gauche' : 'droite') : (orient === 'face' ? 'fond' : 'face');
+      // poteaux et pieds galva (1 pan : le poteau haut monte d'une seule pièce jusqu'à l'arbalétrier)
       cxs.forEach(function (x) { czs.forEach(function (z) {
-        var po = alu ? boite(ps, hE, ps, M.noir) : massif(ps, hE, ps); po.position.set(x, hE / 2, z); po.castShadow = true; G.add(po);
+        var hp = un && uHaut != null && Math.abs((lgX ? x : z) - uHaut) < 1e-6 ? ua(uHaut) : hE, po = alu ? boite(ps, hp, ps, M.noir) : massif(ps, hp, ps); po.position.set(x, hp / 2, z); po.castShadow = true; G.add(po);
         var pd = boite(ps + 0.03, 0.025, ps + 0.03, M.galva); pd.position.set(x, 0.012, z); G.add(pd);
         [-1, 1].forEach(function (sd) { var pl = boite(0.006, 0.14, ps * 0.8, M.galva); pl.position.set(x + sd * (ps / 2 + 0.003), 0.07, z); G.add(pl); }); }); });
       // sablières (le long de chaque rangée) et entraits (travers, à chaque ligne de poteaux), sur les poteaux
       var yb = hE + EN / 2;
       czs.forEach(function (z) { poutre(-L / 2, yb, z, L / 2, yb, z, EN, ps); }); // pièce le long de x : 1re dimension = hauteur
       cxs.forEach(function (x) { poutre(x, yb, -P / 2, x, yb, P / 2, ps, EN); });
-      // jambes de force à 45° : de chaque poteau vers les pièces qui passent dessus (pas du côté fermé ni contre le mur)
+      // jambes de force à 45° : de chaque poteau vers les pièces qui passent dessus
       if (!sansJ) { var kb = 0.5, sk = 0.07;
-        cxs.forEach(function (x, ix) { czs.forEach(function (z, iz) {
+        cxs.forEach(function (x) { czs.forEach(function (z) {
           [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (dv) {
             var nx = x + dv[0] * kb, nz = z + dv[1] * kb; if (nx < -L / 2 - 0.01 || nx > L / 2 + 0.01 || nz < -P / 2 - 0.01 || nz > P / 2 + 0.01) return;
             poutre(x + dv[0] * ps / 2, hE - kb, z + dv[1] * ps / 2, nx, hE, nz, sk, sk); }); }); }); }
-      // fermes des toits à pentes : jambettes et diagonales sous les pans, à chaque rangée de poteaux
-      var dessous = function (x, z) { return sous(x, z) - 0.07; };
-      if (d.toit === '2PANS') czs.forEach(function (z) {
-        [-L / 4, L / 4].forEach(function (x) { poutre(x, hE + EN, z, x, dessous(x, z), z, 0.07, 0.07); });
-        [-1, 1].forEach(function (sd) { var xr = sd * L * 0.39; poutre(0, hE + EN, z, xr, dessous(xr, z), z, 0.07, 0.07); });
-        [-1, 1].forEach(function (sd) { poutre(sd * (L / 2 + d.ovL), dessous(sd * (L / 2 + d.ovL), z) - 0.06, z, 0, dessous(0, z) - 0.06, z, 0.12, 0.07); }); // arbalétriers
+      // 2 pans : ferme à poinçon à chaque rangée de poteaux (photos de nos carports)
+      if (deux) czs.forEach(function (z) {
+        var dA = dPan + hA / 2 / ca, yPc = sous(0, 0) - 0.2 / ca, hPc = yPc - (hE + EN);
+        [-1, 1].forEach(function (sd) {
+          var xe = sd < 0 ? X0 + 0.03 : X1 - 0.03, xr = sd * 0.06; // arbalétrier : de l'égout au poinçon
+          poutre(xe, sous(xe, 0) - dA, z, xr, sous(xr, 0) - dA, z, hA, 0.07);
+          var xc = sd * 0.35 * L / 2; // contrefiche : du pied du poinçon au dessous de l'arbalétrier
+          poutre(sd * 0.06, hE + EN + 0.05, z, xc, sous(xc, 0) - dPan - hA / ca, z, 0.09, 0.07); });
+        if (hPc > 0.1) { var pc = massif(0.12, hPc, 0.09); pc.position.set(0, hE + EN + hPc / 2, z); G.add(pc); } // poinçon jusqu'à la faîtière
       });
-      else if (d.toit === '1PAN') {
-        var lgX = orient === 'droite' || orient === 'gauche', hautX = orient === 'droite' ? -L / 2 : L / 2, hautZ = orient === 'fond' ? P / 2 : -P / 2;
-        (lgX ? czs : cxs).forEach(function (c) { var X = function (u) { return lgX ? u : c; }, Z = function (u) { return lgX ? c : u; }, u0 = lgX ? hautX : hautZ, u1 = -u0;
-          poutre(X(u0), hE + EN, Z(u0), X(u0), dessous(X(u0), Z(u0)), Z(u0), ps, ps); // poteau prolongé côté haut
-          var um = u0 * 0.1; poutre(X(um), hE + EN, Z(um), X(um), dessous(X(um), Z(um)), Z(um), 0.07, 0.07); // montant
-          var ud = u0 * 0.52; poutre(X(u0 * 0.95), hE + EN, Z(u0 * 0.95), X(ud), dessous(X(ud), Z(ud)), Z(ud), 0.07, 0.07); // diagonale
-          poutre(X(u0 * 1.0), dessous(X(u0), Z(u0)) - 0.06, Z(u0), X(u1), dessous(X(u1), Z(u1)) - 0.06, Z(u1), lgX ? 0.12 : 0.07, lgX ? 0.07 : 0.12); }); // arbalétrier
+      // 1 pan : ferme à chaque rangée de poteaux (arbalétrier, jambe de force du poteau haut, montant sur un poteau intermédiaire), planche au faîte
+      if (un) {
+        var uE0 = (lgX ? (sP > 0 ? X1 : X0) : (sP > 0 ? ZF : ZB)) - sP * 0.03, uE1 = (lgX ? (sP > 0 ? X0 : X1) : (sP > 0 ? ZB : ZF)) + sP * 0.03; // égout, faîte
+        var pt = function (u, y, w) { return lgX ? [u, y, w] : [w, y, u]; }, sec = function (a2, b2) { return lgX ? [a2, b2] : [b2, a2]; };
+        var y0j = hE + EN + 0.12, dx = uHaut == null ? 0 : Math.max(0.3, Math.min(0.45 * Math.abs((uBas != null ? uBas : sP * demi) - uHaut), 0.55 * (ua(uHaut) - y0j)));
+        (lgX ? czs : cxs).forEach(function (w) {
+          var A = pt(uE0, su(uE0) - dPan - hA / 2 / ca, w), B = pt(uE1, su(uE1) - dPan - hA / 2 / ca, w), s1 = sec(hA, 0.07);
+          poutre(A[0], A[1], A[2], B[0], B[1], B[2], s1[0], s1[1]); // arbalétrier
+          if (uHaut != null && !sansJ) { var u0j = uHaut + sP * ps / 2, u1j = uHaut + sP * dx, C = pt(u0j, y0j, w), D = pt(u1j, ua(u1j), w), s2 = sec(0.09, 0.07);
+            poutre(C[0], C[1], C[2], D[0], D[1], D[2], s2[0], s2[1]); } // jambe de force du poteau haut vers l'arbalétrier
+          uPot.forEach(function (u) { if ((uHaut != null && Math.abs(u - uHaut) < 1e-6) || (uBas != null && Math.abs(u - uBas) < 1e-6)) return; var h3 = ua(u) - (hE + EN); if (h3 < 0.1) return;
+            var m3 = massif(lgX ? 0.09 : 0.07, h3, lgX ? 0.07 : 0.09), q = pt(u, hE + EN + h3 / 2, w); m3.position.set(q[0], q[1], q[2]); G.add(m3); }); // montant
+        });
+        if (ados !== hautNom) { var uH = lgX ? (sP > 0 ? X0 : X1) : (sP > 0 ? ZB : ZF), vA = lgX ? ZB : X0, vB = lgX ? ZF : X1, yH = su(uH);
+          var fb = lgX ? boite(0.028, 0.26, vB - vA + 0.03, M.bard) : boite(vB - vA + 0.03, 0.26, 0.028, M.bard);
+          fb.position.set(lgX ? uH - sP * 0.014 : (vA + vB) / 2, yH - 0.05, lgX ? (vA + vB) / 2 : uH - sP * 0.014); G.add(fb); }
       }
-      // bandeau d'égout (26 cm) : sous le bord bas de la toiture, il cache la couverture et la gouttière
-      var egout = function (axe, e, sg2) { var ye = sous(axe === 'z' ? e : 0, axe === 'z' ? 0 : e), lg = axe === 'z' ? ZF - ZB : X1 - X0, bdo = axe === 'z' ? boite(0.028, 0.28, lg, M.bard) : boite(lg, 0.28, 0.028, M.bard);
-        bdo.position.set(axe === 'z' ? e + sg2 * 0.07 : (X0 + X1) / 2, ye + 0.02 - 0.14, axe === 'z' ? (ZF + ZB) / 2 : e + sg2 * 0.07); G.add(bdo); };
-      if (d.toit === '2PANS') { egout('z', X0, -1); egout('z', X1, 1); }
-      else if (d.toit === '1PAN') { if (orient === 'droite') egout('z', X1, 1); else if (orient === 'gauche') egout('z', X0, -1); else if (orient === 'face') egout('x', ZF, 1); else egout('x', ZB, -1); }
       // sous-face des toits plats (QUADRO : le dessous de la membrane ne se voit pas)
       if (quadro) { var sfq = boite(X1 - X0, 0.02, ZF - ZB, matSous); sfq.position.set((X0 + X1) / 2, hE + 0.01, (ZF + ZB) / 2); G.add(sfq); }
       // côtés fermés : du sol jusque sous la toiture (pignon compris), entre les poteaux d'extrémité
       var ct = fv('f-clos-type'), finC = ct === 'ajouree' ? E.extFin(d, 'ajouree') : ct === 'clin' ? E.FINITIONS.sr_vert : E.wallFin(d), matC = matMotif(finC);
       clos.forEach(function (k) {
         var lat = k === 'gauche' || k === 'droite', fixe = k === 'gauche' ? -L / 2 : k === 'droite' ? L / 2 : (k === 'fond' ? -P / 2 : P / 2), v0 = lat ? -P / 2 : -L / 2, v1 = -v0;
-        var haut = function (v) { var x = lat ? fixe : v, z = lat ? v : fixe; return (plat || quadro) ? hE : Math.max(hE, dessous(x, z) - (k === 'fond' || k === 'face' ? 0.02 : 0.28)); };
+        var haut = function (v) { var x = lat ? fixe : v, z = lat ? v : fixe;
+          if (plat || quadro) return hE;
+          if (deux) return lat ? hE : Math.max(hE, sous(x, z) - dPan - hA / ca - 0.005);
+          if (lgX === lat) return k === hautNom ? Math.max(hE, ua(lgX ? x : z) - 0.005) : hE; // côté haut : jusque sous l'arbalétrier ; côté bas : sous la sablière
+          return Math.max(hE, ua(lgX ? x : z) - 0.005); };
         var sh = new THREE.Shape(), pts = [v0, v0 / 2, 0, v1 / 2, v1]; sh.moveTo(0, 0); sh.lineTo(v1 - v0, 0);
         pts.slice().reverse().forEach(function (v) { sh.lineTo(v - v0, haut(v)); }); sh.closePath();
         var geo = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: false }); geo.translate(0, 0, -0.011);
@@ -561,8 +577,8 @@ window.CerVue3D = (function () {
       var panne = function (t, h) { var c3 = hautPanne(t) - h / 2 / Math.cos(a);
         if (long1) piece(portee1 - portee0, h, PW, (portee0 + portee1) / 2, c3, t, 'x'); else piece(PW, h, portee1 - portee0, t, c3, (portee0 + portee1) / 2, 'z'); };
       var rangs = function (ta, tb) { var n = Math.max(1, Math.ceil(Math.abs(tb - ta) / 1.0)); for (var k = 1; k < n; k++) panne(ta + (tb - ta) * k / n, PH); };
-      if (d.toit === '2PANS') { panne(0, 0.2); rangs(pente0, 0); rangs(0, pente1); } // faîtière, puis pannes de chaque pan
-      else rangs(pente0, pente1);
+      if (d.toit === '2PANS') { panne(0, 0.2); rangs(pente0, 0); rangs(0, pente1); if (carport) { panne(-L / 2 + wt / 2, PH); panne(L / 2 - wt / 2, PH); } } // faîtière, pannes de chaque pan, pannes sablières (carport)
+      else { rangs(pente0, pente1); if (carport) { panne(pente0 - wt / 2, PH); panne(pente1 + wt / 2, PH); } } // carport 1 pan : pannes aussi au droit des poteaux
       // fermes intermédiaires : arbalétriers, entrait à hauteur des murs, poinçon (2 pans)
       var portee = long1 ? L - 2 * wt : P - 2 * wt, nf = carport ? 0 : Math.ceil(portee / 5) - 1; // carport : ses fermes sont à chaque rangée de poteaux
       for (var f2 = 1; f2 <= nf; f2++) {
@@ -631,6 +647,16 @@ window.CerVue3D = (function () {
         }
       };
       gout.forEach(function (g) {
+        if (g.t === 'platBas') { // toit plat : gouttière cachée derrière le bandeau bas ; la descente sort sous la sous-face, revient contre le mur (ou le long du poteau d'extension)
+          var dz2 = g.dirZ, s2 = g.sgn, mur = s2 * (dz2 ? P / 2 : L / 2), ext2 = (dz2 ? (s2 > 0 ? d.ovF : d.ovB) : (s2 > 0 ? d.ovR : d.ovL)) > 0.5;
+          var al = dz2 ? L / 2 - (ext2 ? 0.06 : 0.3) : -P / 2 + (ext2 ? 0.06 : 0.3), pw = ext2 ? g.e + s2 * ECART : mur + s2 * ECART, o0 = g.e - s2 * 0.08;
+          var Q = function (o, y) { return dz2 ? [al, y, o] : [o, y, al]; };
+          var pts3 = [Q(o0, g.y + 0.1), Q(o0, g.y - 0.06)], y3 = g.y - 0.06, dd = Math.abs(o0 - pw);
+          if (dd > 0.015) { pts3.push(Q(pw, y3 - dd)); y3 -= dd; }
+          pts3.push(Q(pw, 0.14), Q(pw + s2 * 0.12, 0.04)); tuyau(pts3);
+          if (dz2) colliers(al, pw, 0, -s2, 0.14, y3); else colliers(pw, al, -s2, 0, 0.14, y3);
+          return;
+        }
         if (g.t) { // QUADRO et toit plat : sortie au fond, côté droit
           var bExt = d.ovB > 0.5, xo = bExt ? L / 2 - 0.06 : L / 2 - 0.3, zw = (bExt ? ZB : -P / 2) - ECART;
           var pts = g.t === 'quadro' ? [[xo, g.y, ZB + 0.04], [xo, g.y, ZB - ECART]] : [[xo, g.y + 0.1, Math.min(ZB + 0.06, zw)], [xo, g.y - 0.06, Math.min(ZB + 0.06, zw)]];
@@ -732,7 +758,9 @@ window.CerVue3D = (function () {
     R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 0.66; R.outputColorSpace = THREE.SRGBColorSpace;
     zone.appendChild(R.domElement);
     var sc = scene(R, !!photo), G = construire(E), u = G.userData;
-    G.traverse(function (o) { if (o.isMesh && o.material && !o.material.transparent) o.material.envMapIntensity = 0.45; });
+    // reflet du ciel au même niveau pour tout le bois, y compris les pièces à plusieurs matières (bouts de madriers, bandeaux) :
+    // sans ça leurs faces sortaient un tiers plus claires que les lames (remarque d'Antony du 13/10/2026) ; la couverture garde le sien
+    G.traverse(function (o) { if (!o.isMesh || !o.material) return; (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { if (!m.transparent && !m.cerReflet) m.envMapIntensity = 0.45; }); });
     sc.S.add(G);
     if (!photo) sc.S.add(pelouse(THREE, u));
     if (!photo) { // ombre de contact sous l'abri
@@ -741,7 +769,8 @@ window.CerVue3D = (function () {
     }
     var cam = new THREE.PerspectiveCamera(35, 1, 0.1, 9000), ctl = new T.OrbitControls(cam, R.domElement);
     ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.495; ctl.minDistance = 2.5; ctl.maxDistance = 40; ctl.enablePan = !!photo;
-    var cible = new THREE.Vector3((u.x0 + u.x1) / 2, Math.min(1.3, u.h / 2), (u.zF + u.zB) / 2), r = Math.max(u.x1 - u.x0, u.zF - u.zB, 3) * 2;
+    // cadrage : la plus grande des dimensions, hauteur comprise (un carport 1 pan à forte pente monte à 5 m et sortait du cadre)
+    var cible = new THREE.Vector3((u.x0 + u.x1) / 2, Math.max(Math.min(1.3, u.h / 2), u.h * 0.4 - 0.4), (u.zF + u.zB) / 2), r = Math.max(u.x1 - u.x0, u.zF - u.zB, u.h * 1.3, 3) * 2;
     var VUES = { dos: [-0.62, 0.42, -1.3], trois: [0.62, 0.42, 1.3], face: [0, 0.28, 1], gauche: [-1, 0.28, 0.15], droite: [1, 0.28, 0.15], fond: [0.15, 0.28, -1], dessus: [0.25, 1.6, 0.55], int: [0.42, 1.0, 0.8] };
     var anim = null, recul = function (v) { return r * (v === 'dessus' ? 1.35 : 1) * Math.max(1, 1.4 / Math.max(0.4, cam.aspect)); };
     var vers = function (v, inst) { var p = new THREE.Vector3().fromArray(VUES[v]).normalize().multiplyScalar(recul(v)).add(cible);
