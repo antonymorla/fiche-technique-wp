@@ -682,6 +682,10 @@
     P.querySelector('.cer-plan__dims').innerHTML = dimsList(L).map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
     realisations();
     var W = E.menuWarnings(L.d).filter(function (w) { return !/pas de prix/.test(w); });
+    // configuration hors norme (demande d'Antony, 13/10/2026) : au-delà de la hauteur au faîtage réglée dans l'admin (Réglages → Fiche Technique)
+    var hMax = parseFloat(CFG.kind === 'carport' ? CFG.alerteHCp : CFG.alerteH) || 0, dd = L.d, plat = dd.toit === 'TOIT_PLAT' && !dd.isQuadro && CFG.kind !== 'carport';
+    var hT = (dd.hExt || 0) + (plat && E.flatTopH ? E.flatTopH(dd) : (dd.rH || 0)) + (dd.base || 0);
+    if (hMax > 0 && hT > hMax + 0.005) W.unshift('Configuration hors standard (' + hT.toFixed(2).replace('.', ',') + ' m au faîtage) : vous pouvez la commander, mais elle passera par notre bureau d\u2019études, qui se réserve le droit de l\u2019adapter si elle n\u2019est pas réalisable techniquement.');
     if (NOTE_PLACE) W.unshift(NOTE_PLACE);
     if (SANS_PLACE.length) W.unshift('Plus de place sur les murs pour : ' + SANS_PLACE.join(', ') + '. Agrandissez l\u2019abri ou retirez une menuiserie.');
     P.querySelector('.cer-plan__warn').innerHTML = W.map(function (w) { return '<p>' + w.replace(/Ouverture (\d+)/g, function (_, n) { var m = ST.menus[n - 1]; return m ? (m.siteLabel || m.label) : 'Ouverture ' + n; }) + '</p>'; }).join('');

@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
- * Version:           3.2.10
+ * Version:           3.2.11
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '3.2.10' );
+define( 'ACFT_VERSION',  '3.2.11' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -538,6 +538,9 @@ add_action( 'admin_init', function() {
     register_setting( 'acft_group', 'cer_3d_mode', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
     ] );
+    foreach ( [ 'cer_alerte_faitage' => 3.8, 'cer_alerte_faitage_carport' => 4.2 ] as $opt => $def ) { // 0 = pas de message
+        register_setting( 'acft_group', $opt, [ 'sanitize_callback' => function( $v ) use ( $def ) { $v = (float) str_replace( ',', '.', (string) $v ); return ( $v >= 0 && $v <= 20 ) ? round( $v, 2 ) : $def; } ] );
+    }
     register_setting( 'acft_group', 'cer_mairie_acces', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'equipe', 'tous' ], true ) ? $v : 'equipe'; },
     ] );
@@ -611,6 +614,9 @@ function acft_settings_page() {
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="off" <?php checked( $mode, 'off' ); ?> /> Désactivé (configurateurs et devis d'origine)</label>
                 </fieldset>
                 <p style="margin-top:14px"><input type="hidden" name="cer_menus_assortis" value="0" /><label><input type="checkbox" name="cer_menus_assortis" value="1" <?php checked( get_option( 'cer_menus_assortis', '1' ), '1' ); ?> /> Menuiseries bois assorties au bardage : seules les portes et fenêtres de la même teinte que le bardage sont proposées (autoclave vert, brun, gris, noir, ayous) ; alu, PVC et modèles sans teinte restent proposés. Si le bardage change, la menuiserie passe au même modèle dans la bonne teinte.</label></p>
+                <p style="margin:16px 0 4px"><strong>Configurations hors standard</strong> — au-delà de cette hauteur au faîtage, le configurateur prévient le client que sa commande passera par le bureau d'études, qui peut l'adapter (0 = pas de message) :</p>
+                <p style="margin:4px 0"><label>Abri et garage : <input type="number" step="0.05" min="0" max="20" name="cer_alerte_faitage" value="<?php echo esc_attr( get_option( 'cer_alerte_faitage', 3.8 ) ); ?>" style="width:80px" /> m</label>
+                &nbsp; <label>Carport : <input type="number" step="0.05" min="0" max="20" name="cer_alerte_faitage_carport" value="<?php echo esc_attr( get_option( 'cer_alerte_faitage_carport', 4.2 ) ); ?>" style="width:80px" /> m</label></p>
                 <?php submit_button( 'Enregistrer' ); ?>
             </div>
             <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
