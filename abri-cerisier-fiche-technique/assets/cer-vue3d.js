@@ -211,12 +211,14 @@ window.CerVue3D = (function () {
     var THREE = T.THREE, ST = E.ST, d = E.calcDims(), G = new THREE.Group();
     var fv = function (id) { return ST.cfg && ST.cfg[id] != null ? String(ST.cfg[id]) : ''; };
     var L = d.L, P = d.P, base = d.base || 0, hE = d.hExt, tan = Math.tan(d.penteRad || 0), rH = d.rH || 0;
-    var quadro = !!d.isQuadro, plat = d.toit === 'TOIT_PLAT' && !quadro, orient = d.orient || fv('f-orient');
+    var quadro = !!d.isQuadro, plat = d.toit === 'TOIT_PLAT' && !quadro, orient = d.orient || fv('f-orient'), carport = ST.type === 'carport';
     var bois = ['#bdb07e', '#857a50', '#d2c799'];
     var M = {
       massif: new THREE.MeshStandardMaterial({ map: BOIS && BOIS.vert ? (function () { var t = canvasTex(THREE, boisMassifPhoto(), true); t.wrapT = THREE.MirroredRepeatWrapping; return t; })() : canvasTex(THREE, boisMassif(bois)), roughness: 0.8 }),
       noir: new THREE.MeshStandardMaterial({ color: 0x232527, roughness: 0.45, metalness: 0.4 }),
       parpaing: new THREE.MeshStandardMaterial({ color: 0xb9b7ae, roughness: 0.95 }),
+      galva: new THREE.MeshStandardMaterial({ color: 0xa3a8ad, roughness: 0.4, metalness: 0.65 }),
+      enduit: new THREE.MeshStandardMaterial({ color: 0xe2ddd2, roughness: 0.97 }),
       gouttiere: new THREE.MeshStandardMaterial({ color: 0x383e42, roughness: 0.42, metalness: 0.3, side: THREE.DoubleSide }), // gris anthracite RAL 7016
       interieur: new THREE.MeshStandardMaterial({ color: 0x2b2a24, roughness: 1 }),
       verre: new THREE.MeshPhysicalMaterial({ color: 0xdfe9ee, roughness: 0.02, metalness: 0, transparent: true, opacity: 0.22, envMapIntensity: 2.2, clearcoat: 1, clearcoatRoughness: 0.02, depthWrite: false }),
@@ -376,7 +378,7 @@ window.CerVue3D = (function () {
 
     // ── toit ── (les pièces ajoutées jusqu'aux extensions forment la couverture, cachée en vue « Intérieur »)
     var nToit0 = G.children.length;
-    var y0t = base + hE;
+    var y0t = carport ? hE + ((d.toit === '1PAN' || d.toit === '2PANS') ? 0.16 + 0.26 : 0) : base + hE;
     var sous = function (x, z) {
       if (d.toit === '2PANS') return y0t + (L / 2 - Math.abs(x)) * tan;
       if (d.toit === '1PAN') {
@@ -412,7 +414,7 @@ window.CerVue3D = (function () {
       mm.rotation.z = ang; mm.position.set(xc, sous(xc, (za + zb) / 2) + ep / 2 / Math.cos(ang), (za + zb) / 2); G.add(mm); };
     var panZ = function (za, zb, ang) { var w = (zb - za) / Math.cos(ang), zc = (za + zb) / 2, mm = boite(X1 - X0, ep, w, mats());
       mm.rotation.x = ang; mm.position.set((X0 + X1) / 2, sous(0, zc) + ep / 2 / Math.cos(ang), zc); G.add(mm); };
-    var rive = function (xa, xb, z, ang) { var w = (xb - xa) / Math.cos(ang), r = massif(w, 0.2, 0.028, 'x', M.bard); r.rotation.z = ang; r.position.set((xa + xb) / 2, sous((xa + xb) / 2, 0) - 0.03, z); G.add(r); };
+    var rive = function (xa, xb, z, ang) { var w = (xb - xa) / Math.cos(ang), r = massif(w, carport ? 0.26 : 0.2, 0.028, 'x', M.bard); r.rotation.z = ang; r.position.set((xa + xb) / 2, sous((xa + xb) / 2, 0) - 0.03, z); G.add(r); };
     var gout = []; // égouts : { axe: 'z' (le long de la profondeur) ou 'x' (le long de la largeur), e: coordonnée du bord du toit, s: côté (-1 / +1) }
     if (d.toit === '2PANS') {
       pan(X0, 0, ZB, ZF, a); pan(0, X1, ZB, ZF, -a);
@@ -447,7 +449,7 @@ window.CerVue3D = (function () {
       // toit plat (règle d'Antony) : la couverture a toujours une pente, 5 % au moins, vers le côté choisi ; les murs ayant tous la même hauteur,
       // c'est la charpente qui la donne (12 cm au-dessus du mur côté bas). Le bandeau (3 lames de 13 cm) cache la couverture : effet toit plat.
       // Tant que la chute tient dans le bandeau, bandeaux horizontaux ; au-delà (grande profondeur), bandeaux de côté en pente et bandeau haut plus haut.
-      var hb = 0.39, eb = 0.027, MB2 = matMotif(E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
+      var hb = carport ? 0.36 : 0.39, eb = 0.027, MB2 = matMotif(E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
       var u0 = dirZ ? ZB : X0, u1 = dirZ ? ZF : X1, span = u1 - u0, chute = 0.05 * span, bas0 = 0.12;
       var horiz = chute <= hb - 0.03 - bas0, hHaut = horiz ? y0t + hb - 0.03 : y0t + bas0 + chute, hBasC = hHaut - chute;
       platH = function (x, z) { var u = dirZ ? z : x, t = sgn > 0 ? (u - u0) / span : (u1 - u) / span; return hHaut - chute * Math.max(0, Math.min(1, t)); };
@@ -478,6 +480,71 @@ window.CerVue3D = (function () {
       if (fv('f-gout') === 'oui') gout.push(dirZ ? { axe: 'x', e: uBas + sgn * 0.03, s: sgn } : { axe: 'z', e: uBas + sgn * 0.03, s: sgn });
     }
     var TOIT = G.children.slice(nToit0);
+    // ── carport (règles d'Antony, mêmes cotes que les vues du moteur) : poteaux sur la grille du configurateur et pieds galva,
+    // sablières et entraits de 16 cm, fermes, jambes de force à 45° (aucune sur QUADRO ni avec poteaux alu ou capotés alu),
+    // bandeau d'égout de 26 cm qui cache la couverture et la gouttière, côtés fermés jusqu'en haut, mur de la maison si adossé
+    if (carport) {
+      var ps = Math.max(0.09, parseFloat(fv('f-pot')) || 0.12), alu = fv('f-pot') === '0.15' || fv('f-potalu') === 'oui', EN = 0.16, sansJ = alu || quadro;
+      var cols = E.carportColsT ? E.carportColsT(d) : [0, 1], nr = Math.max(2, d.nRows || 2), cxs = cols.map(function (t) { return -L / 2 + ps / 2 + (L - ps) * t; }), czs = [];
+      for (var ri = 0; ri < nr; ri++) czs.push(-P / 2 + ps / 2 + (P - ps) * ri / (nr - 1));
+      var ados = d.ados && d.ados !== 'non' ? d.ados : '', clos = (E.closList ? E.closList() : []).filter(function (k) { return k !== ados; });
+      var poutre = function (x0, y0, z0, x1, y1, z1, ep2, h2) { // pièce de bois entre deux points (axe), section ep2 × h2
+        var dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, lg = Math.hypot(dx, dy, dz), m2 = massif(ep2, lg, h2);
+        var v = new THREE.Vector3(dx, dy, dz).normalize(); m2.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v);
+        m2.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); G.add(m2); return m2; };
+      // poteaux et pieds galva
+      cxs.forEach(function (x) { czs.forEach(function (z) {
+        var po = alu ? boite(ps, hE, ps, M.noir) : massif(ps, hE, ps); po.position.set(x, hE / 2, z); po.castShadow = true; G.add(po);
+        var pd = boite(ps + 0.03, 0.025, ps + 0.03, M.galva); pd.position.set(x, 0.012, z); G.add(pd);
+        [-1, 1].forEach(function (sd) { var pl = boite(0.006, 0.14, ps * 0.8, M.galva); pl.position.set(x + sd * (ps / 2 + 0.003), 0.07, z); G.add(pl); }); }); });
+      // sablières (le long de chaque rangée) et entraits (travers, à chaque ligne de poteaux), sur les poteaux
+      var yb = hE + EN / 2;
+      czs.forEach(function (z) { poutre(-L / 2, yb, z, L / 2, yb, z, EN, ps); }); // pièce le long de x : 1re dimension = hauteur
+      cxs.forEach(function (x) { poutre(x, yb, -P / 2, x, yb, P / 2, ps, EN); });
+      // jambes de force à 45° : de chaque poteau vers les pièces qui passent dessus (pas du côté fermé ni contre le mur)
+      if (!sansJ) { var kb = 0.5, sk = 0.07;
+        cxs.forEach(function (x, ix) { czs.forEach(function (z, iz) {
+          [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (dv) {
+            var nx = x + dv[0] * kb, nz = z + dv[1] * kb; if (nx < -L / 2 - 0.01 || nx > L / 2 + 0.01 || nz < -P / 2 - 0.01 || nz > P / 2 + 0.01) return;
+            poutre(x + dv[0] * ps / 2, hE - kb, z + dv[1] * ps / 2, nx, hE, nz, sk, sk); }); }); }); }
+      // fermes des toits à pentes : jambettes et diagonales sous les pans, à chaque rangée de poteaux
+      var dessous = function (x, z) { return sous(x, z) - 0.07; };
+      if (d.toit === '2PANS') czs.forEach(function (z) {
+        [-L / 4, L / 4].forEach(function (x) { poutre(x, hE + EN, z, x, dessous(x, z), z, 0.07, 0.07); });
+        [-1, 1].forEach(function (sd) { var xr = sd * L * 0.39; poutre(0, hE + EN, z, xr, dessous(xr, z), z, 0.07, 0.07); });
+        [-1, 1].forEach(function (sd) { poutre(sd * (L / 2 + d.ovL), dessous(sd * (L / 2 + d.ovL), z) - 0.06, z, 0, dessous(0, z) - 0.06, z, 0.12, 0.07); }); // arbalétriers
+      });
+      else if (d.toit === '1PAN') {
+        var lgX = orient === 'droite' || orient === 'gauche', hautX = orient === 'droite' ? -L / 2 : L / 2, hautZ = orient === 'fond' ? P / 2 : -P / 2;
+        (lgX ? czs : cxs).forEach(function (c) { var X = function (u) { return lgX ? u : c; }, Z = function (u) { return lgX ? c : u; }, u0 = lgX ? hautX : hautZ, u1 = -u0;
+          poutre(X(u0), hE + EN, Z(u0), X(u0), dessous(X(u0), Z(u0)), Z(u0), ps, ps); // poteau prolongé côté haut
+          var um = u0 * 0.1; poutre(X(um), hE + EN, Z(um), X(um), dessous(X(um), Z(um)), Z(um), 0.07, 0.07); // montant
+          var ud = u0 * 0.52; poutre(X(u0 * 0.95), hE + EN, Z(u0 * 0.95), X(ud), dessous(X(ud), Z(ud)), Z(ud), 0.07, 0.07); // diagonale
+          poutre(X(u0 * 1.0), dessous(X(u0), Z(u0)) - 0.06, Z(u0), X(u1), dessous(X(u1), Z(u1)) - 0.06, Z(u1), lgX ? 0.12 : 0.07, lgX ? 0.07 : 0.12); }); // arbalétrier
+      }
+      // bandeau d'égout (26 cm) : sous le bord bas de la toiture, il cache la couverture et la gouttière
+      var egout = function (axe, e, sg2) { var ye = sous(axe === 'z' ? e : 0, axe === 'z' ? 0 : e), lg = axe === 'z' ? ZF - ZB : X1 - X0, bdo = axe === 'z' ? boite(0.028, 0.28, lg, M.bard) : boite(lg, 0.28, 0.028, M.bard);
+        bdo.position.set(axe === 'z' ? e + sg2 * 0.07 : (X0 + X1) / 2, ye + 0.02 - 0.14, axe === 'z' ? (ZF + ZB) / 2 : e + sg2 * 0.07); G.add(bdo); };
+      if (d.toit === '2PANS') { egout('z', X0, -1); egout('z', X1, 1); }
+      else if (d.toit === '1PAN') { if (orient === 'droite') egout('z', X1, 1); else if (orient === 'gauche') egout('z', X0, -1); else if (orient === 'face') egout('x', ZF, 1); else egout('x', ZB, -1); }
+      // sous-face des toits plats (QUADRO : le dessous de la membrane ne se voit pas)
+      if (quadro) { var sfq = boite(X1 - X0, 0.02, ZF - ZB, matSous); sfq.position.set((X0 + X1) / 2, hE + 0.01, (ZF + ZB) / 2); G.add(sfq); }
+      // côtés fermés : du sol jusque sous la toiture (pignon compris), entre les poteaux d'extrémité
+      var ct = fv('f-clos-type'), finC = ct === 'ajouree' ? E.extFin(d, 'ajouree') : ct === 'clin' ? E.FINITIONS.sr_vert : E.wallFin(d), matC = matMotif(finC);
+      clos.forEach(function (k) {
+        var lat = k === 'gauche' || k === 'droite', fixe = k === 'gauche' ? -L / 2 : k === 'droite' ? L / 2 : (k === 'fond' ? -P / 2 : P / 2), v0 = lat ? -P / 2 : -L / 2, v1 = -v0;
+        var haut = function (v) { var x = lat ? fixe : v, z = lat ? v : fixe; return (plat || quadro) ? hE : Math.max(hE, dessous(x, z) - (k === 'fond' || k === 'face' ? 0.02 : 0.28)); };
+        var sh = new THREE.Shape(), pts = [v0, v0 / 2, 0, v1 / 2, v1]; sh.moveTo(0, 0); sh.lineTo(v1 - v0, 0);
+        pts.slice().reverse().forEach(function (v) { sh.lineTo(v - v0, haut(v)); }); sh.closePath();
+        var geo = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: false }); geo.translate(0, 0, -0.011);
+        var mc = new THREE.Mesh(geo, matC); mc.castShadow = mc.receiveShadow = true;
+        if (lat) { mc.rotation.y = -Math.PI / 2; mc.position.set(fixe + (k === 'gauche' ? -1 : 1) * (ps / 2 - 0.011), 0, v0); }
+        else { mc.position.set(v0, 0, fixe + (k === 'fond' ? -1 : 1) * (ps / 2 - 0.011)); }
+        G.add(mc);
+      });
+      // mur de la maison (adossé)
+      if (ados) { var hm = (d.hExt + rH) + 0.7, sdm = ados === 'gauche' ? -1 : 1, mu = boite(0.2, hm, P + 2, M.enduit); mu.position.set(sdm * (L / 2 + d['ov' + (ados === 'gauche' ? 'L' : 'R')] + 0.1), hm / 2, 0); mu.receiveShadow = true; G.add(mu); }
+    }
     // charpente (règle d'Antony) : pannes perpendiculaires aux pignons, portées par les pignons, faîtière en tête, au plus 1 m entre pannes
     // dans la pente (comme les pannes des carports) ; au-delà de 5 m de portée entre pignons, fermes intermédiaires. Laine de roche sous la couverture (option).
     var PW = 0.07, PH = 0.15, isot = fv('f-isot') === 'oui', matLaineT = isot ? new THREE.MeshStandardMaterial({ map: canvasTex(THREE, laine(), true), roughness: 1, side: THREE.DoubleSide }) : null;
@@ -497,7 +564,7 @@ window.CerVue3D = (function () {
       if (d.toit === '2PANS') { panne(0, 0.2); rangs(pente0, 0); rangs(0, pente1); } // faîtière, puis pannes de chaque pan
       else rangs(pente0, pente1);
       // fermes intermédiaires : arbalétriers, entrait à hauteur des murs, poinçon (2 pans)
-      var portee = long1 ? L - 2 * wt : P - 2 * wt, nf = Math.ceil(portee / 5) - 1;
+      var portee = long1 ? L - 2 * wt : P - 2 * wt, nf = carport ? 0 : Math.ceil(portee / 5) - 1; // carport : ses fermes sont à chaque rangée de poteaux
       for (var f2 = 1; f2 <= nf; f2++) {
         var zf = (long1 ? -L / 2 + wt : -P / 2 + wt) + portee * f2 / (nf + 1), yE = base + hE - 0.075;
         if (d.toit === '2PANS') {
@@ -514,7 +581,7 @@ window.CerVue3D = (function () {
         }
       }
       if (isot && d.toit === '2PANS') { lainePan(pente0, 0, a); lainePan(0, pente1, -a); }
-    } else {
+    } else if (!carport) { // abri : solives et plafond OSB (le carport a sa sous-face)
       var yS = quadro ? base + hE + rH - 0.05 - 0.04 : y0t; // dessous du platelage
       for (var xj = -L / 2 + wt + 0.0225; xj <= L / 2 - wt; xj += 0.6) { var sj = massif(0.045, 0.15, P - 2 * wt, 'z'); sj.position.set(xj, yS - 0.075, 0); G.add(sj); }
       var ospl = new THREE.Mesh(new THREE.PlaneGeometry(L - 2 * wt, P - 2 * wt), matPhoto('osb', 'int-osb.jpg', 1.25)); ospl.rotation.x = Math.PI / 2; ospl.position.set(0, yS - 0.001, 0);
