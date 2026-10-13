@@ -795,7 +795,8 @@ function gableBoards(svg,fin,pts,dir,sc){
 // U de finition (règle d'Antony, 13/10/2026) : un U en BOIS coiffe le bout des madriers à chaque angle et cache les coupes ;
 // vu en élévation, on voit sa joue de 10 cm, en bois massif, fil vertical (ossature : couvre-angle de 5 cm)
 function drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
-  const oss=d.sys==='ossature', cw=oss?Math.max(2,0.05*sc):0.10*sc, hl=Math.max(.6,cw*.12), fin=FINITIONS.madrier;
+  if(d.sys!=='ossature') return drawUMadrier(svg,d,baseX,baseY,drawW,gndY,sc,top);
+  const oss=true, cw=Math.max(2,0.05*sc), hl=Math.max(.6,cw*.12), fin=FINITIONS.madrier;
   const pat=patBoards(svg,{dir:'v',boards:[cw/sc],c:fin.c,ph:fin.ph},sc,baseX,gndY,.04);
   top=top||{L:[baseY,0],R:[baseY,0]};
   [['L',oss?baseX:baseX-cw],['R',oss?baseX+drawW-cw:baseX+drawW]].forEach(([k,x])=>{
@@ -803,6 +804,26 @@ function drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
     const tOut=ty-sl*(oss?0:cw), tIn=ty;
     sPoly(svg,[[x,gndY],[x,k==='L'?tOut:tIn],[x+cw,k==='L'?tIn:tOut],[x+cw,gndY]],pat,shade(fin.c[1],-.3),.8);
     sRect(svg,k==='L'?x:x+cw-hl,Math.max(tOut,tIn),hl,gndY-Math.max(tOut,tIn),shade(fin.c[1],-.15),'none',0); // chant du U, côté extérieur
+  });
+}
+// U de finition des madriers (profil validé par Antony le 13/10/2026) : 40 mm de large (lame de 28 + 2 parois de 6 mm),
+// 20 mm sur les lames, fond de 10 mm, coins extérieurs arrondis ; un U au bout de chaque mur, soit 2 par angle.
+// En élévation : le U de la façade se voit de profil au bout des lames qui dépassent (3 cm), celui du mur perpendiculaire de face (4 cm).
+function drawUMadrier(svg,d,baseX,baseY,drawW,gndY,sc,top){
+  const fin=FINITIONS.madrier, we=Math.max(1.8,(d.wt||0.028)*sc), p=0.006*sc, cw=0.10*sc;
+  const pat=patBoards(svg,{dir:'v',boards:[0.04],c:fin.c,ph:fin.ph},sc,baseX,gndY,.04);
+  top=top||{L:[baseY,0],R:[baseY,0]};
+  const bande=(x,w,ty)=>{
+    const a=Math.max(.4,w*.17);
+    sRect(svg,x,ty,w,gndY-ty,pat,shade(fin.c[1],-.3),.7);
+    sRect(svg,x,ty,a,gndY-ty,'#ffffff','none',0).setAttribute('opacity','.18'); // arrondi éclairé
+    sRect(svg,x+w-a,ty,a,gndY-ty,'#000000','none',0).setAttribute('opacity','.2'); // arrondi à l'ombre
+  };
+  [['L',-1],['R',1]].forEach(([k,dir])=>{
+    const [ty,sl]=top[k], bord=k==='L'?baseX:baseX+drawW;
+    const xf=k==='L'?bord-cw-0.01*sc:bord+cw-0.02*sc; // U de la façade, de profil : fond 1 cm + 2 cm sur les lames
+    bande(xf,0.03*sc,ty-sl*(cw+0.01*sc));
+    bande(k==='L'?bord-p:bord-we-p,we+2*p,ty); // U du mur perpendiculaire, de face, centré sur son épaisseur
   });
 }
 // Angles en madrier, vus en élévation (vignettes du site) : les madriers de la façade dépassent de 10 cm de chaque côté,

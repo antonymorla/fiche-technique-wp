@@ -209,6 +209,16 @@ window.CerVue3D = (function () {
     // bois de la teinte du bardage (rives, bandeaux, tableaux : règle d'Antony) ; les poteaux et la structure restent en autoclave vert
     var phB = (E.wallFin(d) || {}).ph;
     M.bard = phB && phB !== 'vert' && BOIS && BOIS[phB] ? new THREE.MeshStandardMaterial({ map: (function () { var t = canvasTex(THREE, boisMassifPhoto(BOIS[phB]), true); t.wrapT = THREE.MirroredRepeatWrapping; return t; })(), roughness: 0.8 }) : M.massif;
+    // U de finition (profil validé par Antony le 13/10/2026) : coiffe le bout des madriers sur toute la hauteur ; parois de 6 mm de part et d'autre
+    // de la lame, 20 mm sur les lames, fond de 10 mm, coins extérieurs arrondis. Origine : bout des lames, au milieu de l'épaisseur ; s = sens vers l'extérieur
+    var profilU = function (s, h) {
+      var e = wt / 2, hw = e + 0.006, r = 0.006, dx = 0.02, f = 0.01, sh = new THREE.Shape();
+      sh.moveTo(-dx * s, -hw); sh.lineTo((f - r) * s, -hw); sh.quadraticCurveTo(f * s, -hw, f * s, -hw + r); sh.lineTo(f * s, hw - r);
+      sh.quadraticCurveTo(f * s, hw, (f - r) * s, hw); sh.lineTo(-dx * s, hw); sh.lineTo(-dx * s, e); sh.lineTo(0, e); sh.lineTo(0, -e); sh.lineTo(-dx * s, -e); sh.closePath();
+      var geo = new THREE.ExtrudeGeometry(sh, { depth: h + 0.005, bevelEnabled: false, curveSegments: 4 }); geo.rotateX(-Math.PI / 2);
+      var uv = geo.attributes.uv, v0 = Math.random() * 2; for (var i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 5, v0 + uv.getY(i)); // fil du bois vertical
+      var me = new THREE.Mesh(geo, M.massif); me.castShadow = me.receiveShadow = true; return me;
+    };
     var massif = function (w, h, dd, axe, mat) {
       var m = boite(w, h, dd, mat || M.massif, true), geo = m.geometry, uv = geo.attributes.uv, pos = geo.attributes.position;
       var ax = axe === 'x' ? 0 : axe === 'z' ? 2 : 1, len = [w, h, dd][ax], v0 = Math.random() * 2;
@@ -322,7 +332,7 @@ window.CerVue3D = (function () {
         var hautG = (m.gndY - m.pts[1][1]) / m.sc, hautD = (m.gndY - m.pts[m.pts.length - 2][1]) / m.sc;
         [[-0.05, hautG], [m.w + 0.05, hautD]].forEach(function (cn) {
           var bt = boite(0.10, cn[1], wt, [MI.bout, MI.bout, MI.dep, MI.dep, MI.dep, MI.dep]); bt.position.set(cn[0], cn[1] / 2, -sg * wt / 2); grp.add(bt);
-          if (fv('f-profu') === 'oui') { var u2 = massif(0.122, cn[1] + 0.01, wt + 0.044); u2.position.set(cn[0] + (cn[0] < 0 ? -0.011 : 0.011), (cn[1] + 0.01) / 2, -sg * wt / 2); grp.add(u2); }
+          if (fv('f-profu') === 'oui') { var u2 = profilU(cn[0] < 0 ? -1 : 1, cn[1]); u2.position.set(cn[0] < 0 ? -0.10 : m.w + 0.10, 0, -sg * wt / 2); grp.add(u2); }
         });
       }
       if (!oss) surfaceInt(grp, m, trous, -sg * wt, MI.mur);
@@ -520,7 +530,8 @@ window.CerVue3D = (function () {
         var q = P3(cp, 0); colliers(q[0], q[2], z ? -g.s : 0, z ? 0 : -g.s, 0.14, yv);
       });
     }
-    G.userData = { x0: X0, x1: X1, zF: ZF, zB: ZB, h: base + hE + rH, toit: TOIT, pret: Promise.all(attente) };
+    // userData ne garde que des nombres : il est recopié à chaque clone et écrit tel quel dans le GLB (les pièces du toit y pesaient 11 Mo)
+    G.userData = { x0: X0, x1: X1, zF: ZF, zB: ZB, h: base + hE + rH }; G.cerToit = TOIT; G.cerPret = Promise.all(attente);
     return G;
   }
 
@@ -613,7 +624,7 @@ window.CerVue3D = (function () {
       if (anim) { var k = Math.min(1, (t - anim.t0) / 700), s = k * k * (3 - 2 * k); cam.position.lerpVectors(anim.p0, anim.p1, s); if (k >= 1) anim = null; }
       ctl.update(); R.render(sc.S, cam); };
     var ch = ov.querySelector('.ch');
-    return u.pret.then(function () { if (ch) ch.remove(); boucle(performance.now()); actions(ov); return ov; });
+    return G.cerPret.then(function () { if (ch) ch.remove(); boucle(performance.now()); actions(ov); return ov; });
   }
   function actions(ov) {
     if (ov.__actions) return; ov.__actions = true;
@@ -621,7 +632,7 @@ window.CerVue3D = (function () {
       var bt = e.target.closest('button'); if (!bt || !ouvert) return;
       if (bt.dataset.v === 'tour') { ouvert.ctl.autoRotate = !ouvert.ctl.autoRotate; bt.classList.toggle('on', ouvert.ctl.autoRotate); }
       else if (bt.dataset.v === 'int') { // la couverture se soulève : ossature, doublage, sol et charpente visibles
-        ouvert.interieur = !ouvert.interieur; (ouvert.G.userData.toit || []).forEach(function (o) { o.visible = !ouvert.interieur; });
+        ouvert.interieur = !ouvert.interieur; (ouvert.G.cerToit || []).forEach(function (o) { o.visible = !ouvert.interieur; });
         bt.classList.toggle('on', !!ouvert.interieur); if (ouvert.interieur) ouvert.vers('int'); else ouvert.vers('trois'); }
       else if (bt.dataset.v) ouvert.vers(bt.dataset.v);
       else if (bt.dataset.a === 'ar') realiteAugmentee(bt);
@@ -740,6 +751,8 @@ window.CerVue3D = (function () {
     g.traverse(function (o) {
       if (!o.isMesh || !o.material) return;
       if (o.material.isMeshPhysicalMaterial) o.material = new THREE.MeshStandardMaterial({ color: 0x9fb4c0, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.35 });
+      // GLB (Android, déposé sur le serveur) : photos de bois en JPEG au lieu de PNG, 10 fois plus léger
+      if (!o.material.transparent && !o.material.alphaTest) ['map', 'normalMap', 'roughnessMap'].forEach(function (k) { var t = o.material[k]; if (t) t.userData.mimeType = 'image/jpeg'; });
       if (o.material.side === THREE.DoubleSide && o.geometry.index) doubles.push(o);
     });
     // USDZ (iPhone) n'affiche qu'une face : chaque surface « deux faces » (murs de côté, fermetures, gouttières) reçoit sa face retournée
@@ -762,7 +775,7 @@ window.CerVue3D = (function () {
     return new Promise(function (res) {
       var go = function () { var q = window.qrcode(0, 'M'); q.addData(texte); q.make(); res(q.createDataURL(6, 2)); };
       if (window.qrcode) return go();
-      var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; s.onload = go; s.onerror = function () { res(null); }; document.head.appendChild(s);
+      var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; s.integrity = 'sha512-ZDSPMa/JM1D+7kdg2x3BsruQ6T/JpJo3jWDWkCZsP+5yVyp1KfESqLI+7RqB5k24F7p2cV7i2YHh/890y6P6Sw=='; s.crossOrigin = 'anonymous'; s.onload = go; s.onerror = function () { res(null); }; document.head.appendChild(s);
     });
   }
   function realiteAugmentee(bt) {
@@ -773,7 +786,7 @@ window.CerVue3D = (function () {
       if (ouvert !== o) return;
       var sc = modeleExport();
       var usdzP = new X.USDZExporter().parse(sc);
-      var glbP = new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true }); });
+      var glbP = new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true, maxTextureSize: 1024 }); });
       if (IOS) return Promise.resolve(usdzP).then(function (u) {
         var url = URL.createObjectURL(new Blob([u], { type: 'model/vnd.usdz+zip' })), a = document.createElement('a');
         a.rel = 'ar'; a.href = url; // taille réelle à l'ouverture, réductible au pincement a.appendChild(document.createElement('img')); document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
@@ -796,7 +809,7 @@ window.CerVue3D = (function () {
 
   function fichiersAR() { // GLB et USDZ du modèle affiché (contrôles)
     return exporteurs().then(function (X) { var sc = modeleExport();
-      return Promise.all([new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true }); }), new X.USDZExporter().parse(sc)]); });
+      return Promise.all([new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true, maxTextureSize: 1024 }); }), new X.USDZExporter().parse(sc)]); });
   }
-  return { CHARGE_HTML: CHARGE_HTML, CHARGE_CSS: CHARGE_CSS, ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null, fichiersAR: fichiersAR };
+  return { CHARGE_HTML: CHARGE_HTML, CHARGE_CSS: CHARGE_CSS, ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null, fichiersAR: fichiersAR, _etat: function () { return ouvert; } }; // _etat : contrôles automatiques seulement
 })();

@@ -341,7 +341,7 @@
     var u = (C().tex || '') + 'logo-abri-cerisier-blanc.png';
     return fetch(u).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { return new Promise(function (res) { var f = new FileReader(); f.onload = function () { res(f.result); }; f.readAsDataURL(b); }); }).catch(function () { return null; });
   }
-  function jspdf() { return window.jspdf ? Promise.resolve(window.jspdf) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = function () { res(window.jspdf); }; s.onerror = rej; document.head.appendChild(s); }); }
+  function jspdf() { return window.jspdf ? Promise.resolve(window.jspdf) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.integrity = 'sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA=='; s.crossOrigin = 'anonymous'; s.onload = function () { res(window.jspdf); }; s.onerror = rej; document.head.appendChild(s); }); }
   function vueMoteur(side, w, h) { // dessin du configurateur, cotes comprises → image PNG
     var ST = E.ST, d = E.calcDims(), sv = { scale: ST.scale, picto: ST.picto, mur: ST.murSeul }, svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h); svg.setAttribute('width', w * 2.5); svg.setAttribute('height', h * 2.5);

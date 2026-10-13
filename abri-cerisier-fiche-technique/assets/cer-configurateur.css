@@ -366,6 +366,8 @@
 
 /* ── Vignettes (13/10/2026) : extension de toiture, hauteur des murs, barre de progression, message du toit plat ── */
 .cer-vg-cache { display: none !important; }
+.cer-vg-alerte { margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: #fff4e5; color: #9a3412; font-size: 13.5px; line-height: 1.45; }
+.cer-vg-alerte[hidden] { display: none; }
 .cer-plan-on .cer-vg { margin: 6px 0 4px; }
 .cer-plan-on .cer-vg *, .cer-plan-on .cer-prog * { box-sizing: border-box; }
 .cer-plan-on .cer-vg__g2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }

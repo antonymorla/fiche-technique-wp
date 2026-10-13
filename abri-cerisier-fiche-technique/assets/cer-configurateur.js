@@ -1101,22 +1101,29 @@
   var TEINTES = [['vert', /autoclave vert/i, 'autoclave vert'], ['brun', /autoclave brun/i, 'autoclave brun'], ['gris', /autoclave gris/i, 'autoclave gris'], ['noir', /autoclave noir|douglas noir/i, 'autoclave noir'], ['ayous', /ayous/i, 'ayous']];
   var teinteDe = function (l) { if (/\balu\b|pvc|capotage/i.test(l)) return null; for (var i = 0; i < TEINTES.length; i++) if (TEINTES[i][1].test(l)) return TEINTES[i]; return null; };
   var norme = function (l) { return String(l || '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+  // modèle sans sa teinte, mots dans n'importe quel ordre : « acidifié 110x186 cm autoclave vert » = « acidifié ayous 110x186 cm »
+  var modele = function (l) { return norme(l).replace(/autoclave (vert|brun|gris|noir)|douglas noir|ayous/g, ' ').replace(/(\d)\s+cm\b/g, '$1cm').split(' ').filter(Boolean).sort().join(' '); };
   function vgAssortis() {
     if (CFG.assortis === false || !M.men || !ST.cfg) return;
     var sys = ST.cfg['f-sys'] || '', b = ST.cfg['f-bard'] || '';
     var cible = /^madrier/.test(sys) && ST.cfg['f-toit'] !== 'QUADRO' ? 'vert' : { sr_vert: 'vert', sr_brun: 'brun', srn_gris: 'gris', douglas_noir: 'noir', ayous125: 'ayous', ayous_alea: 'ayous' }[b];
-    var T = cible && TEINTES.filter(function (t) { return t[0] === cible; })[0];
+    var T = cible && TEINTES.filter(function (t) { return t[0] === cible; })[0], seul = null;
     Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-container'), function (c) {
       if ((M.men.specific || []).indexOf(c.getAttribute('for')) < 0) return;
       var ins = Array.prototype.slice.call(c.querySelectorAll('input[type=radio]'));
       ins.forEach(function (i) {
         var l = i.getAttribute('data-wapf-label') || '', t = teinteDe(l), autre = !!(T && t && t[0] !== T[0]), sw = i.closest('.wapf-swatch') || i.closest('label');
         if (autre && i.checked && !masqueWapf(c)) { // même modèle dans la teinte du bardage
-          var vise = norme(l.replace(t[1], T[2])), eq = ins.filter(function (x) { return norme(x.getAttribute('data-wapf-label')) === vise; })[0];
-          if (eq) { cocher(eq); autre = true; } else autre = false; // pas d'équivalent : on la laisse visible (le choix du client reste lisible)
+          var vise = modele(l), eq = ins.filter(function (x) { var lx = x.getAttribute('data-wapf-label') || '', tx = teinteDe(lx); return tx && tx[0] === T[0] && modele(lx) === vise; })[0];
+          if (eq) { cocher(eq); autre = true; } else { autre = false; seul = l; } // pas d'équivalent : choix laissé visible, avec un message
         }
         if (sw) cacher(sw, autre && !i.checked);
       });
+      // ce modèle n'existe pas dans la teinte du bardage : on ne décoche rien en douce, on le dit au client
+      var al = c.querySelector('.cer-vg-alerte');
+      if (seul && !al) { al = document.createElement('p'); al.className = 'cer-vg-alerte'; c.appendChild(al); }
+      if (al) { if (seul) al.textContent = 'Ce modèle n\u2019existe pas en ' + T[2] + '. Pour un abri d\u2019une seule teinte, choisissez un modèle en ' + T[2] + ', en alu ou en PVC.'; al.hidden = !seul; }
+      seul = null;
     });
   }
   function vignettes() {

@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.3
+Stable tag: 3.2.4
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,17 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.4 =
+* SÉCURITÉ des 2 points d'entrée publics (revue complète avant l'ouverture à tous) :
+  * ils ne répondent plus qu'aux pages du site (contrôle d'origine) ;
+  * dépôt AR : vrais formats vérifiés (GLB glTF 2, USDZ non compressé avec la scène en premier), 25 Mo par fichier, tout est vérifié avant d'écrire, plafond de 150 dépôts et 3 Go par jour pour tout le site, limite par visiteur avec IPv6 regroupée par /64 ;
+  * dossier : 16 Ko par demande, email borné, lien « Configurateur » limité aux pages du site, 300 par jour au plus, même client dans les 24 h = dossier mis à jour (plus de doublons) ;
+  * RGPD : dossiers lisibles par les administrateurs et gestionnaires de boutique seulement, effacés 3 ans après leur dernière mise à jour, pris en compte par Outils → Exporter / Effacer les données personnelles ;
+  * jsPDF et le générateur de QR chargés avec contrôle d'intégrité.
+* RÉALITÉ AUGMENTÉE : le GLB envoyé au serveur par Android passe de 12 à 23 Mo à moins de 1 Mo (les pièces du toit étaient recopiées dans le fichier, textures en JPEG).
+* MENUISERIES ASSORTIES : un modèle retrouve son équivalent quel que soit l'ordre des mots (« acidifié 110x186 cm autoclave vert » = « acidifié ayous 110x186 cm ») ; si le modèle n'existe pas dans la teinte du bardage, un message le dit au client, rien n'est décoché dans son dos.
+* U DE FINITION (profil validé par Antony) : 40 mm de large, 20 mm sur les lames, fond 10 mm, coins extérieurs arrondis, un U au bout de chaque mur ; en 3D en vrai profil, sur le plan en bande de 3 cm (de profil) et de 4 cm (de face).
 
 = 3.2.3 =
 * PORTES ASSORTIES (règle d'Antony) : une porte ou une fenêtre en bois sans teinte précisée (porte en Z, modèles classiques bois, fenêtres fixes à cadre vert) prend la teinte du bardage autoclave brun, gris ou noir, sur le plan et en 3D. Sur un bardage vert, en ayous ou en madrier : autoclave vert, comme avant.
