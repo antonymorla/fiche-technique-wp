@@ -1192,11 +1192,26 @@
   // de l'autre système apparaît (« Porte classique ossature » / « Porte classique », « Hublot 91cm sur ossature » / « Hublot 91cm »),
   // la même réponse est recochée. Une question obligatoire nouvelle qui bloque la suite (épaisseur des madriers, pignon) reçoit le choix
   // le moins cher, signalé au client. Un modèle qui n'existe pas dans l'autre système reste à choisir, avec un mot pour le dire.
-  var GARDE = {}, GARDE_L = {}, CASCADE = false, reprises = 0, VUS = null; // VUS : questions visibles au passage précédent
+  var GARDE = {}, GARDE_L = {}, GSEQ = 0, AUTO = {}, CASCADE = false, reprises = 0, VUS = null; // AUTO : questions cochées par la reprise, pas par le client
+  // souvenir d'une question : le sien ou celui de sa jumelle (même libellé), le plus récent des deux (audit du 14/10 : la pente 14° du 1 pan,
+  // cochée d'office et effacée au chargement, reprenait le dessus sur le 25° choisi en 2 pans)
+  // un choix du client passe avant un choix fait d'office par la reprise (shingle vert → bac acier en toit plat → retour en 2 pans : shingle vert)
+  var souvenir = function (k) { var a = GARDE[k.nom], b = GARDE_L[k.lab]; if (!(a && b)) return a || b; if (!!a.auto !== !!b.auto) return a.auto ? b : a; return a.t >= b.t ? a : b; }; // VUS : questions visibles au passage précédent
   var normQ = function (s) {
     return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\(\+[^)]*\)/g, ' ')
       .replace(/\b(sur\s+)?(l'\s*)?(ossature(\s+bois)?|madriers?)\b/g, ' ').replace(/[^a-z0-9,]+/g, ' ').trim();
   };
+  // Choix équivalents d'une version à l'autre (audit du 14/10 : « Madrier » et « Ossature Bois » devenaient tous deux une chaîne vide
+  // une fois les mots madrier / ossature retirés, les deux étaient recochés et l'ossature l'emportait, +900 à +2 300 €) :
+  // d'abord le libellé exact (casse, accents et pastille de prix mis à part), sinon la jumelle de l'autre système, jamais une chaîne vide.
+  var normL = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\(\+[^)]*\)/g, ' ').replace(/[^a-z0-9,]+/g, ' ').trim(); };
+  function equivalents(ins, labels) {
+    labels = labels || [];
+    var lab = function (i) { return i.getAttribute('data-wapf-label'); };
+    var ex = ins.filter(function (i) { return labels.some(function (l) { return normL(l) === normL(lab(i)); }); });
+    if (ex.length) return ex;
+    return ins.filter(function (i) { var a = normQ(lab(i)); return a.length >= 3 && labels.some(function (l) { return normQ(l) === a; }); });
+  }
   var cleQ = function (c) {
     var i = c.querySelector('input:not([type=hidden]), select'), m = i && /_clone_\d+/.exec(i.name || '');
     return { nom: i ? String(i.name).replace(/\[\]$/, '') : '', lab: normQ((c.querySelector('.wapf-field-label') || {}).textContent) + (m ? m[0] : '') };
@@ -1206,6 +1221,7 @@
     if (ins.length) v = { choix: Array.prototype.map.call(ins, function (i) { return i.getAttribute('data-wapf-label') || ''; }) };
     else if (nb && nb.value !== '') v = { val: nb.value };
     if (!v) return;
+    v.t = ++GSEQ; v.auto = !!AUTO[cleQ(c).nom]; // ordre des souvenirs : le plus récent l'emporte (un défaut du site effacé au chargement ne doit pas écraser le choix du client)
     var k = cleQ(c); if (k.nom) GARDE[k.nom] = v; if (k.lab) GARDE_L[k.lab] = v; CASCADE = true;
   }
   function reprendre() {
@@ -1222,23 +1238,24 @@
     vues.forEach(function (c) {
       if (!vide(c)) {
         // question qui réapparaît avec un choix par défaut du site (pente 14° du 1 pan après un 25° en 2 pans) : le choix du client l'emporte
-        var k0 = cleQ(c), g0 = avant && !avant[k0.nom] && (GARDE[k0.nom] || GARDE_L[k0.lab]);
+        var k0 = cleQ(c), g0 = avant && !avant[k0.nom] && souvenir(k0);
         if (!g0 || !g0.choix) return;
-        var r0 = Array.prototype.filter.call(c.querySelectorAll('input[type=radio]'), function (i) { return g0.choix.some(function (l) { return normQ(l) === normQ(i.getAttribute('data-wapf-label')); }); })[0];
+        var r0 = equivalents(Array.prototype.slice.call(c.querySelectorAll('input[type=radio]')), g0.choix)[0];
         delete GARDE[k0.nom]; delete GARDE_L[k0.lab];
         if (r0 && !r0.checked) { cocher(r0); fait = true; }
         return;
       }
       var ins = Array.prototype.slice.call(c.querySelectorAll('input[type=radio], input[type=checkbox]')), nb = c.querySelector('input[type=number], input[type=text]');
-      var k = cleQ(c), g = GARDE[k.nom] || GARDE_L[k.lab];
+      var k = cleQ(c), g = souvenir(k);
       if (g) {
         delete GARDE[k.nom]; delete GARDE_L[k.lab];
         if (g.val != null && nb) { saisir(nb, g.val); fait = true; return; }
-        var pris = ins.filter(function (i) { return (g.choix || []).some(function (l) { return normQ(l) === normQ(i.getAttribute('data-wapf-label')); }); });
+        var pris = equivalents(ins, g.choix);
+        if (pris.length && ins[0].type === 'radio') pris = pris.slice(0, 1); // un bouton radio : un seul choix
         if (pris.length) { pris.forEach(cocher); fait = true; return; }
         // modèle absent de cette version : le plus proche (mêmes mots et mêmes cotes), sinon le client choisit
         var p2 = ins[0] && ins[0].type === 'radio' ? proche(ins, (g.choix || [])[0]) : null;
-        if (p2) { cocher(p2); mot(c, 'Votre modèle précédent n\u2019existe pas dans cette version : nous avons pris le plus proche, « ' + (p2.getAttribute('data-wapf-label') || '').trim() + ' ». Modifiez-le si besoin.'); fait = true; return; }
+        if (p2) { cocher(p2); AUTO[k.nom] = 1; mot(c, 'Votre modèle précédent n\u2019existe pas dans cette version : nous avons pris le plus proche, « ' + (p2.getAttribute('data-wapf-label') || '').trim() + ' ». Modifiez-le si besoin.'); fait = true; return; }
         if (ins.length) mot(c, 'Votre choix précédent n\u2019existe pas dans cette version : choisissez à nouveau ici.');
         return;
       }
@@ -1255,7 +1272,7 @@
     var attend = cachees.some(function (h) { return vraie(GARDE[cleQ(h).nom]) && (c.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING); });
     if (!attend) return false;
     var prix = function (i) { var v = numTxt(pastilleDe(c, i)); return isNaN(v) ? 0 : v; };
-    cocher(ins.slice().sort(function (a, b) { return prix(a) - prix(b); })[0]);
+    cocher(ins.slice().sort(function (a, b) { return prix(a) - prix(b); })[0]); AUTO[cleQ(c).nom] = 1;
     mot(c, 'Choisi d\u2019office pour garder la suite de votre configuration : modifiez-le si besoin.');
     return true;
   }
@@ -1648,6 +1665,7 @@
       schedule();
     });
     form.addEventListener('input', function () { schedule(250); });
+    form.addEventListener('change', function (e) { if (e.isTrusted && e.target && e.target.name) delete AUTO[String(e.target.name).replace(/\[\]$/, '')]; }, true);
     // question obligatoire restée sans réponse et cachée par nos dessins : le navigateur bloquait l'ajout au panier en montrant une bulle
     // sur un bouton invisible ; on amène le client à la question, avec un message
     form.addEventListener('invalid', function (e) {

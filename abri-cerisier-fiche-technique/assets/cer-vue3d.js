@@ -802,7 +802,8 @@ window.CerVue3D = (function () {
       var tL = TR.x1 - TR.x0, tP = TR.y1 - TR.y0, tx = (TR.x0 + TR.x1) / 2 - L / 2, tz = P / 2 - (TR.y0 + TR.y1) / 2;
       var colle = function (a, b) { return Math.abs(a - b) < 0.02; };
       var sens = colle(TR.y1, 0) || colle(TR.y0, P) ? 'v' : colle(TR.x1, 0) || colle(TR.x0, L) ? 'h' : (tL >= tP ? 'h' : 'v');
-      var finT = Object.assign({}, E.FINITIONS.sr_vert, { dir: sens, board: 0.145 });
+      // boards : le dessin photo des lames l'exige (sans lui, la 3D ne s'ouvrait plus dès qu'il y avait une terrasse devant ou derrière, audit du 14/10)
+      var finT = Object.assign({}, E.FINITIONS.sr_vert, { dir: sens, board: 0.145, boards: [0.145] });
       var lames = boite(tL, 0.027, tP, matMotif(finT)); lames.position.set(tx, 0.1065, tz); G.add(lames);
       var lamb = boite(Math.max(0.1, tL - 0.06), 0.093, Math.max(0.1, tP - 0.06), new THREE.MeshStandardMaterial({ color: 0x3a3226, roughness: 0.95 }), true);
       lamb.position.set(tx, 0.0465, tz); G.add(lamb);
@@ -1086,7 +1087,10 @@ window.CerVue3D = (function () {
       var glbP = new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true, maxTextureSize: 1024 }); });
       if (IOS) return Promise.resolve(usdzP).then(function (u) {
         var url = URL.createObjectURL(new Blob([u], { type: 'model/vnd.usdz+zip' })), a = document.createElement('a');
-        a.rel = 'ar'; a.href = url; // taille réelle à l'ouverture, réductible au pincement a.appendChild(document.createElement('img')); document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
+        // Quick Look : taille réelle à l'ouverture, réductible au pincement. (Le commentaire était en fin de ligne et avalait la suite :
+        // plus d'image, de lien ni de clic, le bouton ne faisait rien sur iPhone depuis la 3.1.1 — audit du 14/10)
+        a.rel = 'ar'; a.href = url;
+        a.appendChild(document.createElement('img')); document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
         bt.textContent = old;
       });
       return Promise.all([glbP, usdzP]).then(function (r) { return deposer(r[0], r[1]); }).then(function (rep) {

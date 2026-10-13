@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.3.2
+Stable tag: 3.3.3
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,11 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.3 =
+* CORRECTIF PRIX (audit de nuit du 14/10) : changer la toiture d'un abri ou d'un garage en madriers le faisait repasser en ossature (de 900 à 2 300 € de plus). La reprise des choix ne confond plus « Madrier » et « Ossature Bois » (libellé exact d'abord, un seul choix par question). Elle garde aussi le choix le plus récent du client (pente 25° gardée en passant de 2 pans à 1 pan) et fait passer un choix du client avant un remplacement fait d'office (shingle retrouvé après un passage par le toit plat).
+* VUE 3D : elle ne s'ouvrait plus avec une terrasse devant ou derrière l'abri (position par défaut) ; corrigé.
+* RÉALITÉ AUGMENTÉE SUR IPHONE : le bouton ne faisait rien depuis la 3.1.1 (un commentaire avalait l'ouverture de Quick Look) ; corrigé.
 
 = 3.3.2 =
 * TERRASSE TOUJOURS EN PIN AUTOCLAVE VERT (Antony, 13/10/2026), quel que soit le bardage : plan, façades et 3D. Texte du site sous « plancher extérieur » remplacé (abri et garage, module à usage unique, sauvegarde cer_fix_terrasse_sauvegarde) : « Terrasse en pin autoclave vert. Vous la placez où vous voulez autour de l'abri et réglez sa taille directement sur le plan de masse. »
