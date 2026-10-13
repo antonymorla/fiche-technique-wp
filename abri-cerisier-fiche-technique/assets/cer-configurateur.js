@@ -205,6 +205,21 @@
     };
     var libre = function (w, sp) { return sp[0] >= 0 && sp[1] <= len(w) && used[w].every(function (u) { return sp[1] <= u[0] || sp[0] >= u[1]; }); };
     var rang = function (m) { var pl = PLACE[m.key] || {}; return m.key === ACTIF ? 0 : (pl.auto ? 2 : 1); };
+    // Tassement (remarque d'Antony, 13/10/2026 : porte de 80 + fenêtre de 53,5 sur 2 m « ça passe largement ») : quand une menuiserie posée
+    // d'office ne trouve plus de place, les menuiseries posées d'office sur ce mur sont rangées côte à côte, à intervalles égaux ;
+    // jamais si le client a placé lui-même quelque chose sur ce mur, ni sur la façade d'un garage (porte de garage)
+    var poses = {}; walls.forEach(function (w) { poses[w] = []; });
+    var tasser = function (w, m, pl) {
+      if (gW && w === 'face') return false;
+      var lot = poses[w].concat([{ m: m, pl: pl }]); if (lot.some(function (e) { return !e.pl.auto || e.m.key === ACTIF; })) return false;
+      var lg = lot.map(function (e) { var s = span(e.m, e.pl, 0); return s[1] - s[0]; }), reste = len(w) - lg.reduce(function (a, b) { return a + b; }, 0);
+      if (reste < 0) return false;
+      lot.sort(function (a, b) { return (a.m.type === 'porte' ? 0 : 1) - (b.m.type === 'porte' ? 0 : 1); }); // la porte d'abord, à gauche
+      lg = lot.map(function (e) { var s = span(e.m, e.pl, 0); return s[1] - s[0]; });
+      var gap = reste / (lot.length + 1), x = 0; used[w] = [];
+      lot.forEach(function (e, k) { x += gap; var s0 = span(e.m, e.pl, 0), c = x - s0[0]; e.pl.wall = w; e.pl.pos = Math.round(c / len(w) * 1000) / 10; used[w].push(span(e.m, e.pl, c)); x += lg[k]; });
+      poses[w] = lot; return true;
+    };
     list.slice().sort(function (a, b) { return rang(a) - rang(b); }).forEach(function (m) {
       var pl = PLACE[m.key] || (PLACE[m.key] = { wall: walls[0], pos: 50, rail: 'gauche', auto: true });
       if (walls.indexOf(pl.wall) < 0) pl.wall = walls[0];
@@ -216,11 +231,13 @@
           for (var j = 0; j < cs.length; j++) {
             var sp = span(m, pl, cs[j]);
             if (libre(w, sp)) {
+              poses[w].push({ m: m, pl: pl });
               if (m.key === ACTIF && i > 0) NOTE_PLACE = (m.siteLabel || m.label) + ' : pas assez de place sur ' + WLAB[pl.wall] + (E.isSliding(m) && !E.isDoubleM(m) ? ' (course de la coulissante comprise)' : '') + ', elle est placée sur ' + WLAB[w] + '.';
               used[w].push(sp); pl.wall = w; pl.pos = Math.round(cs[j] / L * 100); return;
             }
           }
         }
+        if (i === 0 && pl.auto && tasser(w, m, pl)) return; // sur son mur, en rangeant les autres posées d'office
       }
       SANS_PLACE.push(m.siteLabel || m.label);
     });
@@ -1015,6 +1032,7 @@
     var b = q.querySelector('.cer-vg[data-vg="ext"]');
     if (masqueWapf(q) || !LAST) { if (b) b.remove(); return; }
     var non = radioLab(X.q, /^non/i), oui = radioLab(X.q, /^oui/i); if (!non || !oui) return;
+    if (!oui.checked && !non.checked) { cocher(non); return; } // « Non » coché pour de vrai (question obligatoire cachée par les dessins, sinon panier refusé)
     var K = ['face', 'gauche', 'droite', 'fond'], NOMS = { face: 'Devant', gauche: 'À gauche', droite: 'À droite', fond: 'Derrière' };
     var inp = {}; K.forEach(function (k) { inp[k] = nombre(cont(X.m[k])); });
     K.forEach(function (k) { CUR.ext[k] = oui.checked ? valeur(inp[k]) : 0; });
@@ -1047,7 +1065,7 @@
       html += '<p class="cer-vg__h">De quel côté, et sur quelle profondeur ?</p><div class="cer-vg__g4">' + K.map(function (k) {
         var m = CUR.ext[k], pill = m ? pastilleDe(cont(X.m[k])) : '', o = {}; o[k] = m || 1.5;
         return '<div class="cer-vg__c' + (m ? ' on' : '') + '" data-vg-cote="' + k + '"><span class="cer-vg__pic">' + picto({ cfg: sans, ov: o, view: vue[k], w: 260, h: 190 }) + '</span><b>' + NOMS[k] + '</b>' +
-          '<span class="cer-vg__st"><button type="button" data-vg-pas="-1" aria-label="Moins profond">−</button><span class="' + (m ? '' : 'z') + '">' + (m ? mt(m) : '0 m') + '</span><button type="button" data-vg-pas="1" aria-label="Plus profond">+</button></span>' +
+          '<span class="cer-vg__st"><button type="button" data-vg-pas="-1" aria-label="Moins profond">−</button><input class="cer-vg__in" type="text" inputmode="decimal" data-vg-in="' + k + '" value="' + (m ? fr(m) : '0') + '" aria-label="Profondeur en mètres (ou en centimètres)"> m<button type="button" data-vg-pas="1" aria-label="Plus profond">+</button></span>' +
           (pill ? '<span class="cer-pill' + (/^Inclus/.test(pill) ? ' cer-pill--0' : '') + '">' + pill + '</span>' : '') +
           (MX[k] < Infinity ? '<small class="cer-vg__max">' + (MX[k] >= 0.5 ? mt(MX[k]) + ' au plus, pour garder 1 m de poteau' : 'Pente trop forte : ajoutez une rehausse') + '</small>' : '') + '</div>';
       }).join('') + '</div>';
@@ -1066,7 +1084,16 @@
       }
     }
     b.innerHTML = html;
-    if (!b._ev) { b._ev = true; b.addEventListener('click', function (e) {
+    if (!b._ev) { b._ev = true;
+      // profondeur tapée : « 1,10 » ou « 1.1 » en mètres, « 110 » en centimètres ; bornée au maximum du site et au mètre de poteau
+      b.addEventListener('change', function (e) { var f = e.target.closest('[data-vg-in]'); if (!f) return;
+        var k = f.getAttribute('data-vg-in'), i = nombre(cont(X.m[k])), v = parseFloat(String(f.value).replace(',', '.').replace(/[^\d.]/g, ''));
+        if (isNaN(v)) v = 0; if (v > 10) v = v / 100; v = Math.round(v * 100) / 100;
+        var mx = Math.min(i && parseFloat(i.max) || 5, extMax(k)); if (v > mx) v = mx >= 0.5 ? mx : 0; if (v > 0 && v < 0.3) v = 0.3;
+        saisir(i, v > 0 ? v : ''); });
+      b.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest('[data-vg-in]')) { e.preventDefault(); e.target.blur(); } });
+      b.addEventListener('click', function (e) {
+      if (e.target.closest('[data-vg-in]')) return; // saisie au clavier : pas de 1 m d'office
       var t = e.target.closest('button');
       if (!t) { // clic sur un côté encore à 0 : 1 m d'office, puis − / + pour régler
         var cc = e.target.closest('[data-vg-cote]'); if (!cc) return; var kc = cc.getAttribute('data-vg-cote');
@@ -1090,18 +1117,21 @@
     var b = q.querySelector('.cer-vg[data-vg="reh"]');
     if (masqueWapf(q) || !LAST) { if (b) b.remove(); return; }
     var non = radioLab(R.q, /^non/i), oui = radioLab(R.q, /^oui/i), nc = cont(R.n), n = nombre(nc); if (!non || !oui || !n) return;
-    var k0 = oui.checked ? Math.round(valeur(n)) : 0, mx = parseInt(n.max, 10) || 8; CUR.reh = k0;
+    // hauteur standard cochée pour de vrai (13/10/2026) : la carte « standard » paraissait choisie alors que le bouton du site ne l'était pas ;
+    // la question est obligatoire, le panier était refusé sans rien afficher, et il fallait recliquer pour voir la suite
+    if (!oui.checked && !non.checked) { cocher(non); return; }
+    var k0 = oui.checked ? Math.round(valeur(n)) : 0, mx = parseInt(n.max, 10) || 8, rien = !oui.checked && !non.checked; CUR.reh = k0; // rien : pas de carte présélectionnée
     cacher(q.querySelector('.wapf-field-input')); cacher(q.querySelector('.wapf-field-description')); cacher(nc);
     titreQ(q, 'Quelle hauteur de murs souhaitez-vous ?');
     var prix = []; for (var k = 0; k <= mx; k++) prix.push(k ? prixFx(n, k) : 0);
-    var sig = JSON.stringify([k0, prix, ST.cfg && [ST.cfg['f-toit'], ST.cfg['f-orient'], ST.cfg['f-sys'], ST.cfg['f-bard'], ST.cfg['f-lar'], ST.cfg['f-pro'], ST.cfg['f-pente'], ST.cfg['f-couv']], CUR.ext, (ST.menus || []).length]);
+    var sig = JSON.stringify([k0, rien, prix, ST.cfg && [ST.cfg['f-toit'], ST.cfg['f-orient'], ST.cfg['f-sys'], ST.cfg['f-bard'], ST.cfg['f-lar'], ST.cfg['f-pro'], ST.cfg['f-pente'], ST.cfg['f-couv']], CUR.ext, (ST.menus || []).length]);
     if (b && b._sig === sig) return;
     b = bloc(q, 'reh'); b._sig = sig;
     var sans = { 'f-ext-ferm': 'non' }, Z = { face: 0, fond: 0, gauche: 0, droite: 0 }, W = 260, H = 230;
     var sc = picto({ cfg: sans, ov: Z, nreh: mx, view: 'face', w: W, h: H, fit: true }), h0 = picto({ cfg: sans, ov: Z, nreh: 0, view: 'face', w: W, h: H, hInt: true });
     var plus = k0 >= 5 ? k0 : 5, choix = [[0, 'standard'], [1, '1 rehausse'], [2, '2 rehausses'], [3, '3 rehausses'], [4, '4 rehausses'], [plus, plus + ' rehausses']];
     b.innerHTML = '<div class="cer-vg__g3">' + choix.map(function (c, i) {
-      var kk = c[0], dernier = i === 5, on = dernier ? k0 >= 5 : k0 === kk;
+      var kk = c[0], dernier = i === 5, on = !rien && (dernier ? k0 >= 5 : k0 === kk);
       var pill = kk ? (prix[kk] != null ? '+' + money0(prix[kk]) : '') : 'Inclus';
       return '<div class="cer-vg__c' + (on ? ' on' : '') + '" data-vg-k="' + kk + '"><span class="cer-vg__pic">' + picto({ cfg: sans, ov: Z, nreh: kk, view: 'face', w: W, h: H, scale: sc, reh: kk, person: 0.82 }) + '</span>' +
         '<b>' + (typeof h0 === 'number' ? mt(h0 + 0.13 * kk) : c[1]) + '</b><small>' + c[1] + '</small>' +
@@ -1204,6 +1234,16 @@
       schedule();
     });
     form.addEventListener('input', function () { schedule(250); });
+    // question obligatoire restée sans réponse et cachée par nos dessins : le navigateur bloquait l'ajout au panier en montrant une bulle
+    // sur un bouton invisible ; on amène le client à la question, avec un message
+    form.addEventListener('invalid', function (e) {
+      var c = e.target.closest && e.target.closest('.wapf-field-container'); if (!c) return; e.preventDefault(); if (form._cerInv) return;
+      form._cerInv = true; setTimeout(function () { form._cerInv = false; }, 600);
+      var lab = ((c.querySelector('.wapf-field-label') || {}).textContent || '').replace(/[•\s]+/g, ' ').trim();
+      c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var al = c.querySelector('.cer-oblig'); if (!al) { al = document.createElement('p'); al.className = 'cer-vg-alerte cer-oblig'; c.insertBefore(al, c.firstChild); }
+      al.textContent = lab ? 'Il manque une réponse pour ajouter au panier : « ' + lab + ' »' : 'Il manque une réponse ici pour ajouter au panier.'; clearTimeout(al._t); al._t = setTimeout(function () { al.remove(); }, 9000);
+    }, true);
     form.addEventListener('click', function (e) { if (e.target.closest('.wapf-add-clone, .wapf-del-clone, .wapf-swatch, label')) schedule(200); });
     new MutationObserver(function () { schedule(300); }).observe(form, { childList: true, subtree: true });
     // Ajout au panier : les vues doivent être jointes et à jour

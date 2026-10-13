@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.13
+Stable tag: 3.2.14
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,13 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.14 =
+* PANIER BLOQUÉ (depuis la 3.2.1) : les questions « hauteur des murs » et « extension de toiture », obligatoires et remplacées par des dessins, n'étaient pas vraiment cochées ; le navigateur refusait l'ajout au panier sans rien montrer. « Standard » et « Non » sont désormais cochés d'office, et une question obligatoire oubliée est amenée à l'écran avec un message.
+* VUE 3D : sous Safari, façades redessinées jusqu'à ce que les photos de bois soient prêtes (bardage noir et blanc une fois sur deux) ; fermetures du carport entre les poteaux, poteaux intermédiaires visibles ; bandeau du carport plat = bandeau choisi ; toit plat de l'abri : pannes perpendiculaires à la pente et dessous de la couverture visible (bac blanc, OSB ou planchettes seulement en option).
+* MENUISERIES : placées d'office sans se chevaucher, en rangeant côte à côte celles que le client n'a pas déplacées (porte de 80 + fenêtre de 53,5 sur 2 m) ; une fenêtre peut passer sous le rail d'une porte coulissante.
+* EXTENSION : profondeur tapée au clavier (1,10 ou 110), en plus des boutons − / +.
+* « Comparer les options » ne chevauche plus les cartes.
 
 = 3.2.13 =
 * HAUT DES CONFIGURATEURS (maquette validée par Antony) : vrai titre (« Configurez votre abri de jardin sur mesure »), une phrase et quatre repères ; étape 1 marquée « Commencez ici » avec un schéma largeur / profondeur ; panier, « Voir en 3D » et « Voir mon abri » attendent les dimensions ; plus de case vide, de partage, de SKU, d'étiquettes du thème ni de description courte (celle du garage annonçait un configurateur « en cours de développement ») ; sur téléphone, largeur et profondeur l'une sous l'autre.

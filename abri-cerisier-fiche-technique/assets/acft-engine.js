@@ -2266,8 +2266,9 @@ function menuWarnings(d){
       const ins=P.dr==='coulO'?' (à l\'intérieur)':'';
       zs.forEach(([a,z])=>{
         if(a<-0.001||z>b.w+0.001) W.push(`${n} : la porte coulissante sort du mur en position ouverte${ins} ; changer le côté du rail ou la position.`);
+        // une fenêtre ou un hublot peut passer sous le rail en l'abaissant (règle d'Antony, 13/10/2026) : pas d'alerte si son haut reste sous le rail
         ST.menus.forEach((o,j)=>{ if(j===i||o.wall!==m.wall) return; const c=box(o);
-          if(a<c.x1&&c.x0<z&&c.y0<b.y1) W.push(`${n} : ouverte, la porte coulissante recouvre l'ouverture ${j+1}${ins}.`); });
+          if(a<c.x1&&c.x0<z&&c.y0<b.y1&&!(o.type==='fenetre'&&c.y1<=b.y1+0.001)) W.push(`${n} : ouverte, la porte coulissante recouvre l'ouverture ${j+1}${ins}.`); });
       });
     }
   });

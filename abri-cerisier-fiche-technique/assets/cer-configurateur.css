@@ -314,12 +314,11 @@
 .cer-plan-on .wapf-radio input[type=radio], .cer-plan-on .wapf-swatch--text input[type=radio] { position: absolute !important; opacity: 0 !important; width: 1px; height: 1px; pointer-events: none; }
 /* « Comparer les options » : en haut à droite de la carte, à côté du titre de l'étape */
 .cer-plan-on .wapf-section.TITRE, .cer-plan-on .wapf-section.TITRE2 { position: relative; }
-.cer-plan-on .wapf-section > .cerisier-toggle { position: absolute !important; top: 25px; right: 22px; width: auto !important; margin: 0 !important; z-index: 1; }
-.cer-plan-on .wapf-section:has(> .cerisier-toggle) .cer-step-h { padding-right: 170px; }
+/* (13/10/2026) dans le flux, sous le titre, aligné à droite : en position absolue il chevauchait les cartes quand le titre du guide s'affichait */
+.cer-plan-on .wapf-section > .cerisier-toggle { position: static !important; display: flex; justify-content: flex-end; width: auto !important; margin: -6px 0 12px !important; z-index: 1; }
 .cer-plan-on .stepper-fix { display: none; }
 @media (max-width: 767.98px) {
-  .cer-plan-on .wapf-section > .cerisier-toggle { top: -11px; right: 12px; background: #fff; padding: 0 6px; }
-  .cer-plan-on .wapf-section:has(> .cerisier-toggle) .cer-step-h { padding-right: 0; }
+  .cer-plan-on .wapf-section > .cerisier-toggle { justify-content: flex-start; margin: -4px 0 10px !important; }
   .cer-plan-on .cer-stepper { gap: 4px; }
   .cer-plan-on .cer-stepper__b { flex: 0 0 38px; height: 46px; font-size: 20px; }
   .cer-plan-on .cer-stepper select.wapf-input { flex: 1 1 0; min-width: 0; width: auto; padding: 0 2px; font-size: 16px; }
@@ -456,3 +455,6 @@
   .cer-page .wapf-section.cer-dim { width: 100% !important; flex-basis: 100% !important; max-width: 100% !important; }
   .cer-schema svg { width: 104px; }
 }
+
+/* profondeur d'extension tapée au clavier (demande d'Antony, 13/10/2026) : en mètres (1,10) ou en centimètres (110) */
+.cer-vg__in { width: 62px; text-align: center; border: 1px solid #d9d5c7 !important; border-radius: 8px !important; padding: 4px 2px !important; font: 600 14px Jost, Futura, Arial, sans-serif; background: #fff !important; color: #23251b; margin: 0 !important; min-height: 0 !important; height: 32px; }

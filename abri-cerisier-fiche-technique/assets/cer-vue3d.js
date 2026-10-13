@@ -75,15 +75,24 @@ window.CerVue3D = (function () {
       return { svg: svg, m: JSON.parse(svg.getAttribute('data-mur') || 'null') };
     } finally { ST.picto = sv.picto; ST.murSeul = sv.mur; ST.scale = sv.scale; }
   }
+  var SAFARI = /^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
   function rasteriser(svg, x0, y0, w, h) {
     return new Promise(function (res) {
       var img = new Image();
-      img.onload = function () { var c = document.createElement('canvas'); c.width = Math.max(2, Math.ceil(w)); c.height = Math.max(2, Math.ceil(h)); var g = c.getContext('2d'); g.drawImage(img, -x0, -y0);
-        // vitres claires (magenta du moteur) : rendues transparentes, la vitre 3D posée devant fait le reflet
-        var id = g.getImageData(0, 0, c.width, c.height), px = id.data, vu = false;
-        for (var i = 0; i < px.length; i += 4) { if (px[i] - px[i + 1] > 60 && px[i + 2] - px[i + 1] > 60) { px[i + 3] = 0; vu = true; } } // magenta et ses bords adoucis (le bois n'est jamais magenta)
-        if (vu) g.putImageData(id, 0, 0);
-        c.cerVitre = vu; res(c); };
+      img.onload = function () { var c = document.createElement('canvas'); c.width = Math.max(2, Math.ceil(w)); c.height = Math.max(2, Math.ceil(h)); var g = c.getContext('2d');
+        var fin = function () { g.clearRect(0, 0, c.width, c.height); g.drawImage(img, -x0, -y0);
+          // vitres claires (magenta du moteur) : rendues transparentes, la vitre 3D posée devant fait le reflet
+          var id = g.getImageData(0, 0, c.width, c.height), px = id.data, vu = false;
+          for (var i = 0; i < px.length; i += 4) { if (px[i] - px[i + 1] > 60 && px[i + 2] - px[i + 1] > 60) { px[i + 3] = 0; vu = true; } } // magenta et ses bords adoucis (le bois n'est jamais magenta)
+          if (vu) g.putImageData(id, 0, 0);
+          c.cerVitre = vu; res(c); };
+        // Safari dessine parfois le SVG avant d'avoir décodé les photos de bois qu'il contient : il ne restait que les joints (bardage noir et blanc,
+        // une fois sur deux, remarque d'Antony du 13/10/2026). On redessine jusqu'à ce que l'image ne change plus (2 s au plus).
+        if (!SAFARI) { fin(); return; }
+        var emp = function () { g.clearRect(0, 0, c.width, c.height); g.drawImage(img, -x0, -y0); var dd = g.getImageData(0, 0, c.width, c.height).data, s = 0, n = 0;
+          for (var i = 0; i < dd.length; i += 4 * 97) { s = (s + dd[i] * 3 + dd[i + 1] * 5 + dd[i + 2] * 7 + dd[i + 3]) % 1000000007; n++; } return s + ':' + n; };
+        var av = emp(), tours = 0, suite = function () { var ap = emp(); tours++; if (ap === av && tours >= 2 || tours >= 8) fin(); else { av = ap; setTimeout(suite, 250); } };
+        setTimeout(suite, 200); };
       img.onerror = function () { res(null); };
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
     });
@@ -173,8 +182,8 @@ window.CerVue3D = (function () {
   }
   function dessousBac() { // bac acier vu d'en dessous : nervures tous les 25 cm (une tuile = 1 m de large)
     return dessin(256, 64, function (g, w, h) {
-      g.fillStyle = '#c9cdd1'; g.fillRect(0, 0, w, h);
-      for (var i = 0; i < 4; i++) { var x = i * w / 4; g.fillStyle = '#8f959b'; g.fillRect(x, 0, w / 4 * 0.28, h); g.fillStyle = '#e1e4e7'; g.fillRect(x + w / 4 * 0.28, 0, 3, h); }
+      g.fillStyle = '#eceeef'; g.fillRect(0, 0, w, h); // sous-face prélaquée blanche
+      for (var i = 0; i < 4; i++) { var x = i * w / 4; g.fillStyle = '#c3c8cc'; g.fillRect(x, 0, w / 4 * 0.28, h); g.fillStyle = '#ffffff'; g.fillRect(x + w / 4 * 0.28, 0, 3, h); }
     });
   }
   function dalle() { // dalle béton
@@ -415,8 +424,9 @@ window.CerVue3D = (function () {
     }));
     // dessous de la toiture du carport (règles d'Antony, 13/10/2026), d'après la couverture choisie : bac acier seul = la charpente et les tôles ;
     // « + sous-toiture planchette » et shingle = planchettes au-dessus de la charpente ; OSB ; feutre anti-condensation
-    var sfC = carport && E.sousFace ? E.sousFace() : 'planchette';
-    if (sfC === 'non') { matSous.map = canvasTex(THREE, dessousBac(), true); matSous.map.repeat.set(4, 1); matSous.metalness = 0.45; matSous.roughness = 0.5; matSous.color.set(0xb4b9be); }
+    // (abri compris : bac acier seul = dessous du bac, blanc ; OSB ou planchettes seulement si l'option est prise ; remarque d'Antony du 13/10/2026)
+    var sfC = E.sousFace ? E.sousFace() : 'planchette';
+    if (sfC === 'non') { matSous.map = canvasTex(THREE, dessousBac(), true); matSous.map.repeat.set(4, 1); matSous.metalness = 0.2; matSous.roughness = 0.55; matSous.color.set(0xffffff); }
     else if (sfC === 'feutre') matSous.color.set(0x4a4d51);
     else if (sfC === 'osb') { attente.push(new Promise(function (res) { new THREE.TextureLoader().load((CFG().photos && CFG().photos.osb) || texUrl('int-osb.jpg'), function (t) { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.8, 0.8); matSous.map = t; matSous.needsUpdate = true; res(); }, undefined, function () { res(); }); })); }
     else attente.push(motif(E, function (svg) { return E.patBoards(svg, E.FINITIONS.sr_vert, 256, 0, 512); }, 256).then(function (c) {
@@ -463,7 +473,8 @@ window.CerVue3D = (function () {
       // (5 % au moins, vers le côté choisi) est à l'intérieur du bandeau, et la gouttière est cachée derrière le bandeau bas : seule la descente se voit.
       // Bandeau de l'abri : deux lames de 13 cm (26 cm), trois (39 cm) seulement si la pente ne tient pas dans deux (même règle que le plan) ;
       // carport : 36 cm, trois lames (nos poses)
-      var eb = 0.027, MB2 = matMotif(E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
+      // carport : le bandeau choisi dans le configurateur (ayous vertical, bac acier…), sinon le bardage
+      var eb = 0.027, MB2 = matMotif((carport && E.FINITIONS[fv('f-bandeau')]) || E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
       var u0 = dirZ ? ZB : X0, u1 = dirZ ? ZF : X1, span = u1 - u0, hb = carport ? 0.36 : (E.flatTopH ? E.flatTopH(d) : 0.26);
       var hHaut = y0t + hb - 0.02, hBasC = Math.max(y0t + (carport && sfC !== 'planchette' ? 0.24 : 0.03), hHaut - 0.05 * span), chute = hHaut - hBasC; // carport sans sous-face : la tôle passe au-dessus des poutres
       platH = function (x, z) { var u = dirZ ? z : x, t = sgn > 0 ? (u - u0) / span : (u1 - u) / span; return hHaut - chute * Math.max(0, Math.min(1, t)); };
@@ -473,9 +484,9 @@ window.CerVue3D = (function () {
       var cvr = dirZ ? boite(wc, ec, lc, [matSous, matSous, matCouv, matSous, matSous, matSous]) : boite(lc, ec, wc, [matSous, matSous, matCouv, matSous, matSous, matSous]);
       if (dirZ) cvr.rotation.x = sgn > 0 ? ang : -ang; else cvr.rotation.z = sgn > 0 ? -ang : ang;
       var ym = platH(dirZ ? 0 : cm, dirZ ? cm : 0) - ec / 2; cvr.position.set(dirZ ? (v0 + v1) / 2 : cm, ym, dirZ ? cm : (v0 + v1) / 2); G.add(cvr);
-      // sous-face au niveau du bandeau : abri (plafond), ou carport avec l'option « sous-toiture planchette pour intégration spots » ;
-      // sinon, sur le carport, pannes tous les mètres sous la tôle, qu'on voit d'en dessous avec les poutres
-      if (carport && sfC !== 'planchette') {
+      // plafond au niveau du bandeau seulement sur le carport avec l'option « sous-toiture planchette pour intégration spots » ;
+      // partout ailleurs (abri compris), pannes tous les mètres sous la couverture, dont on voit le dessous (bac blanc, OSB, planchettes selon l'option)
+      if (!(carport && sfC === 'planchette')) { // pannes perpendiculaires à la pente (elles portent la tôle qui coule vers le côté bas)
         var npn = Math.max(1, Math.ceil(span / 1.0));
         for (var kp = 1; kp < npn; kp++) { var up = u0 + span * kp / npn, ytp = platH(dirZ ? 0 : up, dirZ ? up : 0) - 0.035, lp = v1 - v0 - 2 * eb;
           var pn = dirZ ? massif(lp, 0.12, 0.07, 'x') : massif(0.07, 0.12, lp, 'z'); pn.position.set(dirZ ? (v0 + v1) / 2 : up, ytp - 0.06, dirZ ? up : (v0 + v1) / 2); G.add(pn); }
@@ -567,19 +578,24 @@ window.CerVue3D = (function () {
       // côtés fermés : du sol jusque sous la toiture (pignon compris), entre les poteaux d'extrémité
       var ct = fv('f-clos-type'), finC = ct === 'ajouree' ? E.extFin(d, 'ajouree') : ct === 'clin' ? E.FINITIONS.sr_vert : E.wallFin(d), matC = matMotif(finC);
       clos.forEach(function (k) {
-        var lat = k === 'gauche' || k === 'droite', fixe = k === 'gauche' ? -L / 2 : k === 'droite' ? L / 2 : (k === 'fond' ? -P / 2 : P / 2), v0 = lat ? -P / 2 : -L / 2, v1 = -v0;
+        var lat = k === 'gauche' || k === 'droite', fixe = k === 'gauche' ? -L / 2 : k === 'droite' ? L / 2 : (k === 'fond' ? -P / 2 : P / 2);
         var haut = function (v) { var x = lat ? fixe : v, z = lat ? v : fixe;
           if (plat || quadro) return hE;
           if (deux) return lat ? hE : Math.max(hE, sous(x, z) - dPan - hA / ca - 0.005);
           if (lgX === lat) return k === hautNom ? Math.max(hE, ua(lgX ? x : z) - 0.005) : hE; // côté haut : jusque sous l'arbalétrier ; côté bas : sous la sablière
           return Math.max(hE, ua(lgX ? x : z) - 0.005); };
-        var sh = new THREE.Shape(), pts = [v0, v0 / 2, 0, v1 / 2, v1]; sh.moveTo(0, 0); sh.lineTo(v1 - v0, 0);
-        pts.slice().reverse().forEach(function (v) { sh.lineTo(v - v0, haut(v)); }); sh.closePath();
-        var geo = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: false }); geo.translate(0, 0, -0.011);
-        var mc = new THREE.Mesh(geo, matC); mc.castShadow = mc.receiveShadow = true;
-        if (lat) { mc.rotation.y = -Math.PI / 2; mc.position.set(fixe + (k === 'gauche' ? -1 : 1) * (ps / 2 - 0.011), 0, v0); }
-        else { mc.position.set(v0, 0, fixe + (k === 'fond' ? -1 : 1) * (ps / 2 - 0.011)); }
-        G.add(mc);
+        // remplissage entre les poteaux (règle d'Antony) : un panneau par travée, dans l'axe des poteaux ; les poteaux, intermédiaires compris, restent visibles
+        var ligne = lat ? (k === 'gauche' ? cxs[0] : cxs[cxs.length - 1]) : (k === 'fond' ? czs[0] : czs[czs.length - 1]);
+        var pos = (lat ? czs : cxs).slice().sort(function (p, q) { return p - q; });
+        for (var ip = 0; ip < pos.length - 1; ip++) {
+          var a0 = pos[ip] + ps / 2, a1 = pos[ip + 1] - ps / 2; if (a1 - a0 < 0.05) continue;
+          var pts = a0 < 0 && a1 > 0 ? [a0, 0, a1] : [a0, a1], sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(a1 - a0, 0);
+          pts.slice().reverse().forEach(function (v) { sh.lineTo(v - a0, haut(v)); }); sh.closePath();
+          var geo = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: false }); geo.translate(0, 0, -0.011);
+          var mc = new THREE.Mesh(geo, matC); mc.castShadow = mc.receiveShadow = true;
+          if (lat) { mc.rotation.y = -Math.PI / 2; mc.position.set(ligne, 0, a0); } else mc.position.set(a0, 0, ligne);
+          G.add(mc);
+        }
       });
       // mur de la maison (adossé)
       if (ados) { var hm = (d.hExt + rH) + 0.7, sdm = ados === 'gauche' ? -1 : 1, mu = boite(0.2, hm, P + 2, M.enduit); mu.position.set(sdm * (L / 2 + d['ov' + (ados === 'gauche' ? 'L' : 'R')] + 0.1), hm / 2, 0); mu.receiveShadow = true; G.add(mu); }
@@ -620,7 +636,7 @@ window.CerVue3D = (function () {
         }
       }
       if (isot && d.toit === '2PANS') { lainePan(pente0, 0, a); lainePan(0, pente1, -a); }
-    } else if (!carport) { // abri : solives et plafond OSB (le carport a sa sous-face)
+    } else if (!carport && quadro) { // QUADRO : solives et platelage OSB sous la membrane (le toit plat de l'abri a ses pannes, plus haut)
       var yS = quadro ? base + hE + rH - 0.05 - 0.04 : y0t; // dessous du platelage
       for (var xj = -L / 2 + wt + 0.0225; xj <= L / 2 - wt; xj += 0.6) { var sj = massif(0.045, 0.15, P - 2 * wt, 'z'); sj.position.set(xj, yS - 0.075, 0); G.add(sj); }
       var ospl = new THREE.Mesh(new THREE.PlaneGeometry(L - 2 * wt, P - 2 * wt), matPhoto('osb', 'int-osb.jpg', 1.25)); ospl.rotation.x = Math.PI / 2; ospl.position.set(0, yS - 0.001, 0);
