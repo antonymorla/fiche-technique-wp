@@ -505,7 +505,10 @@ function drawGround(svg,x1,x2,gndY){
   sLine(svg,x1,gndY,x2,gndY,'#7c8f5c',1.5);
 }
 // Verre : fond bleuté + reflets
+// Vue 3D (murSeul) : vitre claire dessinée en magenta pur, que la 3D rend transparente (on voit l'intérieur, une vraie vitre fait le reflet)
+const VITRE_3D='#ff00ff';
 function drawGlass(svg,x,y,w,h,frosted){
+  if(ST.murSeul&&!frosted){ sRect(svg,x,y,w,h,VITRE_3D,'none',0).setAttribute('shape-rendering','crispEdges'); return; } // bords nets : pas de liseré rose
   sRect(svg,x,y,w,h,frosted?'#e6ecee':'#c9dde6','none',0);
   if(!frosted&&w>4&&h>4){
     const k=Math.min(w,h);
@@ -592,7 +595,7 @@ function drawMenuReal(svg,m,mx,my,mW,mH,sc,d){
   if(/hublot/.test(l)){
     const r=mW/2, cx=mx+r, cy=my+r;
     svg.appendChild(svgEl('circle',{cx,cy,r,fill:b0,stroke:dk,'stroke-width':.8}));
-    svg.appendChild(svgEl('circle',{cx,cy,r:r-fr*1.2,fill:'#c9dde6',stroke:shade(dk,-.3),'stroke-width':Math.max(.8,0.02*sc)}));
+    svg.appendChild(svgEl('circle',{cx,cy,r:r-fr*1.2,fill:ST.murSeul?VITRE_3D:'#c9dde6',stroke:shade(dk,-.3),'stroke-width':Math.max(.8,0.02*sc),'shape-rendering':ST.murSeul?'crispEdges':'auto'}));
     svg.appendChild(svgEl('line',{x1:cx-r*.35,y1:cy+r*.1,x2:cx+r*.05,y2:cy-r*.3,stroke:'#fff','stroke-width':Math.max(.6,r*.08),opacity:.75}));
     return;
   }

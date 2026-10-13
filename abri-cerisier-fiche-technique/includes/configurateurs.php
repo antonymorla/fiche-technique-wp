@@ -101,7 +101,7 @@ add_filter( 'woocommerce_add_cart_item_data', function ( $data, $product_id ) {
 	$id   = gmdate( 'Y/m/' ) . wp_generate_password( 20, false );
 	list( $dir ) = cer_cfg_upload( $id . '/' );
 	$vues = [];
-	foreach ( [ 'face', 'gauche', 'droite', 'fond', 'plan' ] as $nom ) {
+	foreach ( [ 'face', 'gauche', 'droite', 'fond', 'plan', '3d1', '3d2' ] as $nom ) { // 3d1, 3d2 : vues 3D du devis (facultatives)
 		$uri = isset( $_POST['cer_plan']['vues'][ $nom ] ) ? wp_unslash( $_POST['cer_plan']['vues'][ $nom ] ) : ''; // phpcs:ignore
 		if ( 0 !== strpos( $uri, 'data:image/jpeg;base64,' ) || strlen( $uri ) > 3000000 ) {
 			continue;

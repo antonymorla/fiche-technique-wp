@@ -824,6 +824,19 @@
     return OFF;
   }
   var IMG_STATE = { sig: '', busy: null };
+  // vues 3D du devis : faites à l'ajout au panier seulement (la 3D n'est jamais chargée d'avance), 12 s au plus, sinon devis sans elles
+  var V3 = { sig: '', urls: null, refus: '' };
+  function ajout3d() { if (V3.urls) V3.urls.forEach(function (u, i) { var x = document.createElement('input'); x.type = 'hidden'; x.name = 'cer_plan[vues][3d' + (i + 1) + ']'; x.value = u; form.appendChild(x); }); }
+  function vues3d(sig, bouton) {
+    if (V3.sig === sig || V3.refus === sig || CFG.kind === 'carport' || !window.CER_3D || !window.CER_3D.vue3d) return Promise.resolve();
+    var lib = bouton && bouton.textContent; if (bouton) bouton.textContent = 'Préparation des vues 3D…';
+    var charge = window.CerVue3D ? Promise.resolve(window.CerVue3D) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = window.CER_3D.vue3d; s.onload = function () { window.CerVue3D ? res(window.CerVue3D) : rej(); }; s.onerror = rej; document.head.appendChild(s); });
+    var fait = charge.then(function (V) { return V.vuesDevis ? V.vuesDevis() : null; });
+    return Promise.race([fait, new Promise(function (res) { setTimeout(function () { res('delai'); }, 12000); })]).then(function (r) {
+      if (Array.isArray(r) && r.length) { V3.sig = sig; V3.urls = r; Array.prototype.forEach.call(form.querySelectorAll('input[name^="cer_plan[vues][3d"]'), function (e) { e.remove(); }); ajout3d(); }
+      else V3.refus = sig;
+    }, function () { V3.refus = sig; }).then(function () { if (bouton) bouton.textContent = lib; });
+  }
   function signature() { return JSON.stringify([ST.cfg, ST.menus.map(function (m) { return [m.preset, m.wall, m.pos, m.rail, m.opt, m.seuil]; }), ST.ext, ST.site]); }
   function attach() {
     if (!LAST) return Promise.resolve(false);
@@ -843,6 +856,7 @@
       Array.prototype.forEach.call(form.querySelectorAll('input[name^="cer_plan["]'), function (e) { e.remove(); });
       var add = function (n, v) { var i = document.createElement('input'); i.type = 'hidden'; i.name = n; i.value = v; form.appendChild(i); };
       res.forEach(function (r) { if (r[1]) add('cer_plan[vues][' + r[0] + ']', r[1]); });
+      if (V3.sig === sig) ajout3d(); // vues 3D déjà faites pour cette configuration
       add('cer_plan[config]', JSON.stringify({
         v: CFG.version || '', kind: CFG.kind, cfg: ST.cfg, ext: ST.ext, site: ST.site,
         menus: ST.menus.map(function (m) { return { preset: m.preset, label: m.siteLabel || m.label, code: m.code, type: m.type, lw: m.lw, lh: m.lh, wall: m.wall, pos: m.pos, seuil: m.seuil, rail: m.rail, opt: m.opt }; }),
@@ -1162,10 +1176,11 @@
     // Ajout au panier : les vues doivent être jointes et à jour
     form.addEventListener('submit', function (e) {
       if (!LAST) return;
-      if (signature() === IMG_STATE.sig && form.querySelector('input[name="cer_plan[config]"]')) return;
+      var sg = signature(), v3ok = V3.sig === sg || V3.refus === sg || CFG.kind === 'carport' || !window.CER_3D;
+      if (sg === IMG_STATE.sig && form.querySelector('input[name="cer_plan[config]"]') && v3ok) return;
       e.preventDefault(); e.stopImmediatePropagation();
       var sub = e.submitter;
-      attach().then(function () { if (form.requestSubmit) form.requestSubmit(sub || undefined); else form.submit(); });
+      attach().then(function () { return vues3d(sg, sub); }).then(function () { if (form.requestSubmit) form.requestSubmit(sub || undefined); else form.submit(); });
     }, true);
     schedule(0);
   }

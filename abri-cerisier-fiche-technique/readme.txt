@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.7
+Stable tag: 3.2.8
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,15 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.8 =
+* TOIT PLAT (règle d'Antony) : la couverture a toujours une pente, 5 % au moins, vers le côté choisi ; le bandeau (3 lames de 13 cm) la cache, effet toit plat ; gouttière du côté bas si elle est prise ; au-delà d'environ 4,8 m de profondeur (chute plus grande que le bandeau), bandeaux de côté en pente et bandeau haut plus haut.
+* VUE 3D :
+  * teintes du bois homogènes entre bardage, bandeaux et bouts de madriers (lumière du ciel renforcée, soleil adouci, bois de bout à la teinte des lames) ;
+  * fenêtres et portes vitrées : on voit l'intérieur à travers la vitre, avec un reflet (vitres acidifiées toujours opaques) ;
+  * pelouse en relief : brins d'herbe dessinés par le navigateur, rien à télécharger, moins dense sur téléphone, jamais dans l'abri.
+* DEVIS : deux vues 3D (3/4 avant et 3/4 arrière) en plus des vues 2D, faites par le navigateur au moment de l'ajout au panier (12 s au plus, sinon devis sans elles ; la 3D n'est toujours pas chargée d'avance).
+* PHOTOS HEIC (iPhone) acceptées pour le montage photo et le dossier : lues telles quelles par Safari, converties en JPEG ailleurs (bibliothèque chargée seulement à ce moment, depuis cdnjs).
 
 = 3.2.7 =
 * EXTENSIONS (règle d'Antony) : dans la pente (côtés gauche et droit d'un 2 pans, côté bas d'un 1 pan), l'extension garde au moins 1 m de poteau. Profondeur au plus affichée sous chaque côté, « + » bloqué au-delà, valeur trop grande ramenée avec un message qui conseille une rehausse. Exemple : garage 2 pans à 25°, 2,50 m au plus (3,50 m à 18°).

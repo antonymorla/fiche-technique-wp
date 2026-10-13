@@ -209,7 +209,7 @@ function cer_devis_donnees( WC_Cart $cart, array $client ) {
 		$avec_plan = true;
 		$conf = cer_cfg_config( $it['cer_plan'] );
 		$vues = [];
-		foreach ( [ 'face', 'gauche', 'droite', 'fond', 'plan' ] as $nom ) {
+		foreach ( [ 'face', 'gauche', 'droite', 'fond', 'plan', '3d1', '3d2' ] as $nom ) {
 			$f = cer_cfg_vue( $it['cer_plan'], $nom );
 			if ( $f ) {
 				$vues[ $nom ] = $f[0];
@@ -511,6 +511,18 @@ function cer_devis_rendre( array $d, $vendor ) {
 <?php endif; ?>
 <?php
 		endforeach;
+		// vues 3D (demande d'Antony) : en plus des vues 2D, quand le navigateur du client a pu les faire
+		$v3 = array_values( array_filter( [ '3d1', '3d2' ], function ( $v ) use ( $L ) { return ! empty( $L['vues'][ $v ] ); } ) );
+		if ( $v3 ) :
+			?>
+<pagebreak />
+<?= $entete( 'Votre projet en 3D' . ( $plusieurs ? ' · ' . $titre( $L ) : '' ), 'Vues en perspective' ) ?>
+<?php foreach ( $v3 as $v ) : ?>
+<div class="cadre"><img src="<?= $e( $L['vues'][ $v ] ) ?>" style="width:150mm;height:100mm" /></div>
+<?php endforeach; ?>
+<div class="petit" style="margin-top:2mm">Vues indicatives, faites d'après votre configuration et les photos de nos bois ; les teintes réelles varient d'un lot à l'autre.</div>
+<?php
+		endif;
 	}
 	$html = ob_get_clean();
 

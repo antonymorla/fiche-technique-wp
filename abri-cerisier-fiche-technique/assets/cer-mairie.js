@@ -349,8 +349,8 @@
   // ───────── 3. photos ─────────
   function etape3() {
     var b = corps(2, 'Photos de votre terrain', 'Facultatif mais demandé par la plupart des mairies. Vous pourrez aussi les ajouter à la main au dossier.',
-      '<div class="ph"><label>Photo proche : l\'endroit où sera posé ' + leA() + '<input type="file" accept="image/*" data-k="proche">' + (D.photos.proche ? '<img src="' + D.photos.proche + '">' : '') + '</label>' +
-      '<label>Photo lointaine : le terrain dans son environnement, depuis la rue<input type="file" accept="image/*" data-k="loin">' + (D.photos.loin ? '<img src="' + D.photos.loin + '">' : '') + '</label></div>' +
+      '<div class="ph"><label>Photo proche : l\'endroit où sera posé ' + leA() + '<input type="file" accept="image/*,.heic,.heif" data-k="proche">' + (D.photos.proche ? '<img src="' + D.photos.proche + '">' : '') + '</label>' +
+      '<label>Photo lointaine : le terrain dans son environnement, depuis la rue<input type="file" accept="image/*,.heic,.heif" data-k="loin">' + (D.photos.loin ? '<img src="' + D.photos.loin + '">' : '') + '</label></div>' +
       '<p class="info" style="margin-top:12px">' + (sans3d() ? 'Le document d\'insertion est à compléter par un photomontage du carport sur une photo du terrain : un cadre vous attend dans le dossier, un conseiller Abri Cerisier peut vous aider.' : 'Pour le document d\'insertion, nous utilisons ' + (window.CerVue3D && window.CerVue3D.montage ? 'votre montage photo réalisé dans la vue 3D.' : 'une vue 3D de votre projet. Pour un montage sur une photo de votre jardin : « Voir en 3D » puis « Sur une photo de mon jardin ».')) + '</p>' +
       '<div class="act"><button type="button" class="sec" data-a="retour">Retour</button><button type="button" data-a="suite">Créer mon dossier PDF</button></div>');
     b.querySelectorAll('input[type=file]').forEach(function (inp) {
@@ -359,7 +359,21 @@
     b.querySelector('[data-a=retour]').onclick = etape2;
     b.querySelector('[data-a=suite]').onclick = etape4;
   }
-  function reduire(f, max) { return new Promise(function (res) { var im = new Image(); im.onload = function () { var k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas');
+  // Photos HEIC (iPhone) : lues telles quelles si le navigateur sait le faire (Safari récent), sinon converties en JPEG
+  // dans le navigateur ; la bibliothèque (1,3 Mo, cdnjs) n'est chargée qu'à ce moment-là, rien ne passe par le serveur
+  window.CerHeic = function (f) {
+    if (!f || !(/\.hei[cf]$/i.test(f.name || '') || /hei[cf]/i.test(f.type || ''))) return Promise.resolve(f);
+    var lisible = new Promise(function (res) { var im = new Image(), u = URL.createObjectURL(f); im.onload = function () { URL.revokeObjectURL(u); res(true); }; im.onerror = function () { URL.revokeObjectURL(u); res(false); }; im.src = u; });
+    var go = function () { return window.heic2any({ blob: f, toType: 'image/jpeg', quality: 0.9 }).then(function (b) { return Array.isArray(b) ? b[0] : b; }); };
+    return lisible.then(function (ok) {
+      if (ok) return f;
+      if (window.heic2any) return go();
+      return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
+        s.integrity = 'sha512-VjmsArkf8Vv2yyvbXCyVxp+R3n4N2WyS1GEQ+YQxa7Hu0tx836WpY4nW9/T1W5JBmvuIsxkVH/DlHgp7NEMjDw=='; s.crossOrigin = 'anonymous'; s.onload = res; s.onerror = rej; document.head.appendChild(s); }).then(go);
+    });
+  };
+  function reduire(f, max) { return window.CerHeic(f).then(function (f2) { return reduire0(f2, max); }); }
+  function reduire0(f, max) { return new Promise(function (res) { var im = new Image(); im.onload = function () { var k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas');
     c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.85)); }; im.src = URL.createObjectURL(f); }); }
 
   // ───────── 4. PDF ─────────

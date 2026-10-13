@@ -78,7 +78,12 @@ window.CerVue3D = (function () {
   function rasteriser(svg, x0, y0, w, h) {
     return new Promise(function (res) {
       var img = new Image();
-      img.onload = function () { var c = document.createElement('canvas'); c.width = Math.max(2, Math.ceil(w)); c.height = Math.max(2, Math.ceil(h)); c.getContext('2d').drawImage(img, -x0, -y0); res(c); };
+      img.onload = function () { var c = document.createElement('canvas'); c.width = Math.max(2, Math.ceil(w)); c.height = Math.max(2, Math.ceil(h)); var g = c.getContext('2d'); g.drawImage(img, -x0, -y0);
+        // vitres claires (magenta du moteur) : rendues transparentes, la vitre 3D posée devant fait le reflet
+        var id = g.getImageData(0, 0, c.width, c.height), px = id.data, vu = false;
+        for (var i = 0; i < px.length; i += 4) { if (px[i] - px[i + 1] > 60 && px[i + 2] - px[i + 1] > 60) { px[i + 3] = 0; vu = true; } } // magenta et ses bords adoucis (le bois n'est jamais magenta)
+        if (vu) g.putImageData(id, 0, 0);
+        c.cerVitre = vu; res(c); };
       img.onerror = function () { res(null); };
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
     });
@@ -117,6 +122,27 @@ window.CerVue3D = (function () {
       var gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, 'rgba(0,0,0,.10)'); gr.addColorStop(.5, 'rgba(255,255,255,.04)'); gr.addColorStop(1, 'rgba(0,0,0,.10)');
       g.fillStyle = gr; g.fillRect(0, 0, w, h);
     });
+  }
+  // pelouse en relief (demande d'Antony) : des dizaines de milliers de brins dessinés par le navigateur, rien à télécharger ;
+  // autour de l'abri, jamais à l'intérieur ; moins dense sur téléphone ; hors des exports de réalité augmentée (seul l'abri est exporté)
+  function pelouse(THREE, u) {
+    var tel = window.matchMedia && matchMedia('(pointer:coarse)').matches, n = tel ? 20000 : 60000, cx = (u.x0 + u.x1) / 2, cz = (u.zF + u.zB) / 2;
+    var R0 = Math.max(u.x1 - u.x0, u.zF - u.zB) / 2 + 5, L2 = (u.L || 0) / 2 + 0.06, P2 = (u.P || 0) / 2 + 0.06;
+    var g = new THREE.BufferGeometry(); // un brin : effilé en trois étages, un peu courbé ; base en 0, hauteur 1
+    g.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, 0, 0, 0.5, 0, 0, -0.36, 0.4, 0.04, 0.36, 0.4, 0.04, -0.18, 0.75, 0.11, 0.18, 0.75, 0.11, 0, 1, 0.22], 3));
+    g.setIndex([0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4, 4, 5, 6]); g.computeVertexNormals();
+    g.setAttribute('color', new THREE.Float32BufferAttribute([0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.8, 0.8, 0.75, 0.8, 0.8, 0.75, 1.1, 1.12, 0.95, 1.1, 1.12, 0.95, 1.35, 1.35, 1.1, ], 3)); // pied sombre, pointe claire
+    var im = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ roughness: 0.92, side: THREE.DoubleSide, vertexColors: true }), n), o = new THREE.Object3D(), c = new THREE.Color(), k = 0, R = Math.random;
+    for (var i = 0; i < n * 3 && k < n; i++) {
+      var rr = Math.pow(R(), 0.62) * R0, a = R() * 6.2832, x = cx + Math.cos(a) * rr, z = cz + Math.sin(a) * rr;
+      if (Math.abs(x) < L2 && Math.abs(z) < P2) continue; // pas d'herbe dans l'abri
+      if (R() < Math.pow(rr / R0, 2.5)) continue; // de moins en moins de brins vers le bord : pas de limite visible
+      var h = 0.08 + R() * 0.1, w = 0.01 + R() * 0.008;
+      o.position.set(x, 0, z); o.rotation.set((R() - 0.5) * 0.35, R() * 6.2832, (R() - 0.5) * 0.35); o.scale.set(w, h, h); o.updateMatrix(); im.setMatrixAt(k, o.matrix);
+      c.setHSL(0.23 + R() * 0.06, 0.5 + R() * 0.2, 0.12 + R() * 0.1); im.setColorAt(k, c); k++; // verts du sol, plus ou moins foncés
+    }
+    im.count = k; im.receiveShadow = true; im.frustumCulled = false; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    return im;
   }
   function herbe() {
     return dessin(512, 512, function (g, w, h) {
@@ -171,7 +197,7 @@ window.CerVue3D = (function () {
   }
   function boisDeBout() { // bout d'un madrier : bois de bout clair, cernes, joints sombres entre rangs (une tuile = un rang)
     return dessin(128, 128, function (g, w, h) {
-      g.fillStyle = '#a99a62'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#b4a87a'; g.fillRect(0, 0, w, h); // teinte moyenne des lames (mesurée), cernes un peu plus sombres
       for (var r = 8; r < 120; r += 7) { g.strokeStyle = 'rgba(95,78,38,' + (0.25 + Math.random() * 0.2) + ')'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(w * 0.5, h * 1.15, r * 0.8, r, 0, 0, 7); g.stroke(); }
       g.fillStyle = 'rgba(70,58,30,.55)'; g.fillRect(0, h - 6, w, 6); g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 0, w, 3);
     });
@@ -193,7 +219,7 @@ window.CerVue3D = (function () {
       parpaing: new THREE.MeshStandardMaterial({ color: 0xb9b7ae, roughness: 0.95 }),
       gouttiere: new THREE.MeshStandardMaterial({ color: 0x383e42, roughness: 0.42, metalness: 0.3, side: THREE.DoubleSide }), // gris anthracite RAL 7016
       interieur: new THREE.MeshStandardMaterial({ color: 0x2b2a24, roughness: 1 }),
-      verre: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.03, metalness: 0, transparent: true, opacity: 0.16, envMapIntensity: 1.6, clearcoat: 1, clearcoatRoughness: 0.03 }),
+      verre: new THREE.MeshPhysicalMaterial({ color: 0xdfe9ee, roughness: 0.02, metalness: 0, transparent: true, opacity: 0.22, envMapIntensity: 2.2, clearcoat: 1, clearcoatRoughness: 0.02, depthWrite: false }),
       epdm: new THREE.MeshStandardMaterial({ map: canvasTex(THREE, membrane(), true), roughness: 0.62 })
     };
     M.epdm.map.repeat.set(0.5, 0.5);
@@ -339,7 +365,7 @@ window.CerVue3D = (function () {
       else if (doub) surfaceInt(grp, m, trous, -sg * (wt + 0.012), MI.mur);
       else { surfaceInt(grp, m, trous, -sg * (wt - 0.07), MI.fond); if (MI.laine) surfaceInt(grp, m, trous, -sg * (wt - 0.012), MI.laine); ossatureMur(grp, m, trous, sg); }
       G.add(grp);
-      attente.push(rasteriser(fa.svg, x0, y0, tw, th).then(function (c) { if (c) { mat.map = canvasTex(THREE, c); mat.needsUpdate = true; } }));
+      attente.push(rasteriser(fa.svg, x0, y0, tw, th).then(function (c) { if (c) { mat.map = canvasTex(THREE, c); if (c.cerVitre) mat.alphaTest = 0.5; mat.needsUpdate = true; } })); // vitres : découpe (sinon mur opaque, JPEG à l'export)
     });
     // sol intérieur : plancher (lames de pin traité) ou dalle béton ; soubassement
     var plancher = fv('f-plan') && fv('f-plan') !== 'non', solG = new THREE.PlaneGeometry(L - 2 * wt, P - 2 * wt), su = solG.attributes.uv;
@@ -359,8 +385,10 @@ window.CerVue3D = (function () {
         if (orient === 'fond') return y0t + (z + P / 2) * tan;
         return y0t + (P / 2 - z) * tan;
       }
+      if (platH) return platH(x, z); // toit plat : couverture en pente vers le côté choisi
       return y0t;
     };
+    var platH = null;
     var X0 = -L / 2 - d.ovL, X1 = L / 2 + d.ovR, ZF = P / 2 + d.ovF, ZB = -P / 2 - d.ovB, ep = 0.07, a = Math.atan(tan);
     var cv = E.couvFin(d), matCouv = new THREE.MeshStandardMaterial({ roughness: cv.kind === 'bac' || cv.kind === 'tuile' ? 0.45 : 0.92, metalness: cv.kind === 'bac' || cv.kind === 'tuile' ? 0.35 : 0 });
     var matSous = new THREE.MeshStandardMaterial({ roughness: 0.9 });
@@ -416,9 +444,38 @@ window.CerVue3D = (function () {
       // évacuation : un tuyau traverse l'acrotère au fond, au ras de la membrane, puis un coude et la descente le long du mur
       gout.push({ t: 'quadro', y: avecExt ? top - 0.03 : bas + 0.03 });
     } else {
-      // toit plat : bandeau de 39 cm tout autour, couverture EPDM, gouttière cachée derrière le bandeau
-      var hb = 0.39, MB2 = matMotif(E.wallFin(d)), tp = boite(X1 - X0, hb, ZF - ZB, [MB2, MB2, matCouv, matSous, MB2, MB2]); tp.position.set((X0 + X1) / 2, y0t + hb / 2, (ZF + ZB) / 2); G.add(tp);
-      gout.push({ t: 'plat', y: y0t });
+      // toit plat (règle d'Antony) : la couverture a toujours une pente, 5 % au moins, vers le côté choisi ; les murs ayant tous la même hauteur,
+      // c'est la charpente qui la donne (12 cm au-dessus du mur côté bas). Le bandeau (3 lames de 13 cm) cache la couverture : effet toit plat.
+      // Tant que la chute tient dans le bandeau, bandeaux horizontaux ; au-delà (grande profondeur), bandeaux de côté en pente et bandeau haut plus haut.
+      var hb = 0.39, eb = 0.027, MB2 = matMotif(E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
+      var u0 = dirZ ? ZB : X0, u1 = dirZ ? ZF : X1, span = u1 - u0, chute = 0.05 * span, bas0 = 0.12;
+      var horiz = chute <= hb - 0.03 - bas0, hHaut = horiz ? y0t + hb - 0.03 : y0t + bas0 + chute, hBasC = hHaut - chute;
+      platH = function (x, z) { var u = dirZ ? z : x, t = sgn > 0 ? (u - u0) / span : (u1 - u) / span; return hHaut - chute * Math.max(0, Math.min(1, t)); };
+      var uHaut = sgn > 0 ? u0 : u1, uBas = sgn > 0 ? u1 : u0, v0 = dirZ ? X0 : ZB, v1 = dirZ ? X1 : ZF, ang = Math.atan(chute / span);
+      // couverture : du bandeau haut jusqu'à 3 cm au-delà du bord bas (elle se déverse dans la gouttière), entre les bandeaux de côté
+      var ca = uHaut + sgn * eb, cb = uBas + sgn * 0.03, lc = Math.abs(cb - ca) / Math.cos(ang), cm = (ca + cb) / 2, ec = 0.03, wc = v1 - v0 - 2 * eb;
+      var cvr = dirZ ? boite(wc, ec, lc, [matSous, matSous, matCouv, matSous, matSous, matSous]) : boite(lc, ec, wc, [matSous, matSous, matCouv, matSous, matSous, matSous]);
+      if (dirZ) cvr.rotation.x = sgn > 0 ? ang : -ang; else cvr.rotation.z = sgn > 0 ? -ang : ang;
+      var ym = platH(dirZ ? 0 : cm, dirZ ? cm : 0) - ec / 2; cvr.position.set(dirZ ? (v0 + v1) / 2 : cm, ym, dirZ ? cm : (v0 + v1) / 2); G.add(cvr);
+      // sous-face des débords
+      var sf = boite(X1 - X0, 0.02, ZF - ZB, [matSous, matSous, matSous, matSous, matSous, matSous]); sf.position.set((X0 + X1) / 2, y0t + 0.01, (ZF + ZB) / 2); G.add(sf);
+      // bandeaux : haut (horizontal), bas (sous le bord de la couverture), côtés (horizontaux ou en pente)
+      var planche = function (lg, h, u, yb) { var m = dirZ ? boite(v1 - v0, h, eb, MB2) : boite(eb, h, v1 - v0, MB2); m.position.set(dirZ ? (v0 + v1) / 2 : u, yb + h / 2, dirZ ? u : (v0 + v1) / 2); G.add(m); };
+      var hTop = Math.max(y0t + hb, hHaut + 0.03);
+      planche(v1 - v0, hTop - y0t, uHaut + sgn * eb / 2, y0t);
+      planche(v1 - v0, Math.max(0.06, hBasC - 0.008 - y0t), uBas - sgn * eb / 2, y0t);
+      [v0 + eb / 2, v1 - eb / 2].forEach(function (v) { // côté : trapèze du haut du mur jusqu'au-dessus de la couverture
+        var sh = new THREE.Shape(), hi = horiz ? y0t + hb : hHaut + 0.03, lo = horiz ? y0t + hb : hBasC + 0.03, a0 = sgn > 0 ? u0 : u1, a1 = sgn > 0 ? u1 : u0;
+        sh.moveTo(0, 0); sh.lineTo(span, 0); sh.lineTo(span, lo - y0t); sh.lineTo(0, hi - y0t); sh.closePath();
+        var geo = new THREE.ExtrudeGeometry(sh, { depth: eb, bevelEnabled: false }); geo.translate(0, 0, -eb / 2);
+        var uv = geo.attributes.uv; for (var ui = 0; ui < uv.count; ui++) uv.setXY(ui, uv.getX(ui), uv.getY(ui)); // mètres : même échelle que les autres planches
+        var m = new THREE.Mesh(geo, MB2); m.castShadow = m.receiveShadow = true;
+        // x local (0 → span) part du côté haut ; le mesh est tourné pour suivre l'axe de la pente
+        if (dirZ) { m.rotation.y = sgn > 0 ? -Math.PI / 2 : Math.PI / 2; m.position.set(v, y0t, a0); }
+        else { m.rotation.y = sgn > 0 ? 0 : Math.PI; m.position.set(a0, y0t, v); }
+        G.add(m);
+      });
+      if (fv('f-gout') === 'oui') gout.push(dirZ ? { axe: 'x', e: uBas + sgn * 0.03, s: sgn } : { axe: 'z', e: uBas + sgn * 0.03, s: sgn });
     }
     var TOIT = G.children.slice(nToit0);
     // charpente (règle d'Antony) : pannes perpendiculaires aux pignons, portées par les pignons, faîtière en tête, au plus 1 m entre pannes
@@ -534,7 +591,7 @@ window.CerVue3D = (function () {
       });
     }
     // userData ne garde que des nombres : il est recopié à chaque clone et écrit tel quel dans le GLB (les pièces du toit y pesaient 11 Mo)
-    G.userData = { x0: X0, x1: X1, zF: ZF, zB: ZB, h: base + hE + rH }; G.cerToit = TOIT; G.cerPret = Promise.all(attente);
+    G.userData = { x0: X0, x1: X1, zF: ZF, zB: ZB, h: base + hE + rH, L: L, P: P }; G.cerToit = TOIT; G.cerPret = Promise.all(attente);
     return G;
   }
 
@@ -550,9 +607,9 @@ window.CerVue3D = (function () {
     var pm = new THREE.PMREMGenerator(R), envS = new THREE.Scene(); envS.add(sky2);
     S.environment = pm.fromScene(envS, 0.02).texture;
     if (!photo) { S.add(sky); S.fog = new THREE.Fog(0xc9d6df, 30, 70); }
-    S.add(new THREE.HemisphereLight(0xe9f0f5, 0x6d7a4c, 0.25));
-    var dl = new THREE.DirectionalLight(0xfff1dc, 3.4); dl.position.copy(sun).multiplyScalar(14); dl.castShadow = true;
-    dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 40 }); dl.shadow.bias = -0.0003; dl.shadow.normalBias = 0.025; dl.shadow.radius = 3;
+    S.add(new THREE.HemisphereLight(0xeef2f4, 0x8a8a6a, 0.75)); // lumière du ciel : les faces à l'ombre gardent la teinte du bois (demande d'Antony)
+    var dl = new THREE.DirectionalLight(0xfff4e6, 2.5); dl.position.copy(sun).multiplyScalar(14); dl.castShadow = true;
+    dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 40 }); dl.shadow.bias = -0.0003; dl.shadow.normalBias = 0.025; dl.shadow.radius = 4;
     S.add(dl); S.add(dl.target);
     var sol;
     if (photo) { sol = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.38 })); }
@@ -565,7 +622,7 @@ window.CerVue3D = (function () {
   var ouvert = null;
   var CSS = '.cer3d{position:fixed;inset:0;z-index:100000;background:rgba(30,30,24,.6);display:flex;align-items:center;justify-content:center;padding:10px;font-family:Jost,Futura,Arial,sans-serif}' +
     '.cer3d .b{position:relative;width:100%;height:100%;background:#cfdbe4;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}' +
-    '@media (max-width:700px){.cer3d{padding:0}.cer3d .b{border-radius:0}}' + CHARGE_CSS + '.cer3d .vv,.cer3d .va{display:contents}' +
+    '@media (max-width:700px){.cer3d{padding:0}.cer3d .b{border-radius:0}}' + CHARGE_CSS + '.cer3d .vv,.cer3d .va{display:contents}' + '.cer3d.cache{inset:auto;left:-12000px;top:0;width:1200px;height:800px;padding:0}.cer3d.cache .b{border-radius:0;box-shadow:none}' +
     '.cer3d .zone{position:relative;width:100%;height:100%}.cer3d .zone img.fond{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}' +
     '.cer3d canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important;touch-action:none}' +
     '.cer3d .x{position:absolute;top:12px;right:12px;z-index:3;width:40px!important;height:40px!important;min-width:0!important;padding:0!important;margin:0!important;border-radius:50%!important;border:0!important;background:#fff!important;color:#2b2b22!important;font:400 26px/40px Arial,sans-serif!important;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}' +
@@ -586,7 +643,7 @@ window.CerVue3D = (function () {
     var E = window.CerPlan; if (!E || !E.ST || !E.ST.cfg) return Promise.resolve(null);
     if (ouvert) fermer();
     var nom = E.ST.type === 'garage' ? 'garage' : E.ST.type === 'carport' ? 'carport' : 'abri';
-    var ov = document.createElement('div'); ov.className = 'cer3d';
+    var ov = document.createElement('div'); ov.className = 'cer3d' + (mode === 'cache' ? ' cache' : '');
     ov.innerHTML = '<style>' + CSS + '</style><div class="b"><div class="zone"><div class="ch">' + CHARGE_HTML + '</div></div>' +
       '<span class="t">Votre ' + nom + ' en 3D · glissez pour tourner</span><button class="x" type="button" aria-label="Fermer">×</button>' +
       '<div class="v"><span class="vv"><button data-v="trois" class="on">3/4</button><button data-v="face">Devant</button><button data-v="gauche">Gauche</button><button data-v="droite">Droite</button><button data-v="fond">Derrière</button><button data-v="dessus">Dessus</button><button data-v="int">Intérieur</button><button data-v="tour">Tourner</button></span>' +
@@ -604,12 +661,13 @@ window.CerVue3D = (function () {
     if (photo) { var k = photo.naturalWidth / photo.naturalHeight, W = b.clientWidth, H = b.clientHeight; if (W / H > k) { zone.style.width = Math.round(H * k) + 'px'; zone.style.height = H + 'px'; } else { zone.style.width = W + 'px'; zone.style.height = Math.round(W / k) + 'px'; }
       var im = document.createElement('img'); im.className = 'fond'; im.src = photo.src; zone.appendChild(im); } else { zone.style.width = zone.style.height = '100%'; }
     var R = new THREE.WebGLRenderer({ antialias: true, alpha: !!photo, preserveDrawingBuffer: true });
-    R.setPixelRatio(Math.min(window.devicePixelRatio, 2)); R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
-    R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 0.62; R.outputColorSpace = THREE.SRGBColorSpace;
+    R.setPixelRatio(ov.classList.contains('cache') ? 1 : Math.min(window.devicePixelRatio, 2)); R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
+    R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 0.66; R.outputColorSpace = THREE.SRGBColorSpace;
     zone.appendChild(R.domElement);
     var sc = scene(R, !!photo), G = construire(E), u = G.userData;
     G.traverse(function (o) { if (o.isMesh && o.material && !o.material.transparent) o.material.envMapIntensity = 0.45; });
     sc.S.add(G);
+    if (!photo) sc.S.add(pelouse(THREE, u));
     if (!photo) { // ombre de contact sous l'abri
       var om = new THREE.Mesh(new THREE.PlaneGeometry((u.x1 - u.x0) * 1.5, (u.zF - u.zB) * 1.5), new THREE.MeshBasicMaterial({ map: canvasTex(THREE, ombreDouce()), transparent: true, depthWrite: false, opacity: 0.55 }));
       om.rotation.x = -Math.PI / 2; om.position.set((u.x0 + u.x1) / 2, 0.004, (u.zF + u.zB) / 2); sc.S.add(om);
@@ -617,7 +675,7 @@ window.CerVue3D = (function () {
     var cam = new THREE.PerspectiveCamera(35, 1, 0.1, 9000), ctl = new T.OrbitControls(cam, R.domElement);
     ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.495; ctl.minDistance = 2.5; ctl.maxDistance = 40; ctl.enablePan = !!photo;
     var cible = new THREE.Vector3((u.x0 + u.x1) / 2, Math.min(1.3, u.h / 2), (u.zF + u.zB) / 2), r = Math.max(u.x1 - u.x0, u.zF - u.zB, 3) * 2;
-    var VUES = { trois: [0.62, 0.42, 1.3], face: [0, 0.28, 1], gauche: [-1, 0.28, 0.15], droite: [1, 0.28, 0.15], fond: [0.15, 0.28, -1], dessus: [0.25, 1.6, 0.55], int: [0.42, 1.0, 0.8] };
+    var VUES = { dos: [-0.62, 0.42, -1.3], trois: [0.62, 0.42, 1.3], face: [0, 0.28, 1], gauche: [-1, 0.28, 0.15], droite: [1, 0.28, 0.15], fond: [0.15, 0.28, -1], dessus: [0.25, 1.6, 0.55], int: [0.42, 1.0, 0.8] };
     var anim = null, recul = function (v) { return r * (v === 'dessus' ? 1.35 : 1) * Math.max(1, 1.4 / Math.max(0.4, cam.aspect)); };
     var vers = function (v, inst) { var p = new THREE.Vector3().fromArray(VUES[v]).normalize().multiplyScalar(recul(v)).add(cible);
       ov.querySelectorAll('.v [data-v]').forEach(function (x) { if (x.dataset.v !== 'int' && x.dataset.v !== 'tour') x.classList.toggle('on', x.dataset.v === v); });
@@ -652,9 +710,12 @@ window.CerVue3D = (function () {
     if (!ouvert) return;
     var ov = ouvert.ov, inp = ov.querySelector('input.cer3d-photo');
     if (!inp) {
-      inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.className = 'cer3d-photo';
+      inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*,.heic,.heif'; inp.className = 'cer3d-photo';
       inp.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0'; ov.appendChild(inp);
-      inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; if (f) chargerPhoto(f); inp.value = ''; });
+      inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
+        if (window.CerHeic && /\.hei[cf]$|hei[cf]/i.test((f.name || '') + ' ' + (f.type || ''))) { var t = ov.querySelector('.t'); if (t) t.textContent = 'Conversion de la photo iPhone…';
+          window.CerHeic(f).then(chargerPhoto, function () { if (t) t.textContent = 'Cette photo HEIC n’a pas pu être convertie : essayez en JPEG.'; }); }
+        else chargerPhoto(f); });
     }
     inp.click();
   }
@@ -734,6 +795,14 @@ window.CerVue3D = (function () {
   function capture(vue) {
     if (window.CerVue3D.montage && !vue) return Promise.resolve(window.CerVue3D.montage);
     return ouvrir().then(function () { if (!ouvert) return null; ouvert.vers(vue || 'trois', true); ouvert.ctl.update(); var url = composite().toDataURL('image/jpeg', 0.9); fermer(); return url; });
+  }
+
+  // deux vues 3D pour le devis (3/4 avant, 3/4 arrière), sans rien montrer au client : fenêtre hors de l'écran, ou la vue déjà ouverte (caméra remise ensuite)
+  function vuesDevis() {
+    var prendre = function () { var o = ouvert, p0 = o.cam.position.clone(), t0 = o.ctl.target.clone(), r = ['trois', 'dos'].map(function (v) { o.vers(v, true); o.ctl.update(); return composite().toDataURL('image/jpeg', 0.86); });
+      o.cam.position.copy(p0); o.ctl.target.copy(t0); o.ctl.update(); return r; };
+    if (ouvert && !ouvert.photo) return Promise.resolve(prendre());
+    return ouvrir('cache').then(function () { if (!ouvert) return null; var r = prendre(); fermer(); return r; });
   }
 
   // ───────── réalité augmentée ─────────
@@ -816,5 +885,5 @@ window.CerVue3D = (function () {
     return exporteurs().then(function (X) { var sc = modeleExport();
       return Promise.all([new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true, maxTextureSize: 1024 }); }), new X.USDZExporter().parse(sc)]); });
   }
-  return { CHARGE_HTML: CHARGE_HTML, CHARGE_CSS: CHARGE_CSS, ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null, fichiersAR: fichiersAR, _etat: function () { return ouvert; } }; // _etat : contrôles automatiques seulement
+  return { CHARGE_HTML: CHARGE_HTML, CHARGE_CSS: CHARGE_CSS, ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null, fichiersAR: fichiersAR, vuesDevis: vuesDevis, _etat: function () { return ouvert; } }; // _etat : contrôles automatiques seulement
 })();
