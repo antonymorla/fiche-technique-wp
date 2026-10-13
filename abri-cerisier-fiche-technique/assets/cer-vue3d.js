@@ -475,7 +475,18 @@ window.CerVue3D = (function () {
   var ua = navigator.userAgent, IOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), ANDROID = /Android/i.test(ua);
   function modeleExport() { // copie de l'abri seule, posée au sol, centrée
     var THREE = T.THREE, g = ouvert.G.clone(true), u = ouvert.G.userData, sc = new THREE.Scene(); g.position.set(-(u.x0 + u.x1) / 2, 0, -(u.zF + u.zB) / 2); sc.add(g);
-    var doubles = [];
+    var doubles = [], multi = [];
+    g.traverse(function (o) { if (o.isMesh && Array.isArray(o.material)) multi.push(o); });
+    // USDZ (iPhone) ignore les pièces à plusieurs matières (pans de toit : couverture dessus, lambris dessous, rives) : une pièce par matière
+    multi.forEach(function (o) {
+      var geo = o.geometry, ix = geo.index;
+      geo.groups.forEach(function (gr) {
+        var part = geo.clone(); part.clearGroups();
+        if (ix) part.setIndex(Array.prototype.slice.call(ix.array, gr.start, gr.start + gr.count)); else part.setDrawRange(gr.start, gr.count);
+        var m = new THREE.Mesh(part, o.material[gr.materialIndex]); m.position.copy(o.position); m.quaternion.copy(o.quaternion); m.scale.copy(o.scale); o.parent.add(m);
+      });
+      o.parent.remove(o);
+    });
     g.traverse(function (o) {
       if (!o.isMesh || !o.material) return;
       if (o.material.isMeshPhysicalMaterial) o.material = new THREE.MeshStandardMaterial({ color: 0x9fb4c0, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.35 });
@@ -489,6 +500,7 @@ window.CerVue3D = (function () {
       if (nr) { for (var j = 0; j < nr.count; j++) nr.setXYZ(j, -nr.getX(j), -nr.getY(j), -nr.getZ(j)); }
       var dos = new THREE.Mesh(geo, mat); dos.position.copy(o.position); dos.quaternion.copy(o.quaternion); dos.scale.copy(o.scale); o.parent.add(dos);
     });
+    sc.updateMatrixWorld(true); // les exportateurs lisent les matrices : les pièces ajoutées ci-dessus doivent être à leur place
     return sc;
   }
   function deposer(glb, usdz) {
@@ -514,7 +526,7 @@ window.CerVue3D = (function () {
       var glbP = new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true }); });
       if (IOS) return Promise.resolve(usdzP).then(function (u) {
         var url = URL.createObjectURL(new Blob([u], { type: 'model/vnd.usdz+zip' })), a = document.createElement('a');
-        a.rel = 'ar'; a.href = url + '#allowsContentScaling=0'; a.appendChild(document.createElement('img')); document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
+        a.rel = 'ar'; a.href = url; // taille réelle à l'ouverture, réductible au pincement a.appendChild(document.createElement('img')); document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
         bt.textContent = old;
       });
       return Promise.all([glbP, usdzP]).then(function (r) { return deposer(r[0], r[1]); }).then(function (rep) {
@@ -532,5 +544,9 @@ window.CerVue3D = (function () {
     }).catch(function (e) { bt.textContent = old; panneau('<h3>Réalité augmentée indisponible</h3><small>' + (e && e.message ? e.message : 'Réessayez plus tard.') + '</small>'); });
   }
 
-  return { ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null };
+  function fichiersAR() { // GLB et USDZ du modèle affiché (contrôles)
+    return exporteurs().then(function (X) { var sc = modeleExport();
+      return Promise.all([new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true }); }), new X.USDZExporter().parse(sc)]); });
+  }
+  return { ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null, fichiersAR: fichiersAR };
 })();

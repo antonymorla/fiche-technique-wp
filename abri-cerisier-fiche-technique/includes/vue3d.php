@@ -176,7 +176,7 @@ model-viewer{width:100%;height:68vh;background:#dfe7ec;--poster-color:#dfe7ec}
 p{padding:6px 16px 24px;line-height:1.5;max-width:60ch}
 </style></head><body>
 <header>Abri Cerisier · votre abri en taille réelle</header>
-<model-viewer src="<?php echo $glb; // phpcs:ignore ?>" <?php echo $usdz ? 'ios-src="' . $usdz . '"' : ''; // phpcs:ignore ?> ar ar-modes="webxr scene-viewer quick-look" ar-scale="fixed" ar-placement="floor" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1" environment-image="neutral" alt="Votre abri Cerisier en 3D">
+<model-viewer src="<?php echo $glb; // phpcs:ignore ?>" <?php echo $usdz ? 'ios-src="' . $usdz . '"' : ''; // phpcs:ignore ?> ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" ar-placement="floor" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1" environment-image="neutral" alt="Votre abri Cerisier en 3D">
 <button slot="ar-button" class="ar">Voir dans mon jardin</button>
 </model-viewer>
 <p>Touchez « Voir dans mon jardin », visez le sol de votre jardin quelques secondes, puis posez l'abri. Il est affiché à sa taille réelle : faites le tour, prenez une capture d'écran.</p>

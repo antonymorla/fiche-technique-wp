@@ -269,14 +269,18 @@
     c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.85)); }; im.src = URL.createObjectURL(f); }); }
 
   // ───────── 4. PDF ─────────
+  function logo() { // logo Abri Cerisier blanc (fichier officiel « 6• Logo »), posé sur les bandeaux verts du PDF
+    var u = (C().tex || '') + 'logo-abri-cerisier-blanc.png';
+    return fetch(u).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) { return new Promise(function (res) { var f = new FileReader(); f.onload = function () { res(f.result); }; f.readAsDataURL(b); }); }).catch(function () { return null; });
+  }
   function jspdf() { return window.jspdf ? Promise.resolve(window.jspdf) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = function () { res(window.jspdf); }; s.onerror = rej; document.head.appendChild(s); }); }
   function vueMoteur(side, w, h) { // dessin du configurateur, cotes comprises → image PNG
     var ST = E.ST, d = E.calcDims(), sv = { scale: ST.scale, picto: ST.picto, mur: ST.murSeul }, svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h); svg.setAttribute('width', w * 3); svg.setAttribute('height', h * 3);
+    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h); svg.setAttribute('width', w * 2.5); svg.setAttribute('height', h * 2.5);
     try { ST.picto = false; ST.murSeul = false;
       if (side === 'plan') { ST.scale = null; E.drawPlan(svg, d, w, h); } else { ST.scale = E.commonScale(d, w, h); E.drawElev(svg, d, side, w, h); }
     } finally { ST.scale = sv.scale; ST.picto = sv.picto; ST.murSeul = sv.mur; }
-    return new Promise(function (res) { var im = new Image(); im.onload = function () { var c = document.createElement('canvas'); c.width = w * 3; c.height = h * 3; var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/png')); };
+    return new Promise(function (res) { var im = new Image(); im.onload = function () { var c = document.createElement('canvas'); c.width = w * 2.5; c.height = h * 2.5; var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.86)); };
       im.onerror = function () { res(null); }; im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg)); });
   }
   function situation(z, w, h) {
@@ -291,7 +295,7 @@
     Promise.all([situation(14, 1100, 760).then(function (u) { I.sit1 = u; }), situation(17, 1100, 760).then(function (u) { I.sit2 = u; })])
       .then(function () { etat('Plans et façades…'); return Promise.all(['face', 'droite', 'gauche', 'fond'].map(function (s) { return vueMoteur(s, 380, 280).then(function (u) { I[s] = u; }); }).concat([vueMoteur('plan', 480, 340).then(function (u) { I.plan = u; })])); })
       .then(function () { etat('Vue 3D du projet…'); fermerTemp(); return window.CerVue3D ? window.CerVue3D.capture().then(function (u) { I.insertion = u; }) : null; })
-      .then(function () { rouvrir(); etat('Mise en page du PDF…'); return jspdf(); })
+      .then(function () { rouvrir(); etat('Mise en page du PDF…'); return logo().then(function (l) { I.logo = l; return jspdf(); }); })
       .then(function (J) { var doc = construirePdf(J, pr, I); var nom = 'dossier-mairie-' + (D.client.nom || 'abri').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.pdf';
         doc.save(nom);
         corps(3, 'Votre dossier est prêt', 'Le PDF « ' + esc(nom) + ' » est téléchargé.', '<p class="info">Il reste à remplir et signer le formulaire officiel (' + esc(LIB_FORM[pr.formalite].toLowerCase()) + ') sur service-public.fr, puis à le déposer en mairie avec ce dossier. Un conseiller Abri Cerisier peut vous accompagner.</p><div class="act"><button type="button" data-a="fin">Fermer</button></div>');
@@ -351,8 +355,10 @@
     doc.setTextColor(40); doc.setDrawColor(0); doc.setLineWidth(0.2);
   }
 
+  var LOGO_R = 0;
   function construirePdf(J, pr, I) {
-    var doc = new J.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }), Wp = 297, Hp = 210, M = 14, c = D.client, pa = D.parcelle, d = pr.d;
+    if (I.logo) { var lp = new J.jsPDF().getImageProperties(I.logo); LOGO_R = lp.height / lp.width; }
+    var doc = new J.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true }), Wp = 297, Hp = 210, M = 14, c = D.client, pa = D.parcelle, d = pr.d;
     var vert = [81, 81, 54], gris = [119, 117, 95];
     // pièces du formulaire cerfa 13703 (déclaration préalable, maison individuelle et annexes) ou 13406 (permis de construire) : DP1 à DP8 / PCMI1 à PCMI8
     var pre = pr.formalite === 'pc' ? 'PCMI' : 'DP', cerfa = pr.formalite === 'pc' ? 'cerfa n° 13406' : 'cerfa n° 13703';
@@ -360,21 +366,23 @@
       [pre + '5', 'Plans des façades et de la toiture'], [pre + '6', 'Document graphique d\'insertion'], [pre + '7', 'Photographie de l\'environnement proche'], [pre + '8', 'Photographie du paysage lointain']];
     var P_ = function (i) { return pieces[i][0] + ' - ' + pieces[i][1]; };
     var page = 1;
-    var entete = function (titre, sous) { doc.setFillColor(81, 81, 54); doc.rect(0, 0, Wp, 16, 'F'); doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text(titre, M, 10.5);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text((c.prenom + ' ' + c.nom + '  -  ' + c.label).slice(0, 110), Wp - M, 10.5, { align: 'right' }); doc.setTextColor(40);
-      if (sous) { doc.setFontSize(10); doc.setTextColor(gris[0], gris[1], gris[2]); doc.text(sous, M, 23); doc.setTextColor(40); } };
+    var entete = function (titre, sous) { doc.setFillColor(81, 81, 54); doc.rect(0, 0, Wp, 18, 'F'); doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text(titre, M, 9.5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(225, 224, 210); doc.text((c.prenom + ' ' + c.nom + '  -  ' + c.label).slice(0, 120), M, 14.5);
+      if (I.logo) doc.addImage(I.logo, 'PNG', Wp - M - 46, 9 - 46 * LOGO_R / 2, 46, 46 * LOGO_R, 'logo'); doc.setTextColor(40);
+      if (sous) { doc.setFontSize(10); doc.setTextColor(gris[0], gris[1], gris[2]); doc.text(sous, M, 23.8); doc.setTextColor(40); } };
     var pied = function (x0) { doc.setFontSize(7.5); doc.setTextColor(gris[0], gris[1], gris[2]); x0 = x0 || M;
       var t = doc.splitTextToSize('Dossier préparé avec le configurateur Abri Cerisier le ' + new Date().toLocaleDateString('fr-FR') + '. Le plan local d\'urbanisme (PLU) de votre commune s\'applique : vérifiez les règles avant dépôt.', Wp - M - x0 - 18);
       doc.text(t, x0, Hp - 6 - 3.2 * (t.length - 1));
       doc.text('Page ' + page, Wp - M, Hp - 6, { align: 'right' }); doc.setTextColor(40); };
     var image = function (url, x, y, w, h, fmt) { if (!url) { doc.setDrawColor(200); doc.rect(x, y, w, h); doc.setFontSize(10); doc.text('Image indisponible', x + w / 2, y + h / 2, { align: 'center' }); return; }
-      var p = doc.getImageProperties(url), k = Math.min(w / p.width, h / p.height), ww = p.width * k, hh = p.height * k; doc.addImage(url, fmt || (url.indexOf('image/png') > 0 ? 'PNG' : 'JPEG'), x + (w - ww) / 2, y + (h - hh) / 2, ww, hh); };
+      var p = doc.getImageProperties(url), k = Math.min(w / p.width, h / p.height), ww = p.width * k, hh = p.height * k; doc.addImage(url, fmt || (url.indexOf('image/png') > 0 ? 'PNG' : 'JPEG'), x + (w - ww) / 2, y + (h - hh) / 2, ww, hh, 'i' + url.length + url.slice(-40).replace(/[^a-z0-9]/gi, '')); }; // même image = une seule copie dans le PDF
     var suivante = function (x0) { pied(x0); doc.addPage(); page++; };
 
     // 1. page de garde
     doc.setFillColor(81, 81, 54); doc.rect(0, 0, 100, Hp, 'F');
-    doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.text(doc.splitTextToSize(LIB_FORM[pr.formalite], 80), M, 34);
-    doc.setFontSize(12); doc.setFont('helvetica', 'normal'); doc.text(doc.splitTextToSize(pr.nom + ' en bois', 80), M, 66);
+    if (I.logo) doc.addImage(I.logo, 'PNG', M, 14, 72, 72 * LOGO_R, 'logo');
+    doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.text(doc.splitTextToSize(LIB_FORM[pr.formalite], 80), M, 48);
+    doc.setFontSize(12); doc.setFont('helvetica', 'normal'); doc.text(doc.splitTextToSize(pr.nom + ' en bois', 80), M, 80);
     doc.setFontSize(9); doc.text(doc.splitTextToSize('Pièces graphiques et notice à joindre au formulaire officiel ' + cerfa + ' (service-public.fr). Abri Cerisier.', 76), M, Hp - 24);
     if (I.insertion) image(I.insertion, 108, 14, 175, 92);
     doc.setTextColor(40); var y = 116;
@@ -425,10 +433,10 @@
     suivante();
     // 5. façades et toiture
     entete(P_(4), 'Façades cotées en mètres. Matériaux : ' + pr.bardage + '. Couverture : ' + pr.couverture + '.');
-    image(I.face, M, 26, 132, 82, 'PNG'); image(I.fond, M + 137, 26, 132, 82, 'PNG'); image(I.gauche, M, 110, 132, 82, 'PNG'); image(I.droite, M + 137, 110, 132, 82, 'PNG');
+    image(I.face, M, 26, 132, 82); image(I.fond, M + 137, 26, 132, 82); image(I.gauche, M, 110, 132, 82); image(I.droite, M + 137, 110, 132, 82);
     doc.setFontSize(8); doc.text('Façade avant', M, 108); doc.text('Façade arrière', M + 137, 108); doc.text('Côté gauche', M, 193); doc.text('Côté droit', M + 137, 193); suivante();
     entete(P_(4) + ' (vue de dessus)', 'Vue de dessus : murs, débords de toiture, extensions et menuiseries.');
-    image(I.plan, M, 26, Wp - 2 * M, 165, 'PNG'); suivante();
+    image(I.plan, M, 26, Wp - 2 * M, 165); suivante();
     // 6. insertion
     entete(P_(5), window.CerVue3D && window.CerVue3D.montage ? 'Montage du projet sur une photo du terrain.' : 'Vue du projet. Pour un montage sur photo : configurateur, « Voir en 3D », « Sur une photo de mon jardin ».');
     image(I.insertion, M, 26, Wp - 2 * M, 165); suivante();

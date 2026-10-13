@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.1.0
+Stable tag: 3.1.1
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,11 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.1.1 =
+* RÉALITÉ AUGMENTÉE (iPhone) : le toit manquait et les murs de côté apparaissaient noirs dans Quick Look (le format USDZ ignore les pièces à plusieurs matières et n'affiche qu'une face). Les pans de toit sont découpés par matière et chaque surface reçoit ses deux faces à l'export. Contrôlé avec la bibliothèque USD officielle (pxr) : toit présent, murs à double face, aucune pièce déplacée
+* RÉALITÉ AUGMENTÉE : l'abri s'ouvre à sa taille réelle mais peut être réduit ou agrandi au pincement (il revenait à 100 %)
+* DOSSIER MAIRIE : logo Abri Cerisier (fichier officiel, version blanche) en couverture et en tête de chaque page ; PDF allégé (1,4 Mo au lieu de 18 Mo : plans en JPEG, images communes stockées une fois)
 
 = 3.1.0 =
 * MENUISERIES : deux menuiseries ne peuvent plus se superposer, ni chevaucher la porte de garage (réservée au milieu de la façade). Celle que le client vient de déplacer reste où il l'a mise si la place est libre ; sinon elle glisse à la place libre la plus proche, puis sur un autre mur avec un message. S'il n'y a plus de place nulle part, le panneau le dit
