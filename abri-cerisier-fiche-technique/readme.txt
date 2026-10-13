@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.3.0
+Stable tag: 3.3.1
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,12 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.1 =
+* TERRASSE SUR LE PLAN DE MASSE (plancher extérieur, demande d'Antony du 13/10/2026) : bouton « Positionner sur le plan de masse » sous ses dimensions ; sur le plan, la terrasse se glisse (pas de 10 cm, jamais sur l'abri) et s'agrandit par son coin rond, ce qui met à jour largeur et profondeur, donc le prix. Posée d'office devant la façade, ou sous l'extension de toiture s'il y en a une. Dessinée sur le plan (cotes, plan agrandi pour l'englober), au sol sur les façades, en 3D (lames de 145 mm de la teinte du bardage, sur lambourdes, sans herbe dessous) et jointe à la commande. Le plancher n'est plus dessiné sous l'extension quand la terrasse est ailleurs.
+* PISTE MOINS CHÈRE sous le prix : le même abri en madriers 28 mm quand il est en ossature (ou en 45 mm), avec l'écart de la structure lu dans la grille du site ; « Essayer » bascule en gardant les autres choix et affiche les deux prix, « Revenir » remet la configuration d'avant.
+* VUE 3D PLUS RÉALISTE : horizon de jardin (bois lointain, arbres, haie) peint par le navigateur sur un anneau à 55 m, voilé de brume, rien à télécharger, absent du montage photo et de la réalité augmentée ; brouillard repoussé (le sol au loin reste vert). OSB intérieur sans motif répété (photo lue à deux décalages fondus) avec les joints des panneaux de 1,25 × 2,50 m.
+* TÉLÉPHONE : le panneau ancré en bas n'affiche plus qu'un avertissement, sur une ligne (deux avertissements lui faisaient prendre la moitié de l'écran) ; un même avertissement n'est plus répété pour deux menuiseries identiques.
 
 = 3.3.0 =
 * PORTES ET FENÊTRES DÉPLACÉES SUR LE DESSIN (demande d'Antony du 13/10/2026) : à la souris ou au doigt, sur les façades (le long du mur, par pas de 10 cm, à 10 cm au moins des angles ; une fenêtre glissée vers le haut ou le bas change de hauteur, par pas de 5 cm) et sur le plan (d'un mur à l'autre). Les règles de place restent les mêmes (jamais l'une sur l'autre). Une main animée montre le geste la première fois ; la page ne défile pas quand on tient une menuiserie au doigt.

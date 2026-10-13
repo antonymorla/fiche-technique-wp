@@ -913,8 +913,17 @@ function drawGarageDoorReal(svg,x,y,w,h,sc){
 // état des extensions : ST.ext // côtés fermés par extension : {droite:{a,b,c}} (a, b = flancs ; c = bout)
 const EXT_SIDES={droite:['côté face','côté fond','bout'],gauche:['côté face','côté fond','bout'],face:['côté gauche','côté droit','bout'],fond:['côté gauche','côté droit','bout']};
 function extList(d){return ST.type==='carport'?[]:[['face',d.ovF],['fond',d.ovB],['gauche',d.ovL],['droite',d.ovR]].filter(([,o])=>o>0.5).map(([s])=>s);}
+// Terrasse (plancher extérieur des configurateurs de vente) : posée par le client sur le plan de masse
+// ST.terrasse = {L, P, x, y} : largeur (le long de la façade), profondeur, coin bas-gauche en coordonnées bâtiment
+function terrasse(d){
+  const T=ST.terrasse; if(!T||ST.type==='carport'||!(T.L>0)||!(T.P>0)) return null;
+  return {x0:T.x,x1:T.x+T.L,y0:T.y,y1:T.y+T.P,terr:true};
+}
+// teinte des lames de plancher : celle du bardage quand il est en autoclave brun, sinon autoclave vert (une seule teinte d'autoclave)
+function floorCol(d){ return (wallFin(d)===FINITIONS.sr_brun?FINITIONS.sr_brun:FINITIONS.sr_vert).c; }
 function extGeom(d){
   const {L,P}=d, out={seg:[],floor:[],type:fv('f-ext-ferm')};
+  const T0=terrasse(d); if(T0) out.floor.push(T0);
   const plan=fv('f-ext-plan')==='oui';
   extList(d).forEach(s=>{
     const box=s==='droite'?{x0:L,x1:L+d.ovR,y0:0,y1:P}:s==='gauche'?{x0:-d.ovL,x1:0,y0:0,y1:P}:s==='face'?{x0:0,x1:L,y0:-d.ovF,y1:0}:{x0:0,x1:L,y0:P,y1:P+d.ovB};
@@ -984,7 +993,9 @@ function drawExtElev(svg,d,side,baseX,gndY,sc,real,W,wallY){
     const ua=Math.min(...c.map(q=>q[0])), ub=Math.max(...c.map(q=>q[0])), dmin=Math.min(...c.map(q=>q[1]));
     if(!(dmin<-1e-6||ub<=1e-6||ua>=W-1e-6)) return;
     const fh=Math.max(2,0.12*sc);
-    sRect(svg,baseX+ua*sc,gndY-fh,(ub-ua)*sc,fh,real?patBoards(svg,{dir:'h',board:0.06,c:FINITIONS.sr_brun.c},sc,baseX,gndY):'#e8dcc8','#5c4a32',.8);
+    // à l'intérieur du cadre du dessin (une grande terrasse vue de côté dépasserait)
+    const vw=(svg.viewBox&&svg.viewBox.baseVal&&svg.viewBox.baseVal.width)||1e4, xa=Math.max(4,baseX+ua*sc), xb=Math.min(vw-4,baseX+ub*sc);
+    if(xb>xa) sRect(svg,xa,gndY-fh,xb-xa,fh,real?patBoards(svg,{dir:'h',board:0.06,c:floorCol(d)},sc,baseX,gndY):'#e8dcc8','#5c4a32',.8);
   });
 }
 
@@ -992,12 +1003,16 @@ function drawPlan(svg,d,vw=480,vh=340){
   clr(svg);
   const PAD=ST.picto?10:70;
   const avW=vw-PAD*2, avH=vh-PAD*2;
-  const sc=ST.planScale||Math.min(avW/d.htL, avH/d.htP);
+  // terrasse posée à côté : le dessin l'englobe (x depuis le mur gauche, y depuis la façade)
+  const TR=terrasse(d); let bx0=-d.ovL, bx1=d.L+d.ovR, by0=-d.ovF, by1=d.P+d.ovB;
+  if(TR){ bx0=Math.min(bx0,TR.x0); bx1=Math.max(bx1,TR.x1); by0=Math.min(by0,TR.y0); by1=Math.max(by1,TR.y1); }
+  const sc=ST.planScale||Math.min(avW/(TR?bx1-bx0:d.htL), avH/(TR?by1-by0:d.htP));
   svg.setAttribute('data-sc',sc);
 
   const htW=d.htL*sc, htP=d.htP*sc;
   const cx=vw/2, cy=vh/2;
-  const ox=cx-htW/2, oy=cy-htP/2; // top-left of hors-tout
+  let ox=cx-htW/2, oy=cy-htP/2; // top-left of hors-tout
+  if(TR){ ox=cx-(bx0+bx1)/2*sc-d.ovL*sc; oy=cy-(d.P-(by0+by1)/2)*sc-d.ovB*sc; }
   const wx=ox+d.ovL*sc, wy=oy+d.ovB*sc; // top-left of wall (FOND ovhg at top, FACE at bottom)
   const drawW=d.L*sc, drawP=d.P*sc, wt=d.wt*sc;
 
@@ -1060,6 +1075,13 @@ function drawPlan(svg,d,vw=480,vh=340){
     const st=Math.max(2.5,0.12*sc);
     if(vert) for(let y=y0+st;y<y1;y+=st) sLine(svg,x0,y,x1,y,'#b89b72',.4);
     else for(let x=x0+st;x<x1;x+=st) sLine(svg,x,y0,x,y1,'#b89b72',.4);
+    if(f.terr&&!ST.picto){ // terrasse : nom, largeur et profondeur, cotées du côté opposé à l'abri
+      sTxtBg(svg,(x0+x1)/2,(y0+y1)/2,`Terrasse ${(f.x1-f.x0).toFixed(2)} × ${(f.y1-f.y0).toFixed(2)} m`,7,'#6b5432');
+      const bas=(y0+y1)/2>wy+drawP/2, dro=(x0+x1)/2>=wx+drawW/2-1; // centrée : profondeur cotée à droite, loin de la cote hors tout
+      dimL(svg,x0,bas?y1:y0,x1,bas?y1:y0,`${(f.x1-f.x0).toFixed(2)} m`,bas?14:-14,'#8a6d48');
+      dimL(svg,dro?x1:x0,y0,dro?x1:x0,y1,`${(f.y1-f.y0).toFixed(2)} m`,dro?14:-14,'#8a6d48');
+      svg.setAttribute('data-tf',JSON.stringify({wx,wy,sc,P:d.P}));
+    }
   });
   // Support posts for overhangs > 50cm (portée max 3m → poteaux espacés de ≤3m)
   const postSz=0.12*sc, maxSpan=3; // 3m portée max
@@ -1108,7 +1130,10 @@ function drawPlan(svg,d,vw=480,vh=340){
 
   // ── DIMENSION LINES ──────────────────────────────────
   // Exterior largeur (bottom, main)
-  dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L.toFixed(2)} m`,24);
+  // terrasse devant la façade : la cote de largeur passe au-dessus du plan (au-dessus de celle du hors-tout)
+  const terDevant=TR&&TR.y0<-0.01&&TR.y1<0.05&&TR.x0<d.L&&TR.x1>0;
+  if(terDevant) dimL(svg,wx,wy,wx+drawW,wy,`${d.L.toFixed(2)} m`,-(wy-oy)-36);
+  else dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L.toFixed(2)} m`,24);
   // Exterior profondeur (right, main)
   dimL(svg,wx+drawW,wy,wx+drawW,wy+drawP,`${d.P.toFixed(2)} m`,24);
   // Hors tout largeur (top, offset above plan)
@@ -2303,5 +2328,5 @@ function menuWarnings(d){
 }
 
 
-return {ST,fv,flatTopH,closList,sousFace,CP_ENTRAIT,CP_RIVE,elevFit,commonScale,drawScaleBar,COUVERTURES,EXT_SIDES,FINITIONS,FR_COL,MOPTS,MPRESETS,NS,TEXN,WALL_T,calcDims,carportColsT,clr,couvFin,dimL,doorCladding,drawCarportElev,drawElev,drawExtElev,drawGarageDoorReal,drawGlass,drawGlassGrid,drawGround,drawHandle,drawHinges,drawLeafCont,drawMadrierCorners,drawMenuReal,drawPlan,drawPlanCarport,drawRoof,drawRoofReal,drawSlide,extFin,extGeom,extList,getElevGeom,isDoubleM,isReal,isSliding,menuFin,menuWarnings,optLabel,patBoards,patCouv,presetOf,r2,readCm,renderDims,rng,roofHAt,sArrow,sLine,sPath,sPoly,sRect,sTxt,sTxtBg,shade,slideZonesPx,svgEl,texDefs,texPat,viewMap,wallFin,wallTopAt};
+return {ST,fv,flatTopH,terrasse,floorCol,closList,sousFace,CP_ENTRAIT,CP_RIVE,elevFit,commonScale,drawScaleBar,COUVERTURES,EXT_SIDES,FINITIONS,FR_COL,MOPTS,MPRESETS,NS,TEXN,WALL_T,calcDims,carportColsT,clr,couvFin,dimL,doorCladding,drawCarportElev,drawElev,drawExtElev,drawGarageDoorReal,drawGlass,drawGlassGrid,drawGround,drawHandle,drawHinges,drawLeafCont,drawMadrierCorners,drawMenuReal,drawPlan,drawPlanCarport,drawRoof,drawRoofReal,drawSlide,extFin,extGeom,extList,getElevGeom,isDoubleM,isReal,isSliding,menuFin,menuWarnings,optLabel,patBoards,patCouv,presetOf,r2,readCm,renderDims,rng,roofHAt,sArrow,sLine,sPath,sPoly,sRect,sTxt,sTxtBg,shade,slideZonesPx,svgEl,texDefs,texPat,viewMap,wallFin,wallTopAt};
 })();

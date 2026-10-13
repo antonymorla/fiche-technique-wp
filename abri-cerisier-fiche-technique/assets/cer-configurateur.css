@@ -83,6 +83,10 @@
   .cer-plan__stage { cursor: zoom-in; }
   .cer-plan__stage svg { max-height: 30vh; }
   .cer-plan__warn p { margin-top: 6px; font-size: 12px; }
+  /* ancré en bas (pas en plein écran) : un seul avertissement, sur une ligne ; le détail est en plein écran.
+     Avant, deux avertissements faisaient monter le panneau à mi-écran et cachaient le formulaire (13/10/2026) */
+  body:not(.cer-plan-open) .cer-plan__warn p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-top: 6px; padding-bottom: 6px; }
+  body:not(.cer-plan-open) .cer-plan__warn p + p { display: none; }
   /* replié : simple bouton */
   body.cer-plan-min .cer-plan { transform: translateY(115%); }
   .cer-plan-fab { position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 100001; min-height: 48px; padding: 0 20px; border: 0; border-radius: 24px; background: var(--cer-olive); color: #fff; font: inherit; font-size: 15px; font-weight: 600; box-shadow: 0 8px 22px rgba(43, 43, 34, .3); cursor: pointer; }
@@ -468,3 +472,18 @@
 .cer-indice__txt { background: #3c3d2a; color: #fff; font-size: 12px; line-height: 1.3; padding: 5px 9px; border-radius: 6px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); }
 @keyframes cer-glisse-main { 0%, 100% { transform: translateX(-18px); } 50% { transform: translateX(18px); } }
 @media (prefers-reduced-motion: reduce) { .cer-indice__main { animation: none; } }
+/* Terrasse posée sur le plan de masse (13/10/2026) : la glisser, tirer le rond pour l'agrandir ; bouton sous ses dimensions */
+.cer-th { fill: transparent; cursor: move; touch-action: none; }
+.cer-th:hover, .cer-th.on { fill: rgba(138, 109, 72, .12); stroke: #8a6d48; stroke-width: 1.4; stroke-dasharray: 4 2; }
+.cer-tr { fill: #fff; stroke: #8a6d48; stroke-width: 2.2; cursor: nwse-resize; touch-action: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25)); }
+.cer-tr.cer-tr--zone { fill: transparent; stroke: none; filter: none; }
+.cer-terr-btn { display: inline-flex; align-items: center; gap: 8px; margin: 6px 0 16px; padding: 10px 16px; border: 1.5px solid #515136; border-radius: 999px; background: #fff; color: #3c3d2a; font: 600 14px/1.2 Jost, Futura, Arial, sans-serif; cursor: pointer; }
+.cer-terr-btn:hover { background: #f3f1ea; }
+.cer-terr-btn svg { width: 20px; height: 20px; flex: none; }
+/* Piste moins chère sous le prix (13/10/2026) : une ligne discrète, un bouton */
+.cer-plan__eco { margin: -6px 0 12px; padding: 8px 12px; border-radius: 10px; background: #f3f1ea; color: #3c3d2a; font-size: 13px; line-height: 1.45; }
+.cer-plan__eco[hidden] { display: none !important; }
+.cer-plan__eco b { font-weight: 600; white-space: nowrap; }
+.cer-plan__eco button { margin-left: 4px; padding: 3px 12px; border: 1.5px solid #515136; border-radius: 999px; background: #fff; color: #3c3d2a; font: 600 12.5px/1.4 Jost, Futura, Arial, sans-serif; cursor: pointer; white-space: nowrap; }
+.cer-plan__eco button:hover { background: #fff8e8; }
+@media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) { body:not(.cer-plan-open) .cer-plan__eco { display: none !important; } }

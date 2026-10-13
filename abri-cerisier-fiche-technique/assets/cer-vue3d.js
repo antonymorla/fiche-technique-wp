@@ -145,6 +145,7 @@ window.CerVue3D = (function () {
     for (var i = 0; i < n * 3 && k < n; i++) {
       var rr = Math.pow(R(), 0.62) * R0, a = R() * 6.2832, x = cx + Math.cos(a) * rr, z = cz + Math.sin(a) * rr;
       if (Math.abs(x) < L2 && Math.abs(z) < P2) continue; // pas d'herbe dans l'abri
+      if (u.tx1 > u.tx0 && x > u.tx0 - 0.03 && x < u.tx1 + 0.03 && z > u.tz0 - 0.03 && z < u.tz1 + 0.03) continue; // ni sous la terrasse
       if (R() < Math.pow(rr / R0, 2.5)) continue; // de moins en moins de brins vers le bord : pas de limite visible
       var h = 0.08 + R() * 0.1, w = 0.014 + R() * 0.01; // assez larges pour ne pas scintiller au loin quand on tourne
       o.position.set(x, 0, z); o.rotation.set((R() - 0.5) * 0.35, R() * 6.2832, (R() - 0.5) * 0.35); o.scale.set(w, h, h); o.updateMatrix(); im.setMatrixAt(k, o.matrix);
@@ -152,6 +153,53 @@ window.CerVue3D = (function () {
     }
     im.count = k; im.receiveShadow = true; im.frustumCulled = false; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
     return im;
+  }
+  // horizon de jardin (Antony, 13/10/2026 : « une 3D plus réaliste ») : haie basse et rideau d'arbres peints par le navigateur sur un anneau
+  // à 55 m (au-delà du recul maximal de la caméra, 40 m), voilés d'une brume peinte ; rien à télécharger, absent des fichiers de réalité augmentée
+  function decor(THREE) {
+    var PXM = 35.5, W = 2048, H = 704, R = Math.random, BRUME = [201, 214, 223];
+    var c = dessin(W, H, function (g) {
+      var teinte = function (hx, k, voile) { // vert du feuillage, éclairci ou assombri, voilé vers la couleur de la brume
+        var n = parseInt(hx.slice(1), 16), f = function (v, b) { v = Math.max(0, Math.min(255, v * (1 + k))); return Math.round(v + (b - v) * voile); };
+        return 'rgb(' + f(n >> 16, BRUME[0]) + ',' + f((n >> 8) & 255, BRUME[1]) + ',' + f(n & 255, BRUME[2]) + ')';
+      };
+      var VERTS = ['#2b4126', '#334c2b', '#3c5832', '#46633a', '#517040', '#5c7a47'];
+      var arbre = function (x, hM, rM, voile) { // tronc, puis le houppier en petites touffes (plus claires en haut, côté soleil) ; raccord des bords
+        var yb = H, h = hM * PXM, r = rM * PXM, n = Math.round(90 + r * 0.9);
+        [x, x - W, x + W].forEach(function (xx) {
+          if (xx + r < 0 || xx - r > W) return;
+          g.fillStyle = teinte('#3e3226', 0, voile); g.fillRect(xx - r * 0.05, yb - h * 0.5, r * 0.1, h * 0.5);
+          for (var i = 0; i < n; i++) {
+            var a = R() * 6.283, d = Math.pow(R(), 0.6) * r, cx = xx + Math.cos(a) * d * 1.05, cy = yb - h + r * 1.05 + Math.sin(a) * d * 0.9, rr = r * (0.07 + R() * 0.12);
+            var haut = (cy - (yb - h + r)) / r, cote = (cx - xx) / r; // -1 en haut / à gauche
+            g.fillStyle = teinte(VERTS[Math.floor(R() * VERTS.length)], -0.22 * haut - 0.08 * cote + (R() - 0.5) * 0.16, voile);
+            g.beginPath(); g.ellipse(cx, cy, rr * (0.8 + R() * 0.5), rr, R() * 3.14, 0, 6.283); g.fill();
+          }
+        });
+      };
+      var x; // quatre plans : bois lointain continu (pas de ciel entre les troncs), arbres du fond (plus voilés), arbres proches, haie
+      g.fillStyle = teinte('#30472a', 0, 0.66); g.beginPath(); g.moveTo(0, H);
+      var ph = [R() * 6.28, R() * 6.28, R() * 6.28];
+      for (x = 0; x <= W; x += 8) { // crête du bois : sinus entiers sur la largeur (raccord du motif) + bosses
+        var cr = (6.5 + 1.1 * Math.sin(x / W * 6.283 * 3 + ph[0]) + 0.7 * Math.sin(x / W * 6.283 * 11 + ph[1]) + 0.35 * Math.sin(x / W * 6.283 * 37 + ph[2])) * PXM;
+        g.lineTo(x, H - cr - R() * 6);
+      }
+      g.lineTo(W, H); g.closePath(); g.fill();
+      for (x = 0; x < W; x += 28 + R() * 46) arbre(x, 8 + R() * 5, 2.4 + R() * 1.6, 0.58);
+      for (x = 0; x < W; x += 70 + R() * 120) arbre(x, 6 + R() * 4, 2.2 + R() * 1.3, 0.42);
+      for (x = -20; x < W + 20; x += 10 + R() * 14) { // haie : 1,4 à 2,2 m
+        var hh = (1.4 + R() * 0.8) * PXM, rb = 0.5 * PXM + R() * 12;
+        for (var i = 0; i < 14; i++) { g.fillStyle = teinte(VERTS[Math.floor(R() * VERTS.length)], (R() - 0.6) * 0.22, 0.36); g.beginPath(); g.arc(x + (R() - 0.5) * 18, H - hh + rb * 0.6 + R() * (hh - rb), rb * (0.3 + R() * 0.35), 0, 6.283); g.fill(); }
+      }
+      g.fillStyle = teinte('#2b4126', -0.1, 0.36); g.fillRect(0, H - 0.6 * PXM, W, 0.6 * PXM); // pied de la haie, sans jour
+      // grain du feuillage : points clairs et sombres, seulement sur ce qui est déjà peint
+      g.globalCompositeOperation = 'source-atop';
+      for (var k = 0; k < 26000; k++) { g.fillStyle = R() < 0.5 ? 'rgba(20,30,15,.22)' : 'rgba(235,240,215,.13)'; g.fillRect(R() * W, R() * H, 1 + R() * 2, 1 + R() * 2); }
+      g.globalCompositeOperation = 'source-over';
+    });
+    var tx = canvasTex(THREE, c, true); tx.wrapT = THREE.ClampToEdgeWrapping; tx.repeat.set(6, 1); // 6 motifs de 57,6 m sur le tour (345 m)
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(55, 55, H / PXM, 120, 1, true), new THREE.MeshBasicMaterial({ map: tx, alphaTest: 0.5, side: THREE.DoubleSide, fog: false, toneMapped: false }));
+    m.position.y = H / PXM / 2 - 0.05; m.renderOrder = -1; return m;
   }
   function herbe() {
     return dessin(512, 512, function (g, w, h) {
@@ -278,8 +326,29 @@ window.CerVue3D = (function () {
     //    avec pare-pluie (option), laine de roche entre montants (option), ou doublage OSB / contreplaqué (tripli) / sapin rouge qui les cache ──
     var oss = d.sys === 'ossature' || quadro, wt = Math.max(0.025, d.wt || 0.027), iso = fv('f-isom') || 'non', pp = fv('f-pp') === 'oui';
     var doub = { osb: ['osb', 'int-osb.jpg', 1.25], cp: ['tripli', 'int-tripli.jpg', 1], sapin: ['sapin', 'int-sapin.jpg', 0.88] }[iso];
+    // OSB sans répétition (remarque d'Antony, 13/10/2026 : « texture OSB trop répétitive ») : la photo est lue à deux décalages tirés
+    // d'un bruit lent et fondus l'un dans l'autre (le motif ne revient plus tous les 1,25 m), et les joints des panneaux de
+    // 1,25 × 2,50 m sont tracés, d'un trait fin à toute distance. Seul l'affichage change : les fichiers de réalité augmentée gardent la photo.
+    var osbVivant = function (mt) {
+      mt.onBeforeCompile = function (sh) {
+        sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'float cerH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nvoid main() {')
+          .replace('#include <map_fragment>', ['#ifdef USE_MAP',
+            '  vec2 uvO = vMapUv, dxO = dFdx(uvO), dyO = dFdy(uvO), iO = floor(uvO * 0.45), fO = fract(uvO * 0.45); fO = fO * fO * (3.0 - 2.0 * fO);',
+            '  float kO = 6.0 * mix(mix(cerH(iO), cerH(iO + vec2(1.0, 0.0)), fO.x), mix(cerH(iO + vec2(0.0, 1.0)), cerH(iO + vec2(1.0, 1.0)), fO.x), fO.y);',
+            '  float aO = floor(kO), tO = fract(kO);',
+            '  vec4 cA = textureGrad(map, uvO + sin(vec2(3.0, 7.0) * aO), dxO, dyO), cB = textureGrad(map, uvO + sin(vec2(3.0, 7.0) * (aO + 1.0)), dxO, dyO);',
+            '  vec4 sampledDiffuseColor = mix(cA, cB, smoothstep(0.2, 0.8, tO - 0.1 * dot(cA.rgb - cB.rgb, vec3(1.0))));',
+            '  vec2 pO = uvO * vec2(1.0, 0.5), gO = abs(fract(pO - 0.5) - 0.5) / max(fwidth(pO), vec2(1e-4));',
+            '  sampledDiffuseColor.rgb *= 1.0 - 0.45 * (1.0 - min(min(gO.x, gO.y) / 1.2, 1.0));',
+            '  diffuseColor *= sampledDiffuseColor;',
+            '#endif'].join('\n'));
+      };
+      mt.customProgramCacheKey = function () { return 'cer-osb'; };
+      return mt;
+    };
     var matPhoto = function (cle, fichier, tuile) {
       var mt = new THREE.MeshStandardMaterial({ roughness: 0.85, side: THREE.DoubleSide }), url = (CFG().photos && CFG().photos[cle]) || texUrl(fichier);
+      if (cle === 'osb') osbVivant(mt);
       attente.push(new Promise(function (res) { new THREE.TextureLoader().load(url, function (t) { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
         t.repeat.set(1 / tuile, 1 / tuile); mt.map = t; mt.needsUpdate = true; res(); }, undefined, function () { res(); }); }));
       return mt;
@@ -428,7 +497,7 @@ window.CerVue3D = (function () {
     var sfC = E.sousFace ? E.sousFace() : 'planchette';
     if (sfC === 'non') { matSous.map = canvasTex(THREE, dessousBac(), true); matSous.map.repeat.set(4, 1); matSous.metalness = 0.2; matSous.roughness = 0.55; matSous.color.set(0xffffff); }
     else if (sfC === 'feutre') matSous.color.set(0x4a4d51);
-    else if (sfC === 'osb') { attente.push(new Promise(function (res) { new THREE.TextureLoader().load((CFG().photos && CFG().photos.osb) || texUrl('int-osb.jpg'), function (t) { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.8, 0.8); matSous.map = t; matSous.needsUpdate = true; res(); }, undefined, function () { res(); }); })); }
+    else if (sfC === 'osb') { attente.push(new Promise(function (res) { new THREE.TextureLoader().load((CFG().photos && CFG().photos.osb) || texUrl('int-osb.jpg'), function (t) { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.8, 0.8); matSous.map = t; matSous.needsUpdate = true; res(); }, undefined, function () { res(); }); })); osbVivant(matSous); }
     else attente.push(motif(E, function (svg) { return E.patBoards(svg, E.FINITIONS.sr_vert, 256, 0, 512); }, 256).then(function (c) {
       if (!c) return; var t = canvasTex(THREE, c, true); t.repeat.set(0.5, 0.5); matSous.map = t; matSous.needsUpdate = true; }));
     var mats = function () { return [M.massif, M.massif, matCouv, matSous, M.massif, M.massif]; };
@@ -722,8 +791,22 @@ window.CerVue3D = (function () {
         var q = P3(cp, 0); colliers(q[0], q[2], z ? -g.s : 0, z ? 0 : -g.s, 0.14, yv);
       });
     }
+    // ── terrasse (plancher extérieur) posée par le client sur le plan de masse : lames de 145 mm photographiées, teinte du bardage
+    //    (une seule teinte d'autoclave), sur lambourdes, 12 cm au-dessus du sol ; lames perpendiculaires au mur qu'elle touche ──
+    var TR = E.terrasse ? E.terrasse(d) : null, TB = null;
+    if (TR) {
+      var tL = TR.x1 - TR.x0, tP = TR.y1 - TR.y0, tx = (TR.x0 + TR.x1) / 2 - L / 2, tz = P / 2 - (TR.y0 + TR.y1) / 2;
+      var colle = function (a, b) { return Math.abs(a - b) < 0.02; };
+      var sens = colle(TR.y1, 0) || colle(TR.y0, P) ? 'v' : colle(TR.x1, 0) || colle(TR.x0, L) ? 'h' : (tL >= tP ? 'h' : 'v');
+      var finT = Object.assign({}, E.wallFin(d) === E.FINITIONS.sr_brun ? E.FINITIONS.sr_brun : E.FINITIONS.sr_vert, { dir: sens, board: 0.145 });
+      var lames = boite(tL, 0.027, tP, matMotif(finT)); lames.position.set(tx, 0.1065, tz); G.add(lames);
+      var lamb = boite(Math.max(0.1, tL - 0.06), 0.093, Math.max(0.1, tP - 0.06), new THREE.MeshStandardMaterial({ color: 0x3a3226, roughness: 0.95 }), true);
+      lamb.position.set(tx, 0.0465, tz); G.add(lamb);
+      TB = { x0: tx - tL / 2, x1: tx + tL / 2, z0: tz - tP / 2, z1: tz + tP / 2 };
+    }
     // userData ne garde que des nombres : il est recopié à chaque clone et écrit tel quel dans le GLB (les pièces du toit y pesaient 11 Mo)
-    G.userData = { x0: X0, x1: X1, zF: ZF, zB: ZB, h: base + hE + rH, L: L, P: P }; G.cerToit = TOIT; G.cerPret = Promise.all(attente);
+    G.userData = { x0: TB ? Math.min(X0, TB.x0) : X0, x1: TB ? Math.max(X1, TB.x1) : X1, zF: TB ? Math.max(ZF, TB.z1) : ZF, zB: TB ? Math.min(ZB, TB.z0) : ZB, h: base + hE + rH, L: L, P: P,
+      tx0: TB ? TB.x0 : 0, tx1: TB ? TB.x1 : 0, tz0: TB ? TB.z0 : 0, tz1: TB ? TB.z1 : 0 }; G.cerToit = TOIT; G.cerPret = Promise.all(attente);
     return G;
   }
 
@@ -738,7 +821,7 @@ window.CerVue3D = (function () {
     sky2.material.uniforms.sunPosition.value.copy(sun);
     var pm = new THREE.PMREMGenerator(R), envS = new THREE.Scene(); envS.add(sky2);
     S.environment = pm.fromScene(envS, 0.02).texture;
-    if (!photo) { S.add(sky); S.fog = new THREE.Fog(0xc9d6df, 30, 70); }
+    if (!photo) { S.add(sky); S.fog = new THREE.Fog(0xc9d6df, 40, 130); } // horizon d'arbres à 55 m (decor) : le sol à son pied reste vert
     S.add(new THREE.HemisphereLight(0xeef2f4, 0x8a8a6a, 0.75)); // lumière du ciel : les faces à l'ombre gardent la teinte du bois (demande d'Antony)
     var dl = new THREE.DirectionalLight(0xfff4e6, 2.5); dl.position.copy(sun).multiplyScalar(14); dl.castShadow = true;
     dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 40 }); dl.shadow.bias = -0.0003; dl.shadow.normalBias = 0.025; dl.shadow.radius = 4;
@@ -747,6 +830,7 @@ window.CerVue3D = (function () {
     if (photo) { sol = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.38 })); }
     else { var ht = canvasTex(THREE, herbe(), true); ht.repeat.set(36, 36); sol = new THREE.Mesh(new THREE.CircleGeometry(60, 64), new THREE.MeshStandardMaterial({ map: ht, roughness: 1 })); }
     sol.rotation.x = -Math.PI / 2; sol.receiveShadow = true; S.add(sol);
+    if (!photo) S.add(decor(THREE));
     return { S: S, soleil: dl, ciel: sky, sol: sol };
   }
 

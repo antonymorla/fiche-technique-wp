@@ -21,7 +21,7 @@
       ext: { q: '2a21884', m: { fond: '332ab45', gauche: 'fb3dce9', droite: '4dbeea3', face: '417e37c' },
         rq: { face: '8e6cf2b', fond: 'f0ec21a', gauche: 'fadfe0f', droite: '8aa219a' },
         rs: { face: '50e0fac', fond: '0a1e6b8', gauche: '3ffcfa1', droite: '95db202' }, type: ['2fdae02', 'fb4fb2c'] },
-      pext: { q: 'd7e07ef' },
+      pext: { q: 'd7e07ef', l: 'fcff474', p: '0dff31a' },
       men: { type: 'ae1b55e', specific: ['ea71efa', 'fc21333', 'e583b9f', '5955c88', 'da2562f', '91dfcf4', '84ddbca', 'c0df40d', '41dbb3d', '1fd6c5b', 'bbc4dca', '23affe1'],
         opt: ['d86e030', '8fe32da'], garage: null }
     },
@@ -34,7 +34,7 @@
       ext: { q: 'c13ccea', m: { fond: 'fd1f800', gauche: 'dac3caf', droite: '74ec3e5', face: 'ae31213' },
         rq: { face: 'f40cca6', fond: '7c29fac', gauche: '1e23fe8', droite: '5cee052' },
         rs: { face: 'c4b422c', fond: '51bea7d', gauche: 'a7403ef', droite: 'eace337' }, type: ['a326aeb', 'acfbece'] },
-      pext: { q: 'a3fda0a' },
+      pext: { q: 'a3fda0a', l: 'ce3b1e5', p: 'dbee0df' },
       men: { type: '4fa82ea', specific: ['b4f2bdc', '0aa34c0', 'a154c3e', '0dd9ae4', '7f72ea9', '5ae35e5', 'e4ea58b', 'baa8b15', '6bbd4d4', 'd504110', 'dc7ffad', 'adb330a'],
         opt: ['abd0fbd', '2c9edd0'], garage: '9dfacda' }
     },
@@ -244,6 +244,31 @@
     });
   }
 
+  // ── Terrasse sur le plan de masse (demande d'Antony, 13/10/2026) ──
+  // Coordonnées bâtiment : x depuis le mur gauche, y depuis la façade (négatif = devant). TPOS : coin bas-gauche choisi par le client ;
+  // TSIZE : taille pendant qu'il tire le coin (écrite dans les champs du site au lâcher, le prix suit).
+  var TPOS = null, TSIZE = null;
+  function placerTerrasse(d, L, P) {
+    var x, y;
+    if (TPOS) { x = TPOS.x; y = TPOS.y; }
+    else { // d'office : sous l'extension de toiture la plus profonde, sinon devant la façade, centrée
+      var ex = [['face', d.ovF], ['droite', d.ovR], ['gauche', d.ovL], ['fond', d.ovB]].filter(function (e) { return e[1] > 0.5; }).sort(function (a, b) { return b[1] - a[1]; })[0];
+      var s = ex ? ex[0] : 'face';
+      if (s === 'face') { x = (d.L - L) / 2; y = -P; } else if (s === 'fond') { x = (d.L - L) / 2; y = d.P; }
+      else if (s === 'droite') { x = d.L; y = (d.P - P) / 2; } else { x = -L; y = (d.P - P) / 2; }
+    }
+    var r = horsAbri(d, x, y, L, P);
+    return { L: L, P: P, x: Math.round(r[0] * 100) / 100, y: Math.round(r[1] * 100) / 100 };
+  }
+  // jamais sur l'abri : repoussée hors des murs, du côté qui la déplace le moins
+  function horsAbri(d, x, y, L, P) {
+    var px = Math.min(x + L, d.L) - Math.max(x, 0), py = Math.min(y + P, d.P) - Math.max(y, 0);
+    if (px <= 0.001 || py <= 0.001) return [x, y];
+    var mv = [[d.L - x, 0], [-(x + L), 0], [0, d.P - y], [0, -(y + P)]];
+    mv.sort(function (a, b) { return Math.abs(a[0]) + Math.abs(a[1]) - Math.abs(b[0]) - Math.abs(b[1]); });
+    return [x + mv[0][0], y + mv[0][1]];
+  }
+
   // ── Cotes du site (mêmes formules que le configurateur) ──
   function siteDims(s) {
     var o = {};
@@ -346,13 +371,18 @@
           anyR = true;
         });
         if (anyR) cfg['f-ext-ferm'] = typeR ? (T.remplissage(typeR.label) === 'ajouree' ? 'ajouree' : 'pleine') : 'pleine';
-        if (M.pext && yes(M.pext.q)) cfg['f-ext-plan'] = 'oui';
       }
     }
     ST.type = CFG.kind; ST.cfg = cfg; ST.site = null;
     // dimensions de base pour placer les menuiseries
     s.site = siteDims(s); ST.site = s.site;
     var d = E.calcDims();
+    // Terrasse (plancher extérieur, largeur × profondeur du site) : posée par le client sur le plan de masse
+    ST.terrasse = null;
+    if (CFG.kind !== 'carport' && M.pext && M.pext.l && yes(M.pext.q)) {
+      var tl = TSIZE ? TSIZE.L : num(M.pext.l), tp = TSIZE ? TSIZE.P : num(M.pext.p);
+      if (tl > 0 && tp > 0) ST.terrasse = placerTerrasse(d, tl, tp);
+    }
     var men = readMenus(d, cfg), gW = 0;
     if (men.gdoor) { cfg['f-pgtype'] = men.gdoor.code; gW = 237; }
     var keys = {};
@@ -402,6 +432,7 @@
     P.innerHTML =
       '<div class="cer-plan__in">' +
       '<div class="cer-plan__prix" hidden><span>Prix de votre ' + NOUN + '</span><strong></strong></div>' +
+      '<p class="cer-plan__eco" hidden></p>' +
       '<div class="cer-plan__head"><div class="cer-plan__heading"><span class="cer-plan__kicker">Votre ' + NOUN + ' sur mesure</span><span class="cer-plan__title"><span class="cer-l">Le plan se dessine avec vos choix</span><span class="cer-s">Votre ' + NOUN + ' en direct</span></span></div>' +
       '<button type="button" class="cer-plan__expand">Agrandir</button><button type="button" class="cer-plan__close" aria-label="Réduire">×</button></div>' +
       // onglets + dessin : bloc qui reste en haut du plein écran (téléphone) pendant qu'on règle les menuiseries juste dessous
@@ -434,6 +465,7 @@
     var openFull = function () { if (DOCK.matches && !B.classList.contains('cer-plan-open')) { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = true; openPlace(); draw(); } };
     P.querySelector('.cer-plan__stage').addEventListener('click', openFull);
     P.querySelector('.cer-plan__prix').addEventListener('click', openFull);
+    P.querySelector('.cer-plan__eco').addEventListener('click', function (e) { var b = e.target.closest('[data-eco]'); if (b) { e.stopPropagation(); essaiEco(b.getAttribute('data-eco')); } });
     // place réservée en bas de page = hauteur réelle du visuel ancré (le bouton « Ajouter au panier » reste accessible)
     var pad = function () { B.style.paddingBottom = (DOCK.matches && !B.classList.contains('cer-plan-min') && !B.classList.contains('cer-plan-open')) ? (P.querySelector('.cer-plan__in').offsetHeight + 16) + 'px' : ''; };
     if (window.ResizeObserver) new ResizeObserver(pad).observe(P.querySelector('.cer-plan__in'));
@@ -492,7 +524,8 @@
     } else {
       rows = [['Dimensions extérieures', fr(d.L) + ' × ' + fr(d.P) + ' m'], ['Dimensions intérieures', fr(d.intL) + ' × ' + fr(d.intP) + ' m'],
         ['Surface intérieure', fr(d.intL * d.intP) + ' m²'], ['Hauteur intérieure', fr(d.hInt) + ' m'],
-        d.rH > 0 ? ['Hauteur au faîtage', fr(d.hExt + d.rH + (d.base || 0)) + ' m'] : null, ['Emprise toiture (hors tout)', fr(d.htL) + ' × ' + fr(d.htP) + ' m']].filter(Boolean);
+        d.rH > 0 ? ['Hauteur au faîtage', fr(d.hExt + d.rH + (d.base || 0)) + ' m'] : null, ['Emprise toiture (hors tout)', fr(d.htL) + ' × ' + fr(d.htP) + ' m'],
+        ST.terrasse ? ['Terrasse', fr(ST.terrasse.L) + ' × ' + fr(ST.terrasse.P) + ' m (' + fr(ST.terrasse.L * ST.terrasse.P) + ' m²)'] : null].filter(Boolean);
     }
     return rows;
   }
@@ -712,8 +745,19 @@
     return Math.round((e + lw / 2) / Lc * 1000) / 10;
   }
   function poignees(svg) {
-    if (!LAST || !ST.menus.length) return;
-    var NS = 'http://www.w3.org/2000/svg', mf = svg.getAttribute('data-mf'), pf = svg.getAttribute('data-pf'), d = LAST.d;
+    if (!LAST) return;
+    var NS = 'http://www.w3.org/2000/svg', mf = svg.getAttribute('data-mf'), pf = svg.getAttribute('data-pf'), tf = svg.getAttribute('data-tf'), d = LAST.d;
+    if (VIEW === 'plan' && tf && ST.terrasse) { // terrasse : on la glisse, le coin rond (le plus loin de l'abri) l'agrandit
+      var q = JSON.parse(tf), T = ST.terrasse, X = function (x) { return q.wx + x * q.sc; }, Y = function (y) { return q.wy + (q.P - y) * q.sc; };
+      var r = document.createElementNS(NS, 'rect');
+      r.setAttribute('x', X(T.x)); r.setAttribute('y', Y(T.y + T.P)); r.setAttribute('width', T.L * q.sc); r.setAttribute('height', T.P * q.sc);
+      r.setAttribute('class', 'cer-th' + (GLIS && GLIS.terr ? ' on' : '')); var tt = document.createElementNS(NS, 'title'); tt.textContent = 'Terrasse : faites glisser pour la déplacer'; r.appendChild(tt); svg.appendChild(r);
+      var mx = T.x + T.L / 2 >= d.L / 2 ? 1 : 0, my = T.y + T.P / 2 >= d.P / 2 ? 1 : 0, cxp = X(mx ? T.x + T.L : T.x), cyp = Y(my ? T.y + T.P : T.y);
+      var z = document.createElementNS(NS, 'circle'); z.setAttribute('cx', cxp); z.setAttribute('cy', cyp); z.setAttribute('r', 18); z.setAttribute('class', 'cer-tr cer-tr--zone'); z.setAttribute('data-c', '' + mx + my); svg.appendChild(z); // prise large pour le doigt
+      var c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', cxp); c.setAttribute('cy', cyp); c.setAttribute('r', 7); c.setAttribute('class', 'cer-tr'); c.setAttribute('data-c', '' + mx + my);
+      var tc = document.createElementNS(NS, 'title'); tc.textContent = 'Tirez pour agrandir ou réduire la terrasse'; c.appendChild(tc); svg.appendChild(c);
+    }
+    if (!ST.menus.length) return;
     var hit = function (m, x, y, w, h) {
       var r = document.createElementNS(NS, 'rect');
       r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', Math.max(0, w)); r.setAttribute('height', Math.max(0, h)); r.setAttribute('rx', 2);
@@ -740,6 +784,15 @@
   function svgPt(svg, e) { var m = svg.getScreenCTM(); if (!m) return null; var p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(m.inverse()); }
   function glisser(svg) {
     svg.addEventListener('pointerdown', function (e) {
+      var th = e.target.closest && e.target.closest('.cer-th, .cer-tr');
+      if (th && LAST && ST.terrasse && peutGlisser() && !(e.pointerType === 'mouse' && e.button !== 0)) {
+        var p0 = svgPt(svg, e), f0 = JSON.parse(svg.getAttribute('data-tf') || 'null'); if (!p0 || !f0) return;
+        e.preventDefault(); e.stopPropagation();
+        var T = ST.terrasse;
+        GLIS = { terr: th.classList.contains('cer-tr') ? 'taille' : 'place', id: e.pointerId, f: f0, x0: p0.x, y0: p0.y, T: { x: T.x, y: T.y, L: T.L, P: T.P }, coin: th.getAttribute('data-c') || '11', bouge: false };
+        try { svg.setPointerCapture(e.pointerId); } catch (x) { }
+        document.body.classList.add('cer-glisse'); var bu = P.querySelector('.cer-indice'); if (bu) bu.remove(); return;
+      }
       var h = e.target.closest && e.target.closest('.cer-mh');
       if (!h || !LAST || !peutGlisser() || (e.pointerType === 'mouse' && e.button !== 0)) return;
       var k = h.getAttribute('data-k'), m = ST.menus.filter(function (x) { return x.key === k; })[0], p = svgPt(svg, e);
@@ -754,6 +807,20 @@
     svg.addEventListener('pointermove', function (e) {
       if (!GLIS || e.pointerId !== GLIS.id) return;
       var p = svgPt(svg, e); if (!p) return;
+      if (GLIS.terr) {
+        if (!GLIS.bouge && Math.abs(p.x - GLIS.x0) < 3 && Math.abs(p.y - GLIS.y0) < 3) return;
+        GLIS.bouge = true; e.preventDefault();
+        var q = GLIS.f, T0 = GLIS.T, ddx = (p.x - GLIS.x0) / q.sc, ddy = -(p.y - GLIS.y0) / q.sc, r10 = function (v) { return Math.round(v * 10) / 10; };
+        if (GLIS.terr === 'place') TPOS = { x: r10(T0.x + ddx), y: r10(T0.y + ddy) };
+        else { // coin tiré, coin opposé fixe ; 0,50 m au moins, 15 m au plus
+          var cmx = GLIS.coin.charAt(0) === '1', cmy = GLIS.coin.charAt(1) === '1';
+          var fx = cmx ? T0.x : T0.x + T0.L, fy = cmy ? T0.y : T0.y + T0.P, vx = r10((cmx ? T0.x + T0.L : T0.x) + ddx), vy = r10((cmy ? T0.y + T0.P : T0.y) + ddy);
+          var nL = Math.min(15, Math.max(0.5, r10(Math.abs(vx - fx)))), nP = Math.min(15, Math.max(0.5, r10(Math.abs(vy - fy))));
+          TSIZE = { L: nL, P: nP }; TPOS = { x: vx >= fx ? fx : fx - nL, y: vy >= fy ? fy : fy - nP };
+        }
+        if (!rafG) rafG = requestAnimationFrame(function () { rafG = 0; if (!GLIS) return; try { read(); trace(svg, LAST); } catch (x) { } });
+        return;
+      }
       var dx = p.x - GLIS.x0, dy = p.y - GLIS.y0, f = GLIS.f, m = GLIS.m;
       if (!GLIS.axe) { if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return; GLIS.axe = GLIS.plan || m.type !== 'fenetre' || Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y'; }
       GLIS.bouge = true; e.preventDefault();
@@ -779,7 +846,8 @@
     });
     var fin = function (e) {
       if (!GLIS || e.pointerId !== GLIS.id) return;
-      var b = GLIS.bouge; GLIS = null;
+      var b = GLIS.bouge, tz = GLIS.terr === 'taille'; GLIS = null;
+      if (b && tz && TSIZE) { var S2 = TSIZE; TSIZE = null; saisir(nombre(cont(M.pext.l)), S2.L); saisir(nombre(cont(M.pext.p)), S2.P); } // le prix suit
       try { svg.releasePointerCapture(e.pointerId); } catch (x) { }
       document.body.classList.remove('cer-glisse');
       if (b) { SANS_CLIC = true; setTimeout(function () { SANS_CLIC = false; }, 50); schedule(0, true); }
@@ -790,8 +858,19 @@
     svg.addEventListener('click', function (e) { if (SANS_CLIC) { e.stopPropagation(); e.preventDefault(); } }, true);
   }
   // Indication animée (main qui glisse) : la première fois qu'une menuiserie apparaît sur le dessin ; un rappel 45 s plus tard si rien n'a été déplacé
+  var MAIN = '<svg class="cer-indice__main" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.6-2.2L4 15.6a1.5 1.5 0 0 1 2.3-1.9L9 16" fill="#fff" stroke="#3c3d2a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var indT = 0, indAt = 0, indN = (function () { try { return parseInt(sessionStorage.getItem('cerIndice') || '0', 10) || 0; } catch (e) { return 0; } })();
   function indiceVu() { indN = 9; try { sessionStorage.setItem('cerIndice', '9'); } catch (e) { } var x = P && P.querySelector('.cer-indice'); if (x) x.remove(); }
+  function bulle(cible, txt) {
+    if (!cible || !P) return;
+    var st = P.querySelector('.cer-plan__stage'), rs = st.getBoundingClientRect(), rh = cible.getBoundingClientRect(); if (!rs.width || !rh.width) return;
+    var old = st.querySelector('.cer-indice'); if (old) old.remove();
+    var el = document.createElement('div'); el.className = 'cer-indice';
+    el.style.left = (rh.left - rs.left + rh.width / 2) + 'px'; el.style.top = (rh.top - rs.top + rh.height / 2) + 'px';
+    el.innerHTML = MAIN + '<span class="cer-indice__txt">' + txt + '</span>';
+    st.appendChild(el);
+    clearTimeout(indT); indT = setTimeout(function () { el.classList.add('fin'); setTimeout(function () { el.remove(); }, 400); }, 5200);
+  }
   function indice() {
     if (indN >= 2 || (indN === 1 && Date.now() - indAt < 45000) || GLIS || !P || !peutGlisser() || document.body.classList.contains('cer-plan-min') || P.querySelector('.cer-indice')) return;
     var st = P.querySelector('.cer-plan__stage'), h = st.querySelector('.cer-mh'); if (!h) return;
@@ -800,8 +879,7 @@
     var m = ST.menus.filter(function (x) { return x.key === h.getAttribute('data-k'); })[0] || {};
     var el = document.createElement('div'); el.className = 'cer-indice';
     el.style.left = (rh.left - rs.left + rh.width / 2) + 'px'; el.style.top = (rh.top - rs.top + rh.height / 2) + 'px';
-    el.innerHTML = '<svg class="cer-indice__main" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.6-2.2L4 15.6a1.5 1.5 0 0 1 2.3-1.9L9 16" fill="#fff" stroke="#3c3d2a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-      '<span class="cer-indice__txt">Faites glisser ' + (m.type === 'fenetre' ? 'la fenêtre' : 'la porte') + ' pour la déplacer</span>';
+    el.innerHTML = MAIN + '<span class="cer-indice__txt">Faites glisser ' + (m.type === 'fenetre' ? 'la fenêtre' : 'la porte') + ' pour la déplacer</span>';
     st.appendChild(el);
     clearTimeout(indT); indT = setTimeout(function () { el.classList.add('fin'); setTimeout(function () { el.remove(); }, 400); }, 4800);
   }
@@ -823,10 +901,51 @@
     if (hMax > 0 && hT > hMax + 0.005) W.unshift('Configuration hors standard (' + hT.toFixed(2).replace('.', ',') + ' m au faîtage) : vous pouvez la commander, mais elle passera par notre bureau d\u2019études, qui se réserve le droit de l\u2019adapter si elle n\u2019est pas réalisable techniquement.');
     if (NOTE_PLACE) W.unshift(NOTE_PLACE);
     if (SANS_PLACE.length) W.unshift('Plus de place sur les murs pour : ' + SANS_PLACE.join(', ') + '. Agrandissez l\u2019abri ou retirez une menuiserie.');
-    P.querySelector('.cer-plan__warn').innerHTML = W.map(function (w) { return '<p>' + w.replace(/Ouverture (\d+)/g, function (_, n) { var m = ST.menus[n - 1]; return m ? (m.siteLabel || m.label) : 'Ouverture ' + n; }) + '</p>'; }).join('');
+    W = W.map(function (w) { return w.replace(/Ouverture (\d+)/g, function (_, n) { var m = ST.menus[n - 1]; return m ? (m.siteLabel || m.label) : 'Ouverture ' + n; }); })
+      .filter(function (w, i, a) { return a.indexOf(w) === i; }); // deux menuiseries identiques : un seul avertissement
+    P.querySelector('.cer-plan__warn').innerHTML = W.map(function (w) { return '<p>' + w + '</p>'; }).join('');
     renderPlaces();
     polish();
     try { indice(); } catch (e) { }
+    try { vgMoinsCher(); } catch (e) { if (window.console) console.warn('[Cerisier moins cher]', e); }
+  }
+  // ── Piste moins chère (demande d'Antony, 13/10/2026 : « une solution équivalente moins chère sous le prix, sans trop charger ») ──
+  // Le même abri en madriers 28 mm quand il est en ossature (ou en madriers 45 mm) : écart de la structure lu dans la grille du site
+  // (table-dim, mêmes dimensions arrondies, même toiture). Un clic l'essaie : les autres choix sont gardés (reprise), les deux prix
+  // s'affichent et on peut revenir. Rien pour le QUADRO (ossature seulement) ni le carport.
+  var ECO = null; // essai en cours : { sys: système d'avant ('ossature' | 'madrier45'), avant: prix d'avant }
+  function arrondiSite(v) { var f = v - Math.floor(v); return f < 1e-9 ? v : (v < 8 && f < 0.501 ? Math.floor(v) + 0.5 : Math.floor(v) + 1); }
+  function taxe() {
+    try { var $ = window.jQuery, Pr = window.WAPF && WAPF.Pricing, i = form.querySelector('.wapf-input'); if (!$ || !Pr || !i) return 1;
+      var $r = $(i).parents().filter(function () { return !!$(this).data('$totals'); }).first(); return Pr.addTax(1, $r.data('tax') || 1) || 1; } catch (e) { return 1; }
+  }
+  function vgMoinsCher() {
+    var el = P && P.querySelector('.cer-plan__eco'); if (!el) return;
+    var html = '', c = ST.cfg || {}, L = LAST, TD = window.wapf_lookup_tables && wapf_lookup_tables['table-dim'], tot = numTxt((P.querySelector('.cer-plan__prix strong') || {}).textContent);
+    if (ECO && c['f-sys'] !== 'madrier28') ECO = null; // le client a changé de système lui-même
+    if (ECO) html = '<span>En madriers 28 mm : <b>' + money0(Math.round(tot)) + '</b> au lieu de ' + money0(Math.round(ECO.avant)) + '.</span> <button type="button" data-eco="retour">Revenir ' + (ECO.sys === 'ossature' ? 'en ossature' : 'en 45 mm') + '</button>';
+    else if (TD && L && CFG.kind !== 'carport') {
+      var toit = { '1PAN': 2, '2PANS': 3, 'TOIT_PLAT': 4 }[c['f-toit']], cle = arrondiSite(L.s.Lr) + 'x' + arrondiSite(L.s.Pr), cur = null;
+      if (toit && c['f-sys'] === 'ossature') cur = '2' + toit + ({ sr_vert: 1, sr_brun: 2, ayous125: 3 }[c['f-bard']] || 1);
+      else if (toit && c['f-sys'] === 'madrier45') cur = '1' + toit + '2';
+      var a = cur && TD[cur] && TD[cur][cle], b = toit && TD['1' + toit + '1'] && TD['1' + toit + '1'][cle], ec = a > 0 && b > 0 ? Math.round((a - b) * taxe() / 10) * 10 : 0;
+      if (ec >= 100) html = '<span>Moins cher : le même ' + NOUN + ' en madriers 28 mm, environ <b>' + money0(ec) + '</b> de moins sur la structure.</span> <button type="button" data-eco="essayer">Essayer</button>';
+    }
+    if (el.innerHTML !== html) el.innerHTML = html;
+    el.hidden = !html;
+  }
+  function essaiEco(quoi) {
+    var avant = numTxt((P.querySelector('.cer-plan__prix strong') || {}).textContent), sys = ST.cfg && ST.cfg['f-sys'];
+    var ep28 = function () { var i = radioLab(M.ep && M.ep[0], /28/); if (i) cocher(i); return !!i; };
+    if (quoi === 'essayer') {
+      ECO = { sys: sys, avant: avant };
+      if (sys === 'ossature') { cocher(radioLab(M.sys[0], /^madrier/i)); var n = 0, t0 = setInterval(function () { var c = cont(M.ep && M.ep[0]); if ((c && !masqueWapf(c) && ep28()) || ++n > 20) clearInterval(t0); }, 100); }
+      else ep28();
+    } else if (quoi === 'retour' && ECO) {
+      var e = ECO; ECO = null;
+      if (e.sys === 'ossature') cocher(radioLab(M.sys[0], /ossature/i)); else { var i45 = radioLab(M.ep && M.ep[0], /45/); if (i45) cocher(i45); }
+    }
+    schedule(0);
   }
   // Prix et détail de la configuration lus dans le configurateur du site (ses blocs du haut sont masqués)
   var money = function (v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; };
@@ -1023,7 +1142,7 @@
       res.forEach(function (r) { if (r[1]) add('cer_plan[vues][' + r[0] + ']', r[1]); });
       if (V3.sig === sig) ajout3d(); // vues 3D déjà faites pour cette configuration
       add('cer_plan[config]', JSON.stringify({
-        v: CFG.version || '', kind: CFG.kind, cfg: ST.cfg, ext: ST.ext, site: ST.site,
+        v: CFG.version || '', kind: CFG.kind, cfg: ST.cfg, ext: ST.ext, site: ST.site, terrasse: ST.terrasse,
         menus: ST.menus.map(function (m) { return { preset: m.preset, label: m.siteLabel || m.label, code: m.code, type: m.type, lw: m.lw, lh: m.lh, wall: m.wall, pos: m.pos, seuil: m.seuil, rail: m.rail, opt: m.opt }; }),
         gdoor: LAST.gdoor, dims: dimsList(LAST), warnings: E.menuWarnings(d),
         scales: scales, vb: { elev: [380, 280], plan: [480, 340] }, d: { L: d.L, P: d.P, htL: d.htL, htP: d.htP, intL: d.intL, intP: d.intP, hInt: d.hInt, hExt: d.hExt, rH: d.rH, soub: d.base || 0, pente: d.pente, toit: d.toit }
@@ -1412,6 +1531,22 @@
       b.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest('[data-vg-hin]')) { e.preventDefault(); e.target.blur(); } });
     }
   }
+  // 3 ter. Terrasse : bouton « Positionner sur le plan de masse » sous ses dimensions (le plan s'ouvre, la terrasse se glisse et s'agrandit)
+  function vgTerrasse() {
+    if (!M.pext || !M.pext.p) return;
+    var c = cont(M.pext.p), btn = form.querySelector('.cer-terr-btn');
+    if (!c || masqueWapf(c) || !ST.terrasse) { if (btn) btn.remove(); return; }
+    if (btn) return;
+    btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cer-terr-btn';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="11" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="13" width="18" height="8" rx="1" fill="currentColor" opacity=".25" stroke="currentColor" stroke-width="1.8"/></svg>Positionner sur le plan de masse';
+    c.parentNode.insertBefore(btn, c.nextSibling);
+    btn.addEventListener('click', function () {
+      VIEW = 'plan'; var B = document.body; B.classList.remove('cer-plan-min'); memo('');
+      if (DOCK.matches) { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = false; }
+      draw();
+      setTimeout(function () { bulle(P.querySelector('#cer-sv-main .cer-th'), 'Faites glisser la terrasse ; tirez le rond pour l\u2019agrandir'); }, 300);
+    });
+  }
   // 4. Toit plat en madriers : le message des 20 cm seulement pour ces clients, avec leurs dimensions hors tout
   function vgToitPlat() {
     Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-p'), function (c) { if (/toit plat/i.test(c.textContent) && /majorer/i.test(c.textContent)) cacher(c); });
@@ -1488,7 +1623,7 @@
     });
   }
   function vignettes() {
-    if (CFG.kind !== 'carport') { vgExtension(); vgHauteur(); vgToitPlat(); vgAssortis(); }
+    if (CFG.kind !== 'carport') { vgExtension(); vgHauteur(); vgToitPlat(); vgAssortis(); vgTerrasse(); }
     else vgHauteurCp();
     vgProgression();
   }
