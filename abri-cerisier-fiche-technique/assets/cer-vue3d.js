@@ -399,19 +399,22 @@ window.CerVue3D = (function () {
       gout.push(orient === 'face' ? { axe: 'x', e: ZF, s: 1 } : { axe: 'x', e: ZB, s: -1 });
     } else if (quadro) {
       // QUADRO : murs jusqu'en haut (acrotère), membrane EPDM juste sous l'acrotère (relevé de 5 cm au point haut), pente vers le fond, couvertine noire
-      var top = base + hE + rH, haut = top - 0.05, bas = haut - Math.min(0.05, P * 0.015), mbr = boite(L - 0.06, 0.02, P - 0.06, [M.epdm, M.epdm, M.epdm, M.epdm, M.epdm, M.epdm]);
+      // avec une extension : une seule toiture plate au niveau de la couvertine (bandeau prolongé jusqu'aux poteaux), la couvertine ne fait que le tour extérieur
+      var exF = ZF > P / 2 + 0.01, exB = ZB < -P / 2 - 0.01, exG = X0 < -L / 2 - 0.01, exD = X1 > L / 2 + 0.01, avecExt = exF || exB || exG || exD;
+      var top = base + hE + rH, haut = avecExt ? top - 0.008 : top - 0.05, bas = avecExt ? haut : haut - Math.min(0.05, P * 0.015);
+      var mbr = avecExt ? boite(L, 0.02, P, M.epdm) : boite(L - 0.06, 0.02, P - 0.06, [M.epdm, M.epdm, M.epdm, M.epdm, M.epdm, M.epdm]);
       mbr.rotation.x = -Math.atan((haut - bas) / P); mbr.position.set(0, (haut + bas) / 2, 0); G.add(mbr);
-      [[0, P / 2 - 0.035, L - 0.06, 0.01, 0], [0, -P / 2 + 0.035, L - 0.06, 0.01, 0], [-L / 2 + 0.035, 0, 0.01, P - 0.06, 1], [L / 2 - 0.035, 0, 0.01, P - 0.06, 1]].forEach(function (r) {
+      if (!avecExt) [[0, P / 2 - 0.035, L - 0.06, 0.01, 0], [0, -P / 2 + 0.035, L - 0.06, 0.01, 0], [-L / 2 + 0.035, 0, 0.01, P - 0.06, 1], [L / 2 - 0.035, 0, 0.01, P - 0.06, 1]].forEach(function (r) {
         var hh = top + 0.004 - bas, rv = boite(r[2], hh, r[4] ? r[3] : 0.01, M.epdm); if (r[4]) rv = boite(0.01, hh, r[3], M.epdm);
         rv.position.set(r[0], bas + hh / 2, r[1]); G.add(rv); });
       var cvt = function (w, dd, x, z) { var c = boite(w, 0.045, dd, M.noir); c.position.set(x, top + 0.022, z); G.add(c); };
       cvt(X1 - X0 + 0.04, 0.09, (X0 + X1) / 2, ZF); cvt(X1 - X0 + 0.04, 0.09, (X0 + X1) / 2, ZB); cvt(0.09, ZF - ZB, X0, (ZF + ZB) / 2); cvt(0.09, ZF - ZB, X1, (ZF + ZB) / 2);
-      cvt(L + 0.04, 0.09, 0, P / 2); cvt(L + 0.04, 0.09, 0, -P / 2); cvt(0.09, P, -L / 2, 0); cvt(0.09, P, L / 2, 0);
+      if (!exF) cvt(L + 0.04, 0.09, 0, P / 2); if (!exB) cvt(L + 0.04, 0.09, 0, -P / 2); if (!exG) cvt(0.09, P, -L / 2, 0); if (!exD) cvt(0.09, P, L / 2, 0);
       // extensions du QUADRO : bandeau bardé jusqu'à la couvertine
       var hb2 = top - y0t, bd = function (xa, xb, za, zb) { if (xb - xa < 0.02 || zb - za < 0.02) return; var MB = matMotif(E.wallFin(d)), mm = boite(xb - xa, hb2, zb - za, [MB, MB, M.epdm, matSous, MB, MB]); mm.position.set((xa + xb) / 2, y0t + hb2 / 2, (za + zb) / 2); G.add(mm); };
       bd(X0, X1, P / 2, ZF); bd(X0, X1, ZB, -P / 2); bd(X0, -L / 2, -P / 2, P / 2); bd(L / 2, X1, -P / 2, P / 2);
       // évacuation : un tuyau traverse l'acrotère au fond, au ras de la membrane, puis un coude et la descente le long du mur
-      gout.push({ t: 'quadro', y: bas + 0.03 });
+      gout.push({ t: 'quadro', y: avecExt ? top - 0.03 : bas + 0.03 });
     } else {
       // toit plat : bandeau de 39 cm tout autour, couverture EPDM, gouttière cachée derrière le bandeau
       var hb = 0.39, MB2 = matMotif(E.wallFin(d)), tp = boite(X1 - X0, hb, ZF - ZB, [MB2, MB2, matCouv, matSous, MB2, MB2]); tp.position.set((X0 + X1) / 2, y0t + hb / 2, (ZF + ZB) / 2); G.add(tp);
@@ -575,6 +578,8 @@ window.CerVue3D = (function () {
     '.cer3d .ch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;color:#2b2b22;z-index:2}' +
     '.cer3d .sl{display:flex;align-items:center;gap:8px;margin:8px 0}.cer3d .sl input{flex:1}' +
     '@media (max-width:700px){.cer3d.photo .p{top:auto;bottom:58px;left:10px;right:10px;width:auto;padding:10px 12px}.cer3d.photo .p small{display:none}.cer3d.photo .sl{margin:4px 0}}' +
+    // téléphone couché (écran bas) : le panneau du montage photo tient entre le titre et les boutons, et défile
+    '@media (max-height:500px){.cer3d.photo .p{top:56px;bottom:62px;max-height:none;overflow:auto;padding:8px 12px}.cer3d.photo .p small{display:none}.cer3d.photo .sl{margin:2px 0}}' +
     // téléphone : les vues sur une ligne qui défile au doigt, les deux actions dessous
     '@media (max-width:700px){.cer3d .v{left:0;right:0;bottom:10px;flex-direction:column;flex-wrap:nowrap;gap:6px}.cer3d .vv{display:flex;gap:6px;overflow-x:auto;padding:0 10px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.cer3d .vv::-webkit-scrollbar{display:none}.cer3d .vv button{flex:0 0 auto;white-space:nowrap}.cer3d .va{display:flex;gap:6px;padding:0 10px}.cer3d .va button{flex:1 1 0;padding:10px 8px!important}}';
   function ouvrir(mode) {

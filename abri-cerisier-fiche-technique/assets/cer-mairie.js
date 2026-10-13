@@ -36,6 +36,11 @@
       titre: nom + ' ' + fr(d.L) + ' x ' + fr(d.P) + ' m, ' + toit,
       murs: d.sys === 'ossature' || d.isQuadro ? 'ossature bois bardée' : 'madriers de bois autoclave' };
   }
+  // « l'abri » / « le garage » / « le carport », et « de l'abri » / « du garage »… selon le configurateur
+  function leA() { var t = E.ST.type; return t === 'garage' ? 'le garage' : t === 'carport' ? 'le carport' : 'l\'abri'; }
+  function deA() { var t = E.ST.type; return t === 'garage' ? 'du garage' : t === 'carport' ? 'du carport' : 'de l\'abri'; }
+  // recours à l'architecte (R.431-2) : surface de plancher (partie close) au-delà de 150 m²
+  function archi(pr) { return pr.formalite === 'pc' && pr.sdp > 150; }
   var LIB_FORM = { aucune: 'Aucune autorisation (sous réserve du PLU)', dp: 'Déclaration préalable de travaux', pc: 'Permis de construire' };
 
   // ───────── fenêtre ─────────
@@ -81,17 +86,19 @@
       '<label>Nom<input type="text" name="nom" autocomplete="family-name" required value="' + esc(c.nom) + '"></label>' +
       '<label>Téléphone<input type="tel" name="tel" autocomplete="tel" required value="' + esc(c.tel) + '"></label>' +
       '<label>Email<input type="email" name="email" autocomplete="email" required value="' + esc(c.email) + '"></label>' +
-      '<label class="l2 sugg">Adresse du terrain où sera posé l\'abri<input type="text" name="adresse" autocomplete="off" required value="' + esc(c.label) + '" placeholder="Numéro, rue, code postal, ville"><ul hidden></ul></label>' +
+      '<label class="l2 sugg">Adresse du terrain où sera posé ' + leA() + '<input type="text" name="adresse" autocomplete="off" required value="' + esc(c.label) + '" placeholder="Numéro, rue, code postal, ville"><ul hidden></ul></label>' +
       '<label class="l2">Le terrain est-il en secteur protégé (abords d\'un monument historique, site classé ou patrimonial) ?<select name="secteur"><option value="nsp">Je ne sais pas</option><option value="non">Non</option><option value="oui">Oui</option></select></label>' +
       '<input type="text" name="site_web" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">' +
       '<label class="chk"><input type="checkbox" name="consentement"> <span>J\'accepte qu\'Abri Cerisier conserve ces informations pour me recontacter au sujet de mon projet.' + (C().confid ? ' <a href="' + esc(C().confid) + '" target="_blank" rel="noopener">Confidentialité</a>' : '') + '</span></label>' +
       '<p class="err"></p></form><div class="act"><button type="button" class="sec" data-a="annuler">Annuler</button><button type="button" data-a="suite">Continuer</button></div>');
-    var f = b.querySelector('form'), ad = f.adresse, ul = b.querySelector('.sugg ul'), t = 0, choix = D.adresse;
+    var f = b.querySelector('form'), ad = f.adresse, ul = b.querySelector('.sugg ul'), t = 0, choix = D.adresse, seqAdr = 0;
     if (c.secteur) f.secteur.value = c.secteur;
     ad.addEventListener('input', function () {
       choix = null; clearTimeout(t); var q = ad.value.trim(); if (q.length < 5) { ul.hidden = true; return; }
       t = setTimeout(function () {
+        var n = ++seqAdr; // une réponse lente ne doit pas écraser les suggestions d'une saisie plus récente
         fetch('https://api-adresse.data.gouv.fr/search/?limit=5&q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (j) {
+          if (n !== seqAdr) return;
           var fs = (j.features || []).filter(function (x) { return x.properties.type !== 'municipality'; });
           ul.innerHTML = fs.map(function (x, i) { return '<li data-i="' + i + '">' + esc(x.properties.label) + '</li>'; }).join(''); ul.hidden = !fs.length; ul._fs = fs;
         }).catch(function () {});
@@ -134,9 +141,9 @@
   // ───────── cartes IGN (tuiles Web Mercator) ─────────
   var px = function (lon, lat, z) { var n = 256 * Math.pow(2, z), la = lat * Math.PI / 180; return [(lon + 180) / 360 * n, (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n]; };
   var mpp = function (lat, z) { return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, z); };
-  function tuile(c, x, y, z) {
+  function tuile(c, x, y, z, essai) { // l'IGN refuse parfois une tuile un instant (400) : un second essai, sinon case grise
     return new Promise(function (res) { var im = new Image(); im.crossOrigin = 'anonymous';
-      im.onload = function () { res(im); }; im.onerror = function () { res(null); };
+      im.onload = function () { res(im); }; im.onerror = function () { if (essai) res(null); else setTimeout(function () { tuile(c, x, y, z, 1).then(res); }, 700); };
       im.src = WMTS + 'LAYER=' + c.l + '&STYLE=' + encodeURIComponent(c.s) + '&FORMAT=' + encodeURIComponent(c.f) + '&TILEMATRIX=' + z + '&TILEROW=' + y + '&TILECOL=' + x; });
   }
   // fond de carte w × h centré sur (lon, lat), tuiles du niveau z agrandies k fois (l'IGN s'arrête au niveau 19, environ 19 cm par pixel) ;
@@ -162,6 +169,7 @@
     var geom = JSON.stringify({ type: 'Polygon', coordinates: [[[lon - dl, lat - dp], [lon + dl, lat - dp], [lon + dl, lat + dp], [lon - dl, lat + dp], [lon - dl, lat - dp]]] });
     return fetch('https://apicarto.ign.fr/api/cadastre/parcelle?_limit=500&geom=' + encodeURIComponent(geom)).then(function (r) { return r.json(); }).then(function (j) {
       return (j.features || []).map(function (f) { return { numero: f.properties.numero, section: f.properties.section, idu: f.properties.idu,
+        commune: f.properties.nom_com, insee: f.properties.code_insee, contenance: f.properties.contenance,
         anneaux: f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.map(function (p) { return p[0]; }) : [f.geometry.coordinates[0]] }; });
     }).catch(function () { return []; });
   }
@@ -182,19 +190,23 @@
     if (!t) { t = TUILES[k] = { ok: false }; tuile(c, x, y, z).then(function (im) { t.ok = true; t.im = im; redessiner(); }); }
     return t;
   }
+  // la parcelle trouvée, ou à défaut : la toucher sur la carte (adresse sans numéro, lieu-dit, point posé sur la rue)
+  function sousTitre(pa, leA) {
+    return pa ? 'Parcelle ' + esc(pa.section + ' ' + pa.numero) + ' à ' + esc(pa.commune) + ' (' + fr(pa.contenance, 0) + ' m²). Faites glisser ' + leA + ' à sa place ; faites glisser la carte pour vous déplacer, zoomez avec deux doigts, la molette ou les boutons. Ce n\'est pas votre parcelle ? Touchez la vôtre sur la carte.'
+      : 'Nous n\'avons pas trouvé la parcelle de cette adresse : touchez votre parcelle sur la carte pour la choisir (contours blancs), puis faites glisser ' + leA + ' à sa place.';
+  }
   function etape2() {
-    var pa = D.parcelle, c = D.client, nomA = E.ST.type === 'garage' ? 'garage' : E.ST.type === 'carport' ? 'carport' : 'abri';
+    var pa = D.parcelle, c = D.client, nomA = E.ST.type === 'garage' ? 'garage' : E.ST.type === 'carport' ? 'carport' : 'abri', leA = nomA === 'abri' ? 'l\'abri' : 'le ' + nomA;
     var b = corps(1, 'Placez votre ' + nomA + ' sur votre terrain',
-      pa ? 'Parcelle ' + esc(pa.section + ' ' + pa.numero) + ' à ' + esc(pa.commune) + ' (' + fr(pa.contenance, 0) + ' m²). Faites glisser l\'' + nomA + ' à sa place ; faites glisser la carte pour vous déplacer, zoomez avec deux doigts, la molette ou les boutons.'
-        : 'Nous n\'avons pas trouvé la parcelle cadastrale de cette adresse : placez l\'' + nomA + ' sur la photo aérienne.',
+      sousTitre(pa, leA),
       '<div class="masse"><canvas></canvas><div class="zm"><button type="button" data-z="1" aria-label="Zoomer">+</button><button type="button" data-z="-1" aria-label="Dézoomer">−</button><button type="button" data-z="0" aria-label="Voir toute la parcelle">⤢</button></div>' +
-      '<button type="button" class="ici">Amener l\'' + nomA + ' au centre de la vue</button></div>' +
+      '<button type="button" class="ici">Amener ' + leA + ' au centre de la vue</button></div>' +
       '<div class="rot"><span>Orientation</span><button type="button" class="pas" data-r="-15">↺</button><input type="range" min="-180" max="180" step="1" value="' + ((D.place && D.place.rot) || 0) + '"><button type="button" class="pas" data-r="15">↻</button><span class="deg"></span></div>' +
       '<div class="info"></div><div class="act"><button type="button" class="sec" data-a="retour">Retour</button><button type="button" data-a="suite">Continuer</button></div>');
     var cv = b.querySelector('canvas'), W = 1200, H = 900; cv.width = W; cv.height = H; var g = cv.getContext('2d');
     var lat0 = pa ? centroide(pa.anneaux[0])[1] : c.lat, m19 = mpp(lat0, Z_MASSE), w19 = function (lon, lat) { return px(lon, lat, Z_MASSE); };
     var anneaux = pa ? pa.anneaux.map(function (a) { return a.map(function (q) { return w19(q[0], q[1]); }); }) : [];
-    var autres = {}, cherche = [];
+    var autres = {}, infos = {}, cherche = [];
     var adr = w19(c.lon, c.lat);
     // vue initiale : toute la parcelle avec une marge (au moins 22 m de large)
     var V = { cx: adr[0], cy: adr[1], k: 1 };
@@ -245,8 +257,8 @@
       nord(g, W - 50, 60); echelle(g, 30, H - 30, m19 / V.k);
       var mins = dist.filter(Boolean).map(function (x) { return x.d * m19; }), mn = mins.length ? Math.min.apply(null, mins) : null;
       deg.textContent = pl.rot + '°'; rotInp.value = pl.rot;
-      info.innerHTML = mn == null ? 'Placez l\'' + nomA + ' sur votre terrain.' : 'Distance la plus courte à une limite : <b>' + fr(mn) + ' m</b>.' +
-        (mn > 0.15 && mn < 3 ? ' <span class="alerte">Si le PLU de votre commune ne dit rien, l\'' + nomA + ' doit être en limite de propriété ou à 3 m au moins.</span>' : '');
+      info.innerHTML = mn == null ? 'Placez ' + leA + ' sur votre terrain.' : 'Distance la plus courte à une limite : <b>' + fr(mn) + ' m</b>.' +
+        (mn > 0.15 && mn < 3 ? ' <span class="alerte">Si le PLU de votre commune ne dit rien, ' + leA + ' doit être en limite de propriété ou à 3 m au moins.</span>' : '');
       pl.dist = dist.map(function (x) { return x ? x.d * m19 : null; });
     }
     // parcelles voisines autour de la vue (rechargées quand on s'éloigne)
@@ -255,7 +267,7 @@
       if (r > 400 || cherche.some(function (q) { return Math.hypot(q[0] - ctr[0], q[1] - ctr[1]) * m19 < q[2] * 0.5 && r <= q[2]; })) return;
       cherche.push([ctr[0], ctr[1], r]);
       var lon = ctr[0] / (256 * Math.pow(2, Z_MASSE)) * 360 - 180, n = Math.PI - 2 * Math.PI * ctr[1] / (256 * Math.pow(2, Z_MASSE)), lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-      voisines(lon, lat, r).then(function (vs) { vs.forEach(function (v) { if ((!pa || v.idu !== pa.idu) && !autres[v.idu]) autres[v.idu] = v.anneaux.map(function (a) { return a.map(function (q) { return w19(q[0], q[1]); }); }); }); redessiner(); });
+      voisines(lon, lat, r).then(function (vs) { vs.forEach(function (v) { if ((!pa || v.idu !== pa.idu) && !autres[v.idu]) { autres[v.idu] = v.anneaux.map(function (a) { return a.map(function (q) { return w19(q[0], q[1]); }); }); infos[v.idu] = v; } }); redessiner(); });
     };
     var zoom = function (f, sx, sy) { var a = Wd(sx, sy); V.k = Math.max(0.02, Math.min(8, V.k * f)); var b2 = Wd(sx, sy); V.cx += a[0] - b2[0]; V.cy += a[1] - b2[1]; redessiner(); };
     // gestes
@@ -272,7 +284,7 @@
       // marge de prise autour de l'abri en pixels d'écran (le dessin fait 1200 px de large : 28 px n'en faisaient que 8 sur un téléphone)
       var tol = (e.pointerType === 'touch' ? 36 : 20) * W / (cv.getBoundingClientRect().width || W);
       var surAbri = dedans(p, toitW().map(S)) || Math.hypot(p[0] - centreA[0], p[1] - centreA[1]) < tol;
-      geste = surAbri ? { t: 'abri', o: [w[0] - pl.wx, w[1] - pl.wy] } : { t: 'carte', p: p, c: [V.cx, V.cy] };
+      geste = surAbri ? { t: 'abri', o: [w[0] - pl.wx, w[1] - pl.wy] } : { t: 'carte', p: p, c: [V.cx, V.cy], seul: ids.length === 1 };
       cv.style.cursor = surAbri ? 'move' : 'grabbing';
     });
     cv.addEventListener('pointermove', function (e) {
@@ -285,7 +297,20 @@
         var a = [(m0[0] - W / 2) / geste.k + geste.c[0], (m0[1] - H / 2) / geste.k + geste.c[1]]; // point du monde sous les doigts au départ
         V.cx = a[0] - (mid[0] - W / 2) / V.k; V.cy = a[1] - (mid[1] - H / 2) / V.k; redessiner(); }
     });
-    var lacher = function (e) { delete pts[e.pointerId]; if (!Object.keys(pts).length) { if (geste && geste.t !== 'abri') voisinage(); geste = null; cv.style.cursor = ''; } else if (geste && geste.t === 'pince') geste = null; };
+    var choisir = function (p) { // une parcelle voisine touchée devient la parcelle du projet
+      var idu = Object.keys(autres).filter(function (k) { return autres[k].some(function (an) { return dedans(p, an.map(S)); }); })[0], v = idu && infos[idu];
+      if (!v) return;
+      if (pa) { autres[pa.idu] = anneaux; infos[pa.idu] = pa; }
+      pa = D.parcelle = { commune: v.commune, insee: v.insee, section: v.section, numero: v.numero, contenance: v.contenance, idu: v.idu, anneaux: v.anneaux };
+      anneaux = autres[idu]; delete autres[idu];
+      if (!dedans([pl.wx, pl.wy], anneaux[0])) { var c0 = centroide(anneaux[0]); pl.wx = c0[0]; pl.wy = c0[1]; } // l'abri suit sur la parcelle choisie
+      b.querySelector('.sous').innerHTML = sousTitre(pa, leA); // texte déjà échappé (esc)
+      redessiner();
+    };
+    var lacher = function (e) {
+      var q = pts[e.pointerId], tol = 10 * W / (cv.getBoundingClientRect().width || W);
+      if (q && geste && geste.t === 'carte' && geste.seul && e.type === 'pointerup' && Math.hypot(q[0] - geste.p[0], q[1] - geste.p[1]) < tol) choisir(q);
+      delete pts[e.pointerId]; if (!Object.keys(pts).length) { if (geste && geste.t !== 'abri') voisinage(); geste = null; cv.style.cursor = ''; } else if (geste && geste.t === 'pince') geste = null; };
     cv.addEventListener('pointerup', lacher); cv.addEventListener('pointercancel', lacher);
     cv.addEventListener('wheel', function (e) { e.preventDefault(); var p = ecran(e); zoom(e.deltaY > 0 ? 1 / 1.2 : 1.2, p[0], p[1]); clearTimeout(cv._vt); cv._vt = setTimeout(voisinage, 400); }, { passive: false });
     b.querySelectorAll('.zm button').forEach(function (bt) { bt.onclick = function () { var z = +bt.dataset.z; if (z) zoom(z > 0 ? 1.5 : 1 / 1.5, W / 2, H / 2); else { cadrer(); redessiner(); } setTimeout(voisinage, 300); }; });
@@ -323,9 +348,9 @@
   // ───────── 3. photos ─────────
   function etape3() {
     var b = corps(2, 'Photos de votre terrain', 'Facultatif mais demandé par la plupart des mairies. Vous pourrez aussi les ajouter à la main au dossier.',
-      '<div class="ph"><label>Photo proche : l\'endroit où sera posé l\'abri<input type="file" accept="image/*" data-k="proche">' + (D.photos.proche ? '<img src="' + D.photos.proche + '">' : '') + '</label>' +
+      '<div class="ph"><label>Photo proche : l\'endroit où sera posé ' + leA() + '<input type="file" accept="image/*" data-k="proche">' + (D.photos.proche ? '<img src="' + D.photos.proche + '">' : '') + '</label>' +
       '<label>Photo lointaine : le terrain dans son environnement, depuis la rue<input type="file" accept="image/*" data-k="loin">' + (D.photos.loin ? '<img src="' + D.photos.loin + '">' : '') + '</label></div>' +
-      '<p class="info" style="margin-top:12px">Pour le document d\'insertion, nous utilisons ' + (window.CerVue3D && window.CerVue3D.montage ? 'votre montage photo réalisé dans la vue 3D.' : 'une vue 3D de votre projet. Pour un montage sur une photo de votre jardin : « Voir en 3D » puis « Sur une photo de mon jardin ».') + '</p>' +
+      '<p class="info" style="margin-top:12px">' + (sans3d() ? 'Le document d\'insertion est à compléter par un photomontage du carport sur une photo du terrain : un cadre vous attend dans le dossier, un conseiller Abri Cerisier peut vous aider.' : 'Pour le document d\'insertion, nous utilisons ' + (window.CerVue3D && window.CerVue3D.montage ? 'votre montage photo réalisé dans la vue 3D.' : 'une vue 3D de votre projet. Pour un montage sur une photo de votre jardin : « Voir en 3D » puis « Sur une photo de mon jardin ».')) + '</p>' +
       '<div class="act"><button type="button" class="sec" data-a="retour">Retour</button><button type="button" data-a="suite">Créer mon dossier PDF</button></div>');
     b.querySelectorAll('input[type=file]').forEach(function (inp) {
       inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; if (!f) return; reduire(f, 1800).then(function (url) { D.photos[inp.dataset.k] = url; etape3(); }); });
@@ -362,7 +387,7 @@
     var pr = projet(), I = {};
     Promise.all([situation(14, 1100, 760).then(function (u) { I.sit1 = u; }), situation(17, 1100, 760).then(function (u) { I.sit2 = u; })])
       .then(function () { etat('Plans et façades…'); return Promise.all(['face', 'droite', 'gauche', 'fond'].map(function (s) { return vueMoteur(s, 380, 280).then(function (u) { I[s] = u; }); }).concat([vueMoteur('plan', 480, 340).then(function (u) { I.plan = u; })])); })
-      .then(function () { etat('Vue 3D du projet…'); fermerTemp(); return charger3D().then(function (V) { return V.capture(); }).then(function (u) { I.insertion = u; }, function () { I.insertion = null; }); })
+      .then(function () { if (sans3d()) { I.insertion = null; return; } etat('Vue 3D du projet…'); fermerTemp(); return charger3D().then(function (V) { return V.capture(); }).then(function (u) { I.insertion = u; }, function () { I.insertion = null; }); })
       .then(function () { rouvrir(); etat('Mise en page du PDF…'); return logo().then(function (l) { I.logo = l; return jspdf(); }); })
       .then(function (J) { var doc = construirePdf(J, pr, I); var nom = 'dossier-mairie-' + (D.client.nom || 'abri').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.pdf';
         // téléphone : un téléchargement lancé en fin de calcul est bloqué (iPhone surtout) ; le client touche lui-même le lien,
@@ -371,7 +396,7 @@
         var fic = null; try { fic = new File([blob], nom, { type: 'application/pdf' }); } catch (e) {}
         var partage = !!(tel && fic && navigator.canShare && navigator.canShare({ files: [fic] }));
         if (!tel) doc.save(nom);
-        corps(3, 'Votre dossier est prêt', tel ? 'Touchez le bouton pour ouvrir votre dossier PDF.' : 'Le PDF « ' + esc(nom) + ' » est téléchargé.', '<div class="act" style="justify-content:flex-start"><a class="btn" data-a="pdf" href="' + url + '" download="' + esc(nom) + '" target="_blank" rel="noopener" style="text-decoration:none">' + (tel ? 'Ouvrir mon dossier (PDF)' : 'Télécharger à nouveau') + '</a>' + (partage ? '<button type="button" data-a="partager">Enregistrer ou envoyer</button>' : '') + '</div><p class="info">Il reste à remplir et signer le formulaire officiel (' + esc(LIB_FORM[pr.formalite].toLowerCase()) + ') sur service-public.fr, puis à le déposer en mairie avec ce dossier. Un conseiller Abri Cerisier peut vous accompagner.</p><div class="act"><button type="button" data-a="fin">Fermer</button></div>');
+        corps(3, 'Votre dossier est prêt', tel ? 'Touchez le bouton pour ouvrir votre dossier PDF.' : 'Le PDF « ' + esc(nom) + ' » est téléchargé.', '<div class="act" style="justify-content:flex-start"><a class="btn" data-a="pdf" href="' + url + '" download="' + esc(nom) + '" target="_blank" rel="noopener" style="text-decoration:none">' + (tel ? 'Ouvrir mon dossier (PDF)' : 'Télécharger à nouveau') + '</a>' + (partage ? '<button type="button" data-a="partager">Enregistrer ou envoyer</button>' : '') + '</div><p class="info">Il reste à remplir et signer le formulaire officiel (' + esc(LIB_FORM[pr.formalite].toLowerCase()) + ') sur service-public.fr, puis à le déposer en mairie avec ce dossier.' + (archi(pr) ? ' Au-delà de 150 m² de surface de plancher, le permis doit être établi par un architecte.' : '') + ' Un conseiller Abri Cerisier peut vous accompagner.</p><div class="act"><button type="button" data-a="fin">Fermer</button></div>');
         if (partage) ov.querySelector('[data-a=partager]').onclick = function () { navigator.share({ files: [fic], title: 'Dossier mairie' }).catch(function () {}); };
         ov.querySelector('[data-a=fin]').onclick = function () { fermer(); setTimeout(function () { URL.revokeObjectURL(url); }, 60000); };
       })
@@ -467,7 +492,7 @@
     ligne('Projet', pr.titre + ', murs en ' + pr.murs);
     ligne('Surfaces', 'emprise au sol ' + fr(pr.emprise, 1) + ' m²  -  surface de plancher ' + fr(pr.sdp, 1) + ' m²');
     ligne('Hauteur maximale', fr(pr.hmax) + ' m au-dessus du terrain naturel');
-    ligne('Formalité', LIB_FORM[pr.formalite] + (pr.formalite === 'aucune' ? ' : jusqu\'à 5 m², hors secteur protégé.' : pr.formalite === 'dp' ? ' : de 5 à 20 m² (ou jusqu\'à 20 m² en secteur protégé).' : ' : plus de 20 m².'));
+    ligne('Formalité', LIB_FORM[pr.formalite] + (pr.formalite === 'aucune' ? ' : jusqu\'à 5 m², hors secteur protégé.' : pr.formalite === 'dp' ? ' : de 5 à 20 m² (ou jusqu\'à 20 m² en secteur protégé).' : ' : plus de 20 m².' + (archi(pr) ? ' Au-delà de 150 m² de surface de plancher, le permis doit être établi par un architecte (article R.431-2 du code de l\'urbanisme).' : '')));
     y += 2; doc.setFont('helvetica', 'bold'); doc.text('Pièces jointes', 108, y); y += 5; doc.setFont('helvetica', 'normal');
     pieces.forEach(function (p) { doc.text(p[0] + '  ' + p[1], 112, y); y += 4.6; });
     suivante(108);
@@ -512,25 +537,33 @@
     entete(P_(4) + ' (vue de dessus)', 'Vue de dessus : murs, débords de toiture, extensions et menuiseries.');
     image(I.plan, M, 26, Wp - 2 * M, 165); suivante();
     // 6. insertion
-    entete(P_(5), window.CerVue3D && window.CerVue3D.montage ? 'Montage du projet sur une photo du terrain.' : 'Vue du projet. Pour un montage sur photo : configurateur, « Voir en 3D », « Sur une photo de mon jardin ».');
-    image(I.insertion, M, 26, Wp - 2 * M, 165); suivante();
+    if (!I.insertion && sans3d()) { // carport : pas de vue 3D, cadre pour le photomontage
+      entete(P_(5), 'Photomontage du projet sur une photo du terrain, à compléter.');
+      doc.setDrawColor(190); doc.setLineDash([2, 2], 0); doc.rect(M, 26, Wp - 2 * M, 165); doc.setLineDash([], 0); doc.setFontSize(11); doc.setTextColor(120);
+      doc.text('Photomontage à coller ici : le carport dessiné sur une photo du terrain.', Wp / 2, 108, { align: 'center' }); doc.setTextColor(0); suivante();
+    } else {
+      entete(P_(5), window.CerVue3D && window.CerVue3D.montage ? 'Montage du projet sur une photo du terrain.' : 'Vue du projet. Pour un montage sur photo : configurateur, « Voir en 3D », « Sur une photo de mon jardin ».');
+      image(I.insertion, M, 26, Wp - 2 * M, 165); suivante();
+    }
     // 7. photos (cadre à compléter si le client ne les a pas ajoutées)
-    entete(P_(6) + '  /  ' + pieces[7][0], 'Photo proche : l\'emplacement de l\'abri. Photo lointaine : le terrain dans le paysage, depuis la rue.');
+    entete(P_(6) + '  /  ' + pieces[7][0], 'Photo proche : l\'emplacement ' + deA() + '. Photo lointaine : le terrain dans le paysage, depuis la rue.');
     var cadre = function (url, x, t) { if (url) return image(url, x, 28, 131, 150); doc.setDrawColor(190); doc.setLineDash([2, 2], 0); doc.rect(x, 28, 131, 150); doc.setLineDash([], 0);
       doc.setFontSize(10); doc.setTextColor(gris[0], gris[1], gris[2]); doc.text(doc.splitTextToSize(t, 110), x + 65.5, 98, { align: 'center' }); doc.setTextColor(40); };
-    cadre(D.photos.proche, M, 'Photo à coller ici : l\'endroit où sera posé l\'abri, pris depuis le terrain.');
-    cadre(D.photos.loin, M + 138, 'Photo à coller ici : le terrain vu de la rue ou de loin, pour situer l\'abri dans le paysage.');
+    cadre(D.photos.proche, M, 'Photo à coller ici : l\'endroit où sera posé ' + leA() + ', pris depuis le terrain.');
+    cadre(D.photos.loin, M + 138, 'Photo à coller ici : le terrain vu de la rue ou de loin, pour situer ' + leA() + ' dans le paysage.');
     doc.setFontSize(8); doc.text(pieces[6][0] + ' - environnement proche', M, 184); doc.text(pieces[7][0] + ' - paysage lointain', M + 138, 184);
     pied();
     return doc;
   }
 
   // ───────── boutons dans le panneau du configurateur ─────────
+  function sans3d() { return ((window.CER_CFG || {}).kind || E.ST.type) === 'carport'; } // type déclaré par la page : connu avant que le moteur ne lise le formulaire
   function boutons() {
     var vis = document.querySelector('.cer-plan__vis'); if (!vis || vis.querySelector('.cer-plan__3d')) return !!vis;
     var d = document.createElement('div'); d.className = 'cer-plan__3d';
     d.innerHTML = '<style>.cer-plan__3d{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}.cer-plan__3d button{flex:1 1 140px;border:0;border-radius:22px;padding:10px 14px;font:600 14px Jost,Futura,Arial,sans-serif;cursor:pointer;background:#515136;color:#fff}.cer-plan__3d button.sec{background:#f1efe7;color:#2b2b22}</style>' +
-      '<button type="button" data-a="3d">Voir en 3D</button><button type="button" class="sec" data-a="mairie">Mon dossier mairie (PDF)</button>';
+      // carport : pas encore de modèle 3D (poteaux, bandeaux, charpente) : seul le dossier mairie est proposé
+      (sans3d() ? '' : '<button type="button" data-a="3d">Voir en 3D</button>') + '<button type="button" class="sec" data-a="mairie">Mon dossier mairie (PDF)</button>';
     vis.appendChild(d);
     d.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; if (b.dataset.a === '3d') voir3D(); else ouvrir(); });
     return true;

@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.4
+Stable tag: 3.2.5
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,22 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.5 =
+Corrections trouvées par la campagne de tests du 13/10 (80 parcours 3D au hasard, 15 dossiers mairie sur 10 adresses, 9 appareils et navigateurs, sur les pages enregistrées et rejouées hors ligne).
+* CARPORT : la vue 3D n'a pas encore de poteaux ni de charpente (le toit flottait) : bouton « Voir en 3D » retiré sur le carport ; son dossier mairie garde toutes les pièces, avec un cadre pour le photomontage à la place de la vue 3D.
+* QUADRO AVEC EXTENSION : une seule toiture plate, couvertine sur le tour extérieur seulement (le toit de l'abri apparaissait en creux sous celui de l'extension).
+* DOSSIER MAIRIE :
+  * parcelle introuvable (adresse sans numéro, lieu-dit, point posé sur la rue ou la place, 3 adresses sur 10 dans les essais) : le client touche sa parcelle sur la carte, et peut aussi corriger une parcelle mal trouvée ; l'abri vient se poser dessus ;
+  * « l'garage », « l'carport » et « l'abri » écrit pour un garage ou un carport (formulaire, photos, PDF) : corrigé ;
+  * suggestions d'adresse protégées contre une réponse lente qui écrasait une saisie plus récente ;
+  * tuile IGN refusée un instant : un second essai au lieu d'une case grise ;
+  * permis de construire au-delà de 150 m² de surface de plancher : rappel de l'obligation d'architecte (R.431-2).
+* TÉLÉPHONE :
+  * la page glissait de 5 px de côté (en-tête mobile du thème) : corrigé sur les configurateurs ;
+  * guide comparatif ouvert sur un téléphone de 320 px : le tableau défile dans son cadre au lieu d'élargir toute la page ;
+  * téléphone couché : le panneau du montage photo ne cache plus « Valider le montage ».
+* PLAN 2D : plus de hauteur négative quand le bord d'une extension descend sous le sol (grande extension sur une pente forte).
 
 = 3.2.4 =
 * SÉCURITÉ des 2 points d'entrée publics (revue complète avant l'ouverture à tous) :

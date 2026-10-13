@@ -186,7 +186,7 @@ function svgEl(tag,attrs){const e=document.createElementNS(NS,tag);Object.entrie
 function clr(svg){while(svg.firstChild)svg.removeChild(svg.firstChild);}
 
 function sRect(p,x,y,w,h,fill,stroke,sw,dash){
-  const r=svgEl('rect',{x,y,width:w,height:h,fill:fill||'none',stroke:stroke||'none','stroke-width':sw||1});
+  const r=svgEl('rect',{x,y,width:Math.max(0,w),height:Math.max(0,h),fill:fill||'none',stroke:stroke||'none','stroke-width':sw||1});
   if(dash)r.setAttribute('stroke-dasharray',dash);p.appendChild(r);return r;
 }
 function sLine(p,x1,y1,x2,y2,stroke,sw,dash){

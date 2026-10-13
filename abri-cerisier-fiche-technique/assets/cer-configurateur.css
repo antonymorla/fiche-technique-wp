@@ -417,3 +417,8 @@
   .cer-plan-on .cer-prog { border-radius: 12px; margin: 0 0 12px; padding: 10px 14px 9px; width: 100%; }
   .cer-plan-on .cer-prog .n { display: none; }
 }
+
+/* Téléphone : dans l'en-tête mobile du thème Konte, le conteneur fait 100 % de large plus 5 px de marge : la page glissait de 5 px de côté sous le doigt */
+.header-mobile > .konte-container-fluid { width: auto; }
+/* Guides comparatifs (« Aide au choix ») : sur un téléphone de 320 px, le tableau de 342 px élargissait toute la page ; il défile dans son cadre */
+.cerisier-guide-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
