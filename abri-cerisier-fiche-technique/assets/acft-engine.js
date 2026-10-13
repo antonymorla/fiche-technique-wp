@@ -626,7 +626,7 @@ function drawMenuReal(svg,m,mx,my,mW,mH,sc,d){
     return;
   }
   // ── Portes : vantaux ──
-  const leaves=P.leaves||(/double/.test(l)?[.5,.5]:(/tierce/.test(l)?[2/3,1/3]:[1]));
+  const leaves=P.leaves||(/double(?!\s*vitrage)/.test(l)?[.5,.5]:(/tierce/.test(l)?[2/3,1/3]:[1])); // « double vitrage » n'est pas une porte double (porte-fenêtre 80×205, audit du 14/10)
   let x=ix;
   leaves.forEach((k,i)=>{
     const w=iw*k, side=leaves.length===1?'R':(i===0?'R':'L'); // côté de la béquille
@@ -963,6 +963,7 @@ function viewMap(d,side){
 }
 function extFin(d,type){
   if(type==='ajouree') return {dir:'v',boards:[0.042],gap:0.025,gapC:'none',c:FINITIONS.sr_vert.c};
+  if(type==='clin') return FINITIONS.madrier; // « Madrier clin 27mm » : lames horizontales de madrier, quel que soit le système de l'abri
   return d.sys==='ossature'?wallFin(d):FINITIONS.madrier;
 }
 // Fermetures et plancher d'extension dans une élévation
@@ -1052,13 +1053,11 @@ function drawPlan(svg,d,vw=480,vh=340){
     // Madrier corner joints (10cm protrusions)
     if(d.sys!=='ossature'){
       const cj=0.10*sc;
-      [[wx,wy],[wx+drawW,wy],[wx,wy+drawP],[wx+drawW,wy+drawP]].forEach(([cx2,cy2])=>{
-        const sx=cx2===wx?-cj:0, sy=cy2===wy?-cj:0;
-        const ex=cx2===wx?wt:drawW-wt, ey=cy2===wy?wt:drawP-wt;
-        // horizontal joint
-        sRect(svg,cx2+sx,cy2+sy,cj+wt*(cx2===wx?1:-1),cj,'#d0dae8','#1a1a2e',1);
-        // vertical joint
-        sRect(svg,cx2+sx,cy2+sy,cj,cj+wt*(cy2===wy?1:-1),'#d0dae8','#1a1a2e',1);
+      // à chaque angle, chaque mur dépasse de 10 cm au-delà du mur qu'il croise, sur son épaisseur (mêmes bouts aux 4 angles, audit du 14/10)
+      [[wx,wy,-1,-1],[wx+drawW,wy,1,-1],[wx,wy+drawP,-1,1],[wx+drawW,wy+drawP,1,1]].forEach(([cx2,cy2,ox,oy])=>{
+        const yb=oy<0?wy:wy+drawP-wt, xb=ox<0?wx:wx+drawW-wt;
+        sRect(svg,ox<0?cx2-cj:cx2,yb,cj,wt,'#d0dae8','#1a1a2e',1);   // bout du mur de façade ou du fond
+        sRect(svg,xb,oy<0?cy2-cj:cy2,wt,cj,'#d0dae8','#1a1a2e',1);   // bout du mur de côté
       });
       // Madrier log lines (horizontal)
       const logH=(d.sys==='madrier28'?0.028:0.045)*sc;
@@ -1126,6 +1125,12 @@ function drawPlan(svg,d,vw=480,vh=340){
     }
   });
 
+  // porte de garage : ouverture centrée en façade, comme sur l'élévation (manquait sur le plan, audit du 14/10)
+  if(ST.type==='garage'){
+    const gw=(parseFloat(fv('f-pglw'))||237)/100*sc;
+    sRect(svg,wx+drawW/2-gw/2,wy+drawP-4,gw,8,'#ecf0f1','#2c3e50',1.5);
+    if(!ST.picto) sTxtBg(svg,wx+drawW/2,wy+drawP-13,'porte de garage',6,'#2c3e50');
+  }
   svg.setAttribute('data-pf',JSON.stringify({wx,wy,dw:drawW,dp:drawP}));
 
   // ── DIMENSION LINES ──────────────────────────────────
@@ -1436,26 +1441,20 @@ function drawElev(svg,d,side,vw=320,vh=260){
     // flat, slope1, slope2 : toit plat à baseY ou baseY-rHpx
     return g.roofT==='flat'?baseY:baseY-rHpx;
   }
-  if(g.ovhgL>0.50&&!ST.murSeul){
-    const topY=roofYat(-oL/sc*sc); // Y du toit au bord extérieur gauche
-    // Utilise dx négatif = à gauche du mur
-    const ry=roofYat(-oL);
-    sRect(svg,baseX-oL,ry,postW,solY-ry,postCol,postStroke,1);
-    if(real) sRect(svg,baseX-oL,ry,Math.max(.6,postW*.18),solY-ry,'#d2c799','none',0);
-  }
-  if(g.ovhgR>0.50&&!ST.murSeul){
-    const ry=roofYat(drawW+oR);
-    sRect(svg,baseX+drawW+oR-postW,ry,postW,solY-ry,postCol,postStroke,1);
-    if(real) sRect(svg,baseX+drawW+oR-postW,ry,Math.max(.6,postW*.18),solY-ry,'#d2c799','none',0);
-  }
-  // Extension face au spectateur (vue côté égout) : ses deux poteaux d'angle, devant le mur, dans l'alignement de la façade et du fond
-  if((g.roofT==='slope1'||g.roofT==='slope2')&&(g.ovhgTop||0)>0.50&&!ST.murSeul){
-    const ey=baseY+g.ovhgTop*Math.tan(d.penteRad||0)*sc;
-    [baseX,baseX+drawW-postW].forEach(x=>{
-      sRect(svg,x,ey,postW,solY-ey,postCol,postStroke,1);
-      if(real) sRect(svg,x,ey,Math.max(.6,postW*.18),solY-ey,'#d2c799','none',0);
-    });
-  }
+  // Poteaux d'extension, dessinés après les fermetures d'extension (ils sont devant elles) : audit du 14/10
+  const extPosts=()=>{
+    if(ST.murSeul) return;
+    const pp=(x,ry)=>{ sRect(svg,x,ry,postW,solY-ry,postCol,postStroke,1); if(real) sRect(svg,x,ry,Math.max(.6,postW*.18),solY-ry,'#d2c799','none',0); };
+    if(g.ovhgL>0.50) pp(baseX-oL,roofYat(-oL));
+    if(g.ovhgR>0.50) pp(baseX+drawW+oR-postW,roofYat(drawW+oR));
+    // extension face au spectateur (devant ou derrière, toutes toitures) : ses poteaux devant le mur, aux places du plan
+    // (angles, puis tous les 3 m au plus) ; vue côté égout : ils montent sous le bout de la pente, sinon sous la sablière à hauteur de mur
+    if((g.ovhgTop||0)>0.50){
+      const ey=(g.roofT==='slope1'||g.roofT==='slope2')?baseY+g.ovhgTop*Math.tan(d.penteRad||0)*sc:baseY;
+      const n=Math.max(2,Math.ceil(g.w/3)+1);
+      for(let i=0;i<n;i++) pp(baseX+(drawW-postW)*i/(n-1),ey);
+    }
+  };
 
   // Gouttière : côté égout seulement (rien sur le côté haut d'un 1 pan), descente au coin jusqu'au sol
   if(fv('f-gout')==='oui'&&g.roofT!=='edge'&&!ST.murSeul){
@@ -1472,7 +1471,12 @@ function drawElev(svg,d,side,vw=320,vh=260){
       const L=p.end==='L';
       const yTop=d.isQuadro?baseY-d.rH*sc+Math.max(3,0.12*sc):baseY; // QUADRO : gargouille sous la couvertine
       if(p.onEave) downpipe(svg,L?baseX+off:baseX+drawW-off,runY!=null?runY:yTop,solY,sc);
-      else { const s=endY[p.end]; downpipe(svg,L?baseX-off:baseX+drawW+off,s?s.y:yTop,solY,sc,s?s.x:null); }
+      else {
+        const s=endY[p.end], ext=(L?g.ovhgL:g.ovhgR)>0.5;
+        // extension côté égout (poteaux) : la descente longe le poteau d'extension, sous le bout de la gouttière ; sinon col de cygne jusqu'au mur
+        if(ext&&s) downpipe(svg,s.x+(L?off:-off),s.y,solY,sc);
+        else downpipe(svg,L?baseX-off:baseX+drawW+off,s?s.y:yTop,solY,sc,s?s.x:null);
+      }
     });
   }
 
@@ -1521,6 +1525,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
 
   // Fermetures et plancher des extensions (abri bûches)
   if(!ST.murSeul) drawExtElev(svg,d,side,baseX,solY,sc,real,g.w,gndY);
+  extPosts();
 
   // ── DIMENSION LINES ──────────────────────────────────
   const roofTopY=baseY-(g.roofT==='flat'?flatTopH(d)*sc:(g.roofT==='edge'?0:g.rH*sc));
@@ -1621,8 +1626,9 @@ function drawCarportElev(svg,d,side,vw,vh){
   const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
   const isFace=side==='face'||side==='fond';
   const viewW=isFace?d.L:d.P;
-  const ovhgL=isFace?d.ovL:(side==='gauche'?d.ovF:d.ovB);
-  const ovhgR=isFace?d.ovR:(side==='gauche'?d.ovB:d.ovF);
+  // vue du fond = vue de face en miroir : gauche et droite échangés (carport adossé, audit du 14/10)
+  const ovhgL=isFace?(side==='fond'?d.ovR:d.ovL):(side==='gauche'?d.ovF:d.ovB);
+  const ovhgR=isFace?(side==='fond'?d.ovL:d.ovR):(side==='gauche'?d.ovB:d.ovF);
   const maxH=d.hExt+d.rH;
   const totW=viewW+ovhgL+ovhgR;
   const sc=ST.scale||Math.min(avW/totW,(avH-8)/maxH);
@@ -1689,7 +1695,7 @@ function drawCarportElev(svg,d,side,vw,vh){
     }
   }
   let ts;
-  if(isFace) ts=carportColsT(d);
+  if(isFace) ts=side==='fond'?carportColsT(d).map(t=>1-t):carportColsT(d);
   else {const nr=d.nRows; ts=[]; for(let i=0;i<nr;i++) ts.push(nr>1?i/(nr-1):0.5);}
   let drawPosts=()=>{};
   if(wallSide){
@@ -1742,7 +1748,8 @@ function drawCarportElev(svg,d,side,vw,vh){
     drawPosts();
   }
   if(isFace&&d.ados!=='non'){
-    const mw=Math.max(6,0.20*sc), mx=d.ados==='gauche'?baseX-mw:baseX+dW;
+    const murG=(d.ados==='gauche')!==(side==='fond'); // vu du fond, le mur de gauche est à droite
+    const mw=Math.max(6,0.20*sc), mx=murG?baseX-mw:baseX+dW;
     sRect(svg,mx,gndY-hpx-rHpx-6,mw,hpx+rHpx+6,'#e5e5e5','#555',1);
     for(let y=gndY-hpx-rHpx;y<gndY;y+=6) sLine(svg,mx,y+6,mx+mw,y,'#999',.6);
   }
@@ -1787,8 +1794,9 @@ function drawCarportElev(svg,d,side,vw,vh){
   };
   const wood=['#c3b47f','#8a7d50','#d8cc9c']; // charpente toujours en bois ; seuls les poteaux alu ou capotés alu sont noirs
   // Jambes de force (règle d'Antony du 13/10/2026) : toujours, que les poteaux soient en bois, capotés alu ou en alu (percés), pour le contreventement ;
-  // seule exception, la charpente en lamellé-collé : QUADRO, ou écartement « Max 6 m lamellé-collé » choisi en largeur ou en profondeur
-  const noBraces=d.toit==='QUADRO'||fv('f-esp')==='6'||fv('f-espL')==='6';
+  // seule exception, la charpente en lamellé-collé : QUADRO, ou écartement « Max 6 m lamellé-collé » ; la poutre lamellé-collé ne court que dans
+  // le sens choisi (largeur : vues de face et du fond ; profondeur : vues de côté), l'autre sens garde ses jambes de force (audit du 14/10)
+  const noBraces=d.toit==='QUADRO'||(isFace?fv('f-espL')==='6':fv('f-esp')==='6');
   const piece=(pts)=>sPoly(svg,pts,real?wood[0]:'#d5d8dc',real?wood[1]:'#555',real?.7:1);
   const beam=(x,y,w,h)=>{piece([[x,y],[x+w,y],[x+w,y+h],[x,y+h]]); if(real) sRect(svg,x,y,w,Math.max(.5,h*.18),wood[2],'none',0);};
   const member=(x1,y1,x2,y2,tk)=>{ // pièce inclinée d'épaisseur tk
@@ -1803,10 +1811,12 @@ function drawCarportElev(svg,d,side,vw,vh){
   const kneeBraces=()=>{ // jambes de force à 45° entre poteaux et entrait / sablière
     if(wallSide||CLOSALL.includes(side)||noBraces) return;
     const kb=Math.min(0.5*sc,hpx*.25);
+    // carport adossé vu de face ou du fond : le poteau voisin du mur a aussi sa jambe de force côté mur (la poutre porte sur le mur)
+    const murG=isFace&&d.ados!=='non'&&((d.ados==='gauche')!==(side==='fond')), murD=isFace&&d.ados!=='non'&&!murG;
     ts.forEach((t,i)=>{
       const px=baseX+(dW-ps)*t;
-      if(i>0) member(px,topY+kb,px-kb,topY,Math.max(1.6,0.08*sc));
-      if(i<ts.length-1) member(px+ps,topY+kb,px+ps+kb,topY,Math.max(1.6,0.08*sc));
+      if(i>0||murG) member(px,topY+kb,px-kb,topY,Math.max(1.6,0.08*sc));
+      if(i<ts.length-1||murD) member(px+ps,topY+kb,px+ps+kb,topY,Math.max(1.6,0.08*sc));
     });
   };
   const sabliere=()=>{ // entrait (face) ou sablière (côté) ; lamellé-collé avec les poteaux alu : lamelles visibles
@@ -1969,7 +1979,8 @@ function drawCarportElev(svg,d,side,vw,vh){
   // Espacement des poteaux : passage libre entre poteaux (et entraxe, d'axe à axe)
   if(!wallSide&&np>1){
     const esp=(viewW-d.wt)*(ts[1]-ts[0]);
-    sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`${np} poteaux — ${(esp-d.wt).toFixed(2)} m entre poteaux (entraxe ${esp.toFixed(2)} m)`,7,'#555');
+    // « d'axe en axe » plutôt qu'« entraxe » : Bérénice appelle entraxe le passage entre poteaux (mail du 09/10), audit du 14/10
+    sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`${np} poteaux — ${(esp-d.wt).toFixed(2)} m entre poteaux (d'axe en axe ${esp.toFixed(2)} m)`,7,'#555');
   } else if(!wallSide&&np===1){
     sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`1 poteau`,7,'#555');
   }
@@ -2278,7 +2289,7 @@ const MPRESETS=[
 ];
 const presetOf=m=>MPRESETS.find(p=>p.id===m.preset)||{};
 const isSliding=m=>/^coul/.test(presetOf(m).dr||'');
-const isDoubleM=m=>(presetOf(m).leaves||[]).length===2||/double/i.test(m.label);
+const isDoubleM=m=>(presetOf(m).leaves||[]).length===2||/double(?!\s*vitrage)/i.test(m.label);
 // Options par ouverture (codes de la table « menuiseries » du site)
 const MOPTS={
   fenetre:[['','Aucune'],['VDF','Volets décoratifs fixes'],['VBF','Volets battants'],['115','Jardinière']],
@@ -2313,6 +2324,17 @@ function menuWarnings(d){
       const c=box(o);
       if(b.x0<c.x1&&c.x0<b.x1&&b.y0<c.y1&&c.y0<b.y1) W.push(`${n} et ouverture ${j+1} se chevauchent sur le mur ${m.wall}.`);
     });
+    // audit du 14/10 (générateur) : la porte de garage compte comme une menuiserie ; une porte ne se pose pas sur un poteau de carport
+    if(ST.type==='garage'&&m.wall==='face'){
+      const gw=(parseFloat(fv('f-pglw'))||237)/100, gh=(parseFloat(fv('f-pglh'))||200)/100;
+      if(b.x0<d.L/2+gw/2&&d.L/2-gw/2<b.x1&&b.y0<gh) W.push(`${n} : recouvre la porte de garage ; la déplacer.`);
+    }
+    if(ST.type==='carport'){
+      const sec=parseFloat(fv('f-pot'))||0.12, face=m.wall==='face'||m.wall==='fond';
+      let ts=face?carportColsT(d):Array.from({length:Math.max(2,d.nRows||2)},(_,k,a)=>k/(a.length-1));
+      if(m.wall==='fond') ts=ts.map(t=>1-t);
+      if(ts.some(t=>{const p0=(b.w-sec)*t; return b.x0<p0+sec&&p0<b.x1;})) W.push(`${n} : recouvre un poteau du carport ; la placer entre deux poteaux.`);
+    }
     if(isSliding(m)){
       const zs=isDoubleM(m)?[[b.x0-m.lw/200,b.x0],[b.x1,b.x1+m.lw/200]]:(m.rail==='droite'?[[b.x1,b.x1+m.lw/100]]:[[b.x0-m.lw/100,b.x0]]);
       const ins=P.dr==='coulO'?' (à l\'intérieur)':'';

@@ -370,7 +370,8 @@
           ST.ext[k] = { a: cs.indexOf(flanks[0]) >= 0, b: cs.indexOf(flanks[1]) >= 0, c: cs.indexOf(k) >= 0 };
           anyR = true;
         });
-        if (anyR) cfg['f-ext-ferm'] = typeR ? (T.remplissage(typeR.label) === 'ajouree' ? 'ajouree' : 'pleine') : 'pleine';
+        // ajourée, madrier clin 27 mm (dessiné en madrier, même sur un abri en ossature : audit du 14/10) ou pleine (bardage de l'abri)
+        if (anyR) cfg['f-ext-ferm'] = typeR ? ({ ajouree: 'ajouree', clin: 'clin' }[T.remplissage(typeR.label)] || 'pleine') : 'pleine';
       }
     }
     ST.type = CFG.kind; ST.cfg = cfg; ST.site = null;
@@ -515,11 +516,20 @@
         '</div>';
     }).join('');
   }
+  // Passage libre entre deux poteaux voisins (largeur, profondeur), poteaux intermédiaires et mur d'adossement compris (audit du 14/10 :
+  // « 4,36 m » en profondeur alors qu'un poteau intermédiaire coupe le passage en 2,12 m)
+  function passageCp(d, s) {
+    var sec = s.sec || 0.12, cols = E.carportColsT ? E.carportColsT(d) : [0, 1], nr = Math.max(2, d.nRows || 2), xs = cols.map(function (t) { return (d.L - sec) * t; });
+    if (d.ados && d.ados !== 'non') xs = d.ados === 'gauche' ? [-sec].concat(xs) : xs.concat([d.L]); // le mur tient lieu de poteau
+    var gl = Infinity; for (var i = 1; i < xs.length; i++) gl = Math.min(gl, xs[i] - xs[i - 1] - sec);
+    var gp = (d.P - sec) / (nr - 1) - sec;
+    return fr(Math.max(0, gl)) + ' (largeur) · ' + fr(Math.max(0, gp)) + ' m (profondeur)';
+  }
   function dimsList(L) {
     var d = L.d, s = L.s, rows;
     if (CFG.kind === 'carport') {
       rows = [['Dimensions hors tout', fr(d.htL) + ' × ' + fr(d.htP) + ' m'], ['Emprise des poteaux', fr(d.L) + ' × ' + fr(d.P) + ' m'],
-        ['Passage entre poteaux', fr(d.intL) + ' × ' + fr(d.intP) + ' m'], ['Hauteur sous ferme', fr(d.hInt) + ' m'],
+        ['Passage entre poteaux', passageCp(d, s)], ['Hauteur sous ferme', fr(d.hInt) + ' m'],
         ['Hauteur au faîtage', fr(d.hExt + d.rH) + ' m'], ['Surface couverte', fr(d.htL * d.htP) + ' m²'], ['Poteaux', d.nPosts + ' (' + Math.round(s.sec * 100) + ' × ' + Math.round(s.sec * 100) + ' cm)']];
     } else {
       rows = [['Dimensions extérieures', fr(d.L) + ' × ' + fr(d.P) + ' m'], ['Dimensions intérieures', fr(d.intL) + ' × ' + fr(d.intP) + ' m'],
@@ -1419,6 +1429,7 @@
         var k = f.getAttribute('data-vg-in'), i = nombre(cont(X.m[k])), v = parseFloat(String(f.value).replace(',', '.').replace(/[^\d.]/g, ''));
         if (isNaN(v)) v = 0; if (v > 10) v = v / 100; v = Math.round(v * 100) / 100;
         var mx = Math.min(i && parseFloat(i.max) || 5, extMax(k)); if (v > mx) v = mx >= 0.5 ? mx : 0; if (v > 0 && v < 0.3) v = 0.3;
+        f.value = fr(v); // valeur ramenée dans les bornes : la case l'affiche aussi (sinon « 300 » restait écrit, audit du 14/10)
         saisir(i, v > 0 ? v : ''); });
       b.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest('[data-vg-in]')) { e.preventDefault(); e.target.blur(); } });
       b.addEventListener('click', function (e) {

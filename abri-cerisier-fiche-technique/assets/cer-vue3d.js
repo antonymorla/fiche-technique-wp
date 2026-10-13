@@ -580,7 +580,8 @@ window.CerVue3D = (function () {
     if (carport) {
       var ps = Math.max(0.09, parseFloat(fv('f-pot')) || 0.12), alu = fv('f-pot') === '0.15' || fv('f-potalu') === 'oui', EN = 0.16, PH0 = 0.15;
       // jambes de force (règle d'Antony du 13/10/2026) : toujours, poteaux bois, capotés alu ou alu ; sauf charpente en lamellé-collé (QUADRO, écartement « Max 6 m lamellé-collé »)
-      var sansJ = quadro || fv('f-esp') === '6' || fv('f-espL') === '6';
+      // par sens (audit du 14/10) : la poutre lamellé-collé ne court que dans le sens où les poteaux sont à 6 m (largeur : x ; profondeur : z)
+      var sansX = quadro || fv('f-espL') === '6', sansZ = quadro || fv('f-esp') === '6', sansJ = sansX && sansZ;
       var cols = E.carportColsT ? E.carportColsT(d) : [0, 1], nr = Math.max(2, d.nRows || 2), cxs = cols.map(function (t) { return -L / 2 + ps / 2 + (L - ps) * t; }), czs = [];
       for (var ri = 0; ri < nr; ri++) czs.push(-P / 2 + ps / 2 + (P - ps) * ri / (nr - 1));
       var ados = d.ados && d.ados !== 'non' ? d.ados : '', clos = (E.closList ? E.closList() : []).filter(function (k) { return k !== ados; });
@@ -611,6 +612,7 @@ window.CerVue3D = (function () {
       if (!sansJ) { var kb = 0.5, sk = 0.07;
         cxs.forEach(function (x) { czs.forEach(function (z) {
           [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (dv) {
+            if (dv[0] ? sansX : sansZ) return;
             var nx = x + dv[0] * kb, nz = z + dv[1] * kb; if (nx < -L / 2 - 0.01 || nx > L / 2 + 0.01 || nz < -P / 2 - 0.01 || nz > P / 2 + 0.01) return;
             poutre(x + dv[0] * ps / 2, hE - kb, z + dv[1] * ps / 2, nx, hE, nz, sk, sk); }); }); }); }
       // 2 pans : ferme à poinçon à chaque rangée de poteaux (photos de nos carports)
@@ -714,10 +716,12 @@ window.CerVue3D = (function () {
     TOIT = G.children.slice(nToit0); // couverture et charpente : soulevées ensemble en vue « Intérieur »
     // ── extensions : poteaux massifs 12 × 12 aux angles extérieurs, sablière ──
     var poteau = function (x, z) { var h = sous(x, z); var mm = massif(0.12, h, 0.12); mm.position.set(x, h / 2, z); G.add(mm); };
-    if (d.ovF > 0.5) { poteau(-L / 2 + 0.06, ZF - 0.06); poteau(L / 2 - 0.06, ZF - 0.06); }
-    if (d.ovB > 0.5) { poteau(-L / 2 + 0.06, ZB + 0.06); poteau(L / 2 - 0.06, ZB + 0.06); }
-    if (d.ovL > 0.5) { poteau(X0 + 0.06, P / 2 - 0.06); poteau(X0 + 0.06, -P / 2 + 0.06); var sb = massif(0.09, 0.14, P, 'z'); sb.position.set(X0 + 0.06, sous(X0 + 0.06, 0) - 0.07, 0); G.add(sb); }
-    if (d.ovR > 0.5) { poteau(X1 - 0.06, P / 2 - 0.06); poteau(X1 - 0.06, -P / 2 + 0.06); var sb2 = massif(0.09, 0.14, P, 'z'); sb2.position.set(X1 - 0.06, sous(X1 - 0.06, 0) - 0.07, 0); G.add(sb2); }
+    // mêmes places que sur le plan (acft-engine, drawPostRow) : les angles, puis un poteau tous les 3 m au plus (audit du 14/10)
+    var rang = function (a0, a1, f) { var n = Math.max(2, Math.ceil(Math.abs(a1 - a0 + (a1 > a0 ? 0.12 : -0.12)) / 3) + 1); for (var i = 0; i < n; i++) f(a0 + (a1 - a0) * i / (n - 1)); };
+    if (d.ovF > 0.5) rang(-L / 2 + 0.06, L / 2 - 0.06, function (x) { poteau(x, ZF - 0.06); });
+    if (d.ovB > 0.5) rang(-L / 2 + 0.06, L / 2 - 0.06, function (x) { poteau(x, ZB + 0.06); });
+    if (d.ovL > 0.5) { rang(P / 2 - 0.06, -P / 2 + 0.06, function (z) { poteau(X0 + 0.06, z); }); var sb = massif(0.09, 0.14, P, 'z'); sb.position.set(X0 + 0.06, sous(X0 + 0.06, 0) - 0.07, 0); G.add(sb); }
+    if (d.ovR > 0.5) { rang(P / 2 - 0.06, -P / 2 + 0.06, function (z) { poteau(X1 - 0.06, z); }); var sb2 = massif(0.09, 0.14, P, 'z'); sb2.position.set(X1 - 0.06, sous(X1 - 0.06, 0) - 0.07, 0); G.add(sb2); }
     // ── fermetures des extensions (plan du moteur) ──
     var EX = E.extGeom ? E.extGeom(d) : { seg: [] };
     if (EX.seg.length) {
