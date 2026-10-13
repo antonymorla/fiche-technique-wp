@@ -300,15 +300,22 @@ function couvFin(d){
 const FR_COL={exo:['#8e4b22','#5a2b10','#ad6a3c'],gris:['#9a9b94','#64655f','#b4b5ae'],vert:['#c4b886','#8a7f55','#d8cea2'],
   ayous:['#b07a4e','#7a4f2c','#c8956a'],alu:['#3d4146','#222528','#5a5f65']};
 // Teinte d'une menuiserie : cadre imposé par le modèle, sinon d'après le libellé
+// Règle d'Antony : une menuiserie en bois sans teinte imposée prend la teinte du bardage autoclave brun, gris ou noir
+// (jamais deux teintes d'autoclave sur le même abri) ; sur un bardage vert, en ayous ou en madrier, elle reste en autoclave vert
+function boisAssorti(d,defaut){
+  const w=d&&wallFin(d);
+  return w&&(w===FINITIONS.sr_brun||w===FINITIONS.srn_gris||w===FINITIONS.douglas_noir)?w:defaut;
+}
 function menuFin(m,d){
   const P=presetOf(m), l=m.label.toLowerCase();
+  if(P.fr==='vert'&&!/vert/.test(l)) return boisAssorti(d,{c:FR_COL.vert,ph:'vert'});
   if(P.fr) return {c:FR_COL[P.fr],alu:P.fr==='alu'};
   if(/alu|pvc|baie/.test(l)) return {c:FR_COL.alu,alu:true};
   if(/noir/.test(l)) return FINITIONS.douglas_noir;
   if(/gris/.test(l)) return FINITIONS.srn_gris;
   if(/brun/.test(l)) return FINITIONS.sr_brun;
   if(/ayous/.test(l)) return /aléatoire/.test(l)?FINITIONS.ayous_alea:FINITIONS.ayous125;
-  if(/ bois$/.test(P.cat||'')) return FINITIONS.sr_vert; // menuiseries bois du site : autoclave vert
+  if(/ bois$/.test(P.cat||'')) return boisAssorti(d,FINITIONS.sr_vert); // menuiseries bois du site : autoclave vert, ou la teinte du bardage
   return d?wallFin(d):FINITIONS.sr_vert; // sans teinte précisée : même bois que le bardage
 }
 // Bardage d'une porte d'ossature : sens des lames (clin horizontal / vertical) et ajouré d'après le libellé
@@ -316,7 +323,7 @@ function doorCladding(m,f){
   const l=m.label.toLowerCase(), ajour=/ajour/.test(l);
   if(/horizontal/.test(l)) return Object.assign({},f,{dir:'h',board:f.board||0.13});
   if(f.dir==='v') return ajour&&!f.gap?Object.assign({},f,{gap:0.01}):f;
-  return {dir:'v',boards:[f.board||0.13],c:f.c,gap:ajour?0.01:0};
+  return {dir:'v',boards:[f.board||0.13],c:f.c,ph:f.ph,gap:ajour?0.01:0};
 }
 function shade(hex,amt){ // amt -1..1
   const n=parseInt(hex.slice(1,7),16); let r=n>>16,g=(n>>8)&255,b=n&255;
@@ -543,7 +550,7 @@ function drawLeafCont(svg,x,y,w,h,f,sc,vit,frosted){
       sRect(svg,px,py,pw,ph,shade(dk,.1),'none',0);
       drawGlass(svg,px+Math.max(.5,0.012*sc),py+Math.max(.5,0.012*sc),pw-Math.max(1,0.024*sc),ph-Math.max(1,0.024*sc),frosted);
     } else {
-      sRect(svg,px,py,pw,ph,patBoards(svg,{dir:'h',board:Math.max(0.03,ph/sc/3),c:f.c},sc,px,py+ph,-.03),dk,.5);
+      sRect(svg,px,py,pw,ph,patBoards(svg,{dir:'h',board:Math.max(0.03,ph/sc/3),c:f.c,ph:f.ph},sc,px,py+ph,-.03),dk,.5);
     }
   }
 }
@@ -562,7 +569,7 @@ function drawSlide(svg,m,mx,my,mW,mH,sc,real){
     sTxtBg(svg,(zs[0][0]+zs[0][1])/2,my+mH*.18,'rail intérieur',6,'#3498db');
   } else {
     const rh=Math.max(2.5,0.12*sc), f=menuFin(m);
-    if(real) sRect(svg,x0,my-rh,x1-x0,rh,patBoards(svg,{dir:'h',board:0.12,c:f.c},sc,x0,my,-.08),shade(f.c[1],-.2),.8);
+    if(real) sRect(svg,x0,my-rh,x1-x0,rh,patBoards(svg,{dir:'h',board:0.12,c:f.c,ph:f.ph},sc,x0,my,-.08),shade(f.c[1],-.2),.8);
     else sRect(svg,x0,my-rh,x1-x0,rh,'#ecf0f1','#555',1);
     sTxtBg(svg,(zs[0][0]+zs[0][1])/2,my+mH*.18,'coulissement',6,'#e67e22');
   }
@@ -633,9 +640,9 @@ function drawMenuReal(svg,m,mx,my,mW,mH,sc,d){
       else drawGlassGrid(svg,gx,gy,gw,gh,2,P.dr==='mort'?2:3,shade(b0,-.12),sc,frosted);
       const by=gy+gh+st*.7, bh=iy+ih-st-by;
       if(P.dr==='pfdv') sRect(svg,gx,by,gw,bh,shade(b0,-.15),dk,.5);
-      else sRect(svg,gx,by,gw,bh,patBoards(svg,{dir:'v',boards:[0.09],c:f.c},sc,gx,by),dk,.5);
+      else sRect(svg,gx,by,gw,bh,patBoards(svg,{dir:'v',boards:[0.09],c:f.c,ph:f.ph},sc,gx,by),dk,.5);
     } else if(P.dr==='z'){ // lames verticales et écharpe en Z
-      sRect(svg,x,iy,w,ih,patBoards(svg,{dir:'v',boards:[0.1],c:f.c},sc,x,iy),dk,.7);
+      sRect(svg,x,iy,w,ih,patBoards(svg,{dir:'v',boards:[0.1],c:f.c,ph:f.ph},sc,x,iy),dk,.7);
       sLine(svg,x,iy+ih*.15,x+w,iy+ih*.15,dk,1.2); sLine(svg,x,iy+ih*.85,x+w,iy+ih*.85,dk,1.2);
       sLine(svg,x,iy+ih*.85,x+w,iy+ih*.15,dk,1.2);
     } else { // ALU / PVC : vitrage toute hauteur

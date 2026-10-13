@@ -41,7 +41,7 @@
   // ───────── fenêtre ─────────
   var CSS = '.cermr{position:fixed;inset:0;z-index:100001;background:rgba(30,30,24,.6);display:flex;align-items:center;justify-content:center;padding:14px;font-family:Jost,Futura,Arial,sans-serif;color:#2b2b22}' +
     '.cermr .b{position:relative;width:min(980px,100%);max-height:100%;overflow:auto;background:#fff;border-radius:18px;padding:22px 22px 18px;box-shadow:0 20px 60px rgba(0,0,0,.35)}' +
-    '.cermr h2{margin:0 0 4px;font-size:21px}.cermr .sous{color:#77755f;margin:0 0 14px;font-size:14px}' +
+    '.cermr h2{margin:0 0 4px;font-size:21px;padding-right:42px;white-space:normal;overflow-wrap:anywhere}.cermr .sous{color:#77755f;margin:0 0 14px;font-size:14px}' +
     '.cermr .et{display:flex;gap:6px;margin:0 0 16px;flex-wrap:wrap}.cermr .et span{font-size:12px;padding:4px 10px;border-radius:12px;background:#f1efe7;color:#77755f}.cermr .et span.on{background:#515136;color:#fff}' +
     '.cermr form{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.cermr label{display:grid;gap:4px;font-size:13px;color:#4b4a3c}.cermr label.l2{grid-column:1/-1}' +
     '.cermr input[type=text],.cermr input[type=email],.cermr input[type=tel],.cermr select{width:100%;box-sizing:border-box;border:1px solid #d9d5c7;border-radius:10px;padding:10px 12px;font:15px Jost,Arial,sans-serif;background:#fff;color:#2b2b22}' +
@@ -56,7 +56,7 @@
     '.cermr .ici{position:absolute;bottom:10px;right:10px;border:0!important;border-radius:18px!important;padding:8px 12px!important;margin:0!important;background:rgba(255,255,255,.95)!important;color:#2b2b22!important;font:600 13px Jost,Arial,sans-serif!important;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2)}' +
     '.cermr .rot{display:flex;align-items:center;gap:10px;margin:10px 0}.cermr .rot input{flex:1}.cermr .info{font-size:14px;line-height:1.5}.cermr .alerte{color:#9a3412}' +
     '.cermr .ph{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cermr .ph label{border:1px dashed #cfcab8;border-radius:12px;padding:12px;min-height:110px;align-content:start}.cermr .ph img{max-width:100%;max-height:140px;border-radius:8px;margin-top:6px}' +
-    '@media (max-width:640px){.cermr form,.cermr .ph{grid-template-columns:1fr}.cermr .b{padding:18px 14px}}';
+    '@media (max-width:640px){.cermr form,.cermr .ph{grid-template-columns:1fr}.cermr{padding:0}.cermr .b{padding:18px 14px;border-radius:0;height:100%;max-height:none}}';
   var ov = null;
   function ouvrir() {
     fermer();
@@ -265,11 +265,13 @@
       if (((a[1] > y) !== (c2[1] > y)) && (x < (c2[0] - a[0]) * (y - a[1]) / (c2[1] - a[1]) + a[0])) ok = !ok; } return ok; };
     cv.style.touchAction = 'none';
     cv.addEventListener('pointerdown', function (e) {
-      var p = ecran(e); pts[e.pointerId] = p; cv.setPointerCapture(e.pointerId);
+      var p = ecran(e); pts[e.pointerId] = p; try { cv.setPointerCapture(e.pointerId); } catch (x) {}
       var ids = Object.keys(pts);
       if (ids.length === 2) { var A = pts[ids[0]], B = pts[ids[1]]; geste = { t: 'pince', d: Math.hypot(A[0] - B[0], A[1] - B[1]), k: V.k, m: [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], c: [V.cx, V.cy] }; return; }
       var w = Wd(p[0], p[1]), centreA = S([pl.wx, pl.wy]);
-      var surAbri = dedans(p, toitW().map(S)) || Math.hypot(p[0] - centreA[0], p[1] - centreA[1]) < 28;
+      // marge de prise autour de l'abri en pixels d'écran (le dessin fait 1200 px de large : 28 px n'en faisaient que 8 sur un téléphone)
+      var tol = (e.pointerType === 'touch' ? 36 : 20) * W / (cv.getBoundingClientRect().width || W);
+      var surAbri = dedans(p, toitW().map(S)) || Math.hypot(p[0] - centreA[0], p[1] - centreA[1]) < tol;
       geste = surAbri ? { t: 'abri', o: [w[0] - pl.wx, w[1] - pl.wy] } : { t: 'carte', p: p, c: [V.cx, V.cy] };
       cv.style.cursor = surAbri ? 'move' : 'grabbing';
     });
@@ -363,9 +365,15 @@
       .then(function () { etat('Vue 3D du projet…'); fermerTemp(); return charger3D().then(function (V) { return V.capture(); }).then(function (u) { I.insertion = u; }, function () { I.insertion = null; }); })
       .then(function () { rouvrir(); etat('Mise en page du PDF…'); return logo().then(function (l) { I.logo = l; return jspdf(); }); })
       .then(function (J) { var doc = construirePdf(J, pr, I); var nom = 'dossier-mairie-' + (D.client.nom || 'abri').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.pdf';
-        doc.save(nom);
-        corps(3, 'Votre dossier est prêt', 'Le PDF « ' + esc(nom) + ' » est téléchargé.', '<p class="info">Il reste à remplir et signer le formulaire officiel (' + esc(LIB_FORM[pr.formalite].toLowerCase()) + ') sur service-public.fr, puis à le déposer en mairie avec ce dossier. Un conseiller Abri Cerisier peut vous accompagner.</p><div class="act"><button type="button" data-a="fin">Fermer</button></div>');
-        ov.querySelector('[data-a=fin]').onclick = fermer;
+        // téléphone : un téléchargement lancé en fin de calcul est bloqué (iPhone surtout) ; le client touche lui-même le lien,
+        // et peut l'enregistrer dans Fichiers ou l'envoyer par mail avec le partage du téléphone
+        var blob = doc.output('blob'), url = URL.createObjectURL(blob), tel = window.matchMedia && matchMedia('(pointer:coarse)').matches;
+        var fic = null; try { fic = new File([blob], nom, { type: 'application/pdf' }); } catch (e) {}
+        var partage = !!(tel && fic && navigator.canShare && navigator.canShare({ files: [fic] }));
+        if (!tel) doc.save(nom);
+        corps(3, 'Votre dossier est prêt', tel ? 'Touchez le bouton pour ouvrir votre dossier PDF.' : 'Le PDF « ' + esc(nom) + ' » est téléchargé.', '<div class="act" style="justify-content:flex-start"><a class="btn" data-a="pdf" href="' + url + '" download="' + esc(nom) + '" target="_blank" rel="noopener" style="text-decoration:none">' + (tel ? 'Ouvrir mon dossier (PDF)' : 'Télécharger à nouveau') + '</a>' + (partage ? '<button type="button" data-a="partager">Enregistrer ou envoyer</button>' : '') + '</div><p class="info">Il reste à remplir et signer le formulaire officiel (' + esc(LIB_FORM[pr.formalite].toLowerCase()) + ') sur service-public.fr, puis à le déposer en mairie avec ce dossier. Un conseiller Abri Cerisier peut vous accompagner.</p><div class="act"><button type="button" data-a="fin">Fermer</button></div>');
+        if (partage) ov.querySelector('[data-a=partager]').onclick = function () { navigator.share({ files: [fic], title: 'Dossier mairie' }).catch(function () {}); };
+        ov.querySelector('[data-a=fin]').onclick = function () { fermer(); setTimeout(function () { URL.revokeObjectURL(url); }, 60000); };
       })
       .catch(function (e) { rouvrir(); etat('La création du dossier a échoué : ' + (e && e.message ? e.message : 'réessayez.')); });
   }

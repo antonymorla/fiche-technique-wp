@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.2
+Stable tag: 3.2.3
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,11 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.3 =
+* PORTES ASSORTIES (règle d'Antony) : une porte ou une fenêtre en bois sans teinte précisée (porte en Z, modèles classiques bois, fenêtres fixes à cadre vert) prend la teinte du bardage autoclave brun, gris ou noir, sur le plan et en 3D. Sur un bardage vert, en ayous ou en madrier : autoclave vert, comme avant.
+* VUE 3D (module toujours désactivé) : les portes reçoivent la texture photo du bois (elles étaient dessinées en aplat) ; autoclave brun refait à partir de la photo du pin vert, recolorée sur la teinte du brun « modifié » du dossier Textures.
+* TÉLÉPHONE : vue 3D cadrée en entier sur un écran en hauteur, vues sur une ligne qui défile au doigt, actions dessous ; dossier mairie en plein écran, titre qui ne passe plus sous la croix, abri facile à attraper au doigt sur la carte (la marge de prise faisait 8 px sur un téléphone) ; PDF ouvert par un bouton à toucher, avec « Enregistrer ou envoyer » (Fichiers, mail) quand le téléphone le permet. Vérifié sur Safari iPhone 13 et Chrome Android.
 
 = 3.2.2 =
 * MENUISERIES ASSORTIES AU BARDAGE (règle d'Antony, réglage « Menuiseries bois assorties au bardage », activé) : une porte ou une fenêtre en autoclave d'une autre teinte que le bardage n'est plus proposée (vert, brun, gris, noir, ayous) ; alu, PVC et modèles sans teinte restent. La menuiserie cochée passe au même modèle dans la bonne teinte (ex. porte verte cochée par défaut sur un abri brun → porte brune). Vérifié : abri ossature brun.

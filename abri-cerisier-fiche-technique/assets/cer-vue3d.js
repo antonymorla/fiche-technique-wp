@@ -21,7 +21,8 @@ window.CerVue3D = (function () {
   // vert : zones = bandes sans nœud (pixels), noeuds = [x, y, largeur, hauteur] des nœuds reposés au hasard, petits = petits nœuds par m².
   var PHOTOS = {
     vert: ['pin-autoclave-vert.jpg', { zones: [[0, 165], [250, 400], [555, 816]], noeuds: [[410, 205, 120, 100], [300, 450, 120, 105]], petits: 5 }],
-    brun: ['bois-brun.jpg', { petits: 0 }], gris: ['bois-gris.jpg', { petits: 0 }], noir: ['bois-noir.jpg', { petits: 0 }], ayous: ['bois-ayous.jpg', { petits: 0 }]
+    // brun = la photo du vert recolorée (même fil, mêmes nœuds) : demande d'Antony
+    brun: ['bois-brun.jpg', { zones: [[0, 165], [250, 400], [555, 816]], noeuds: [[410, 205, 120, 100], [300, 450, 120, 105]], petits: 5 }], gris: ['bois-gris.jpg', { petits: 0 }], noir: ['bois-noir.jpg', { petits: 0 }], ayous: ['bois-ayous.jpg', { petits: 0 }]
   };
   function enDataUrl(url) {
     return /^data:/.test(url) ? Promise.resolve(url) : fetch(url).then(function (r) { if (!r.ok) throw new Error('texture'); return r.blob(); })
@@ -550,7 +551,7 @@ window.CerVue3D = (function () {
   var ouvert = null;
   var CSS = '.cer3d{position:fixed;inset:0;z-index:100000;background:rgba(30,30,24,.6);display:flex;align-items:center;justify-content:center;padding:10px;font-family:Jost,Futura,Arial,sans-serif}' +
     '.cer3d .b{position:relative;width:100%;height:100%;background:#cfdbe4;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}' +
-    '@media (max-width:700px){.cer3d{padding:0}.cer3d .b{border-radius:0}}' + CHARGE_CSS +
+    '@media (max-width:700px){.cer3d{padding:0}.cer3d .b{border-radius:0}}' + CHARGE_CSS + '.cer3d .vv,.cer3d .va{display:contents}' +
     '.cer3d .zone{position:relative;width:100%;height:100%}.cer3d .zone img.fond{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}' +
     '.cer3d canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important;touch-action:none}' +
     '.cer3d .x{position:absolute;top:12px;right:12px;z-index:3;width:40px!important;height:40px!important;min-width:0!important;padding:0!important;margin:0!important;border-radius:50%!important;border:0!important;background:#fff!important;color:#2b2b22!important;font:400 26px/40px Arial,sans-serif!important;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}' +
@@ -562,7 +563,9 @@ window.CerVue3D = (function () {
     '.cer3d .p h3{margin:0 0 6px;font-size:16px;display:flex;justify-content:space-between;align-items:center}.cer3d .p .rep{border:0!important;background:#f1efe7!important;border-radius:50%!important;width:28px!important;height:28px!important;padding:0!important;font:400 18px/28px Arial!important;color:#2b2b22!important;cursor:pointer}.cer3d .sl span{min-width:92px;font-size:13px}.cer3d .p img.qr{display:block;margin:8px auto;width:200px;height:200px;image-rendering:pixelated}.cer3d .p small{color:#77755f}' +
     '.cer3d .ch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;color:#2b2b22;z-index:2}' +
     '.cer3d .sl{display:flex;align-items:center;gap:8px;margin:8px 0}.cer3d .sl input{flex:1}' +
-    '@media (max-width:700px){.cer3d.photo .p{top:auto;bottom:58px;left:10px;right:10px;width:auto;padding:10px 12px}.cer3d.photo .p small{display:none}.cer3d.photo .sl{margin:4px 0}}';
+    '@media (max-width:700px){.cer3d.photo .p{top:auto;bottom:58px;left:10px;right:10px;width:auto;padding:10px 12px}.cer3d.photo .p small{display:none}.cer3d.photo .sl{margin:4px 0}}' +
+    // téléphone : les vues sur une ligne qui défile au doigt, les deux actions dessous
+    '@media (max-width:700px){.cer3d .v{left:0;right:0;bottom:10px;flex-direction:column;flex-wrap:nowrap;gap:6px}.cer3d .vv{display:flex;gap:6px;overflow-x:auto;padding:0 10px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.cer3d .vv::-webkit-scrollbar{display:none}.cer3d .vv button{flex:0 0 auto;white-space:nowrap}.cer3d .va{display:flex;gap:6px;padding:0 10px}.cer3d .va button{flex:1 1 0;padding:10px 8px!important}}';
   function ouvrir(mode) {
     var E = window.CerPlan; if (!E || !E.ST || !E.ST.cfg) return Promise.resolve(null);
     if (ouvert) fermer();
@@ -570,8 +573,8 @@ window.CerVue3D = (function () {
     var ov = document.createElement('div'); ov.className = 'cer3d';
     ov.innerHTML = '<style>' + CSS + '</style><div class="b"><div class="zone"><div class="ch">' + CHARGE_HTML + '</div></div>' +
       '<span class="t">Votre ' + nom + ' en 3D · glissez pour tourner</span><button class="x" type="button" aria-label="Fermer">×</button>' +
-      '<div class="v"><button data-v="trois" class="on">3/4</button><button data-v="face">Devant</button><button data-v="gauche">Gauche</button><button data-v="droite">Droite</button><button data-v="fond">Derrière</button><button data-v="dessus">Dessus</button><button data-v="int">Intérieur</button><button data-v="tour">Tourner</button>' +
-      '<button data-a="ar" class="fort">Voir chez moi (réalité augmentée)</button><button data-a="photo">Sur une photo de mon jardin</button></div></div>';
+      '<div class="v"><span class="vv"><button data-v="trois" class="on">3/4</button><button data-v="face">Devant</button><button data-v="gauche">Gauche</button><button data-v="droite">Droite</button><button data-v="fond">Derrière</button><button data-v="dessus">Dessus</button><button data-v="int">Intérieur</button><button data-v="tour">Tourner</button></span>' +
+      '<span class="va"><button data-a="ar" class="fort">Voir chez moi (réalité augmentée)</button><button data-a="photo">Sur une photo de mon jardin</button></span></div></div>';
     document.body.appendChild(ov);
     ov.querySelector('.x').onclick = fermer; ov.addEventListener('click', function (e) { if (e.target === ov) fermer(); });
     return charger().then(function () { return monter(ov, null); }).then(function () { if (mode === 'photo') choisirPhoto(); return ov; })
@@ -599,7 +602,7 @@ window.CerVue3D = (function () {
     ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI * 0.495; ctl.minDistance = 2.5; ctl.maxDistance = 40; ctl.enablePan = !!photo;
     var cible = new THREE.Vector3((u.x0 + u.x1) / 2, Math.min(1.3, u.h / 2), (u.zF + u.zB) / 2), r = Math.max(u.x1 - u.x0, u.zF - u.zB, 3) * 2;
     var VUES = { trois: [0.62, 0.42, 1.3], face: [0, 0.28, 1], gauche: [-1, 0.28, 0.15], droite: [1, 0.28, 0.15], fond: [0.15, 0.28, -1], dessus: [0.25, 1.6, 0.55], int: [0.42, 1.0, 0.8] };
-    var anim = null, recul = function (v) { return r * (v === 'dessus' ? 1.35 : 1) * Math.max(1, Math.pow(1.4 / Math.max(0.4, cam.aspect), 0.6)); };
+    var anim = null, recul = function (v) { return r * (v === 'dessus' ? 1.35 : 1) * Math.max(1, 1.4 / Math.max(0.4, cam.aspect)); };
     var vers = function (v, inst) { var p = new THREE.Vector3().fromArray(VUES[v]).normalize().multiplyScalar(recul(v)).add(cible);
       ov.querySelectorAll('.v [data-v]').forEach(function (x) { if (x.dataset.v !== 'int' && x.dataset.v !== 'tour') x.classList.toggle('on', x.dataset.v === v); });
       if (inst) { cam.position.copy(p); ctl.target.copy(cible); } else anim = { t0: performance.now(), p0: cam.position.clone(), p1: p }; };
@@ -648,7 +651,7 @@ window.CerVue3D = (function () {
       c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
       var ph = new Image(); ph.onload = function () {
         var v = ov.querySelector('.v'); v.querySelectorAll('[data-a],[data-v]').forEach(function (x) { x.style.display = 'none'; });
-        if (!v.querySelector('[data-a=valider]')) v.insertAdjacentHTML('beforeend', '<button data-a="valider" class="fort">Valider le montage</button>');
+        if (!v.querySelector('[data-a=valider]')) v.querySelector('.va').insertAdjacentHTML('beforeend', '<button data-a="valider" class="fort">Valider le montage</button>');
         v.querySelector('[data-a=valider]').style.display = '';
         monter(ov, ph).then(modePhoto);
       };
@@ -691,7 +694,7 @@ window.CerVue3D = (function () {
       ray.setFromCamera(v, cam); var q = new THREE.Vector3(); return ray.ray.intersectPlane(plan, q) ? q : null; };
     var mesure = function () { var a = Object.values(pts); if (a.length < 2) return null; return { d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), a: Math.atan2(a[1].y - a[0].y, a[1].x - a[0].x) }; };
     el.style.touchAction = 'none';
-    el.addEventListener('pointerdown', function (e) { pts[e.pointerId] = { x: e.clientX, y: e.clientY }; el.setPointerCapture(e.pointerId);
+    el.addEventListener('pointerdown', function (e) { pts[e.pointerId] = { x: e.clientX, y: e.clientY }; try { el.setPointerCapture(e.pointerId); } catch (x) {}
       if (Object.keys(pts).length === 1) { var q = auSol(e); prise = q ? q.sub(piv.position) : null; } else { prise = null; deux = { m: mesure(), dist: P.dist, rot: P.rot }; } });
     el.addEventListener('pointermove', function (e) { if (!pts[e.pointerId]) return; pts[e.pointerId] = { x: e.clientX, y: e.clientY };
       if (deux && deux.m) { var m = mesure(); if (m) { P.dist = Math.max(taille0 * 0.8, Math.min(taille0 * 8, deux.dist * deux.m.d / Math.max(10, m.d))); P.rot = deux.rot - THREE.MathUtils.radToDeg(m.a - deux.m.a); appliquer(); } return; }
