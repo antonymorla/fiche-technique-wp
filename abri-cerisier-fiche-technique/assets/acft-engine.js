@@ -1754,9 +1754,10 @@ function drawCarportElev(svg,d,side,vw,vh){
     }
     return 'bac';
   };
-  const wood=['#c3b47f','#8a7d50','#d8cc9c']; // charpente toujours en bois (lamellé-collé avec les poteaux alu), seuls les poteaux sont noirs
-  // Pas de jambes de force (règle d'Antony) sur les carports QUADRO et avec poteaux alu ou capotés alu : charpente en lamellé-collé
-  const noBraces=isAlu||d.toit==='QUADRO';
+  const wood=['#c3b47f','#8a7d50','#d8cc9c']; // charpente toujours en bois ; seuls les poteaux alu ou capotés alu sont noirs
+  // Jambes de force (règle d'Antony du 13/10/2026) : toujours, que les poteaux soient en bois, capotés alu ou en alu (percés), pour le contreventement ;
+  // seule exception, la charpente en lamellé-collé : QUADRO, ou écartement « Max 6 m lamellé-collé » choisi en largeur ou en profondeur
+  const noBraces=d.toit==='QUADRO'||fv('f-esp')==='6'||fv('f-espL')==='6';
   const piece=(pts)=>sPoly(svg,pts,real?wood[0]:'#d5d8dc',real?wood[1]:'#555',real?.7:1);
   const beam=(x,y,w,h)=>{piece([[x,y],[x+w,y],[x+w,y+h],[x,y+h]]); if(real) sRect(svg,x,y,w,Math.max(.5,h*.18),wood[2],'none',0);};
   const member=(x1,y1,x2,y2,tk)=>{ // pièce inclinée d'épaisseur tk
@@ -1871,8 +1872,8 @@ function drawCarportElev(svg,d,side,vw,vh){
         sTxt(svg,rx+rw/2,highY-7,'faîte (au fond)',7,'#555');
       }
     } else {
-      // Ferme 1 pan (photo d'Antony du 13/10/2026) : entrait, poteau haut d'une seule pièce jusqu'à l'arbalétrier (sous la rive),
-      // jambe de force du poteau haut vers l'arbalétrier, montant sur un poteau intermédiaire, rive qui suit la pente
+      // Ferme 1 pan (photo et remarque d'Antony du 13/10/2026) : entrait, poteau haut d'une seule pièce jusqu'à l'arbalétrier (sous la rive),
+      // contre-fiche centrale du pied du poteau haut au milieu de la pente, montant sur un poteau intermédiaire, rive qui suit la pente
       const xs=rx, xe=rx+rw, lyL=highL?highY:lowY, lyR=highR?highY:lowY;
       const yAt=x=>lyL+(lyR-lyL)*(x-xs)/(xe-xs||1);
       kneeBraces(); sabliere();
@@ -1880,8 +1881,9 @@ function drawCarportElev(svg,d,side,vw,vh){
       postsUp=()=>{ if(hasHigh) postTop(xp,yAt(xc)+rv*.9); };
       postsUp();
       ts.forEach(t=>{ if(t<=0.001||t>=0.999) return; const x=baseX+(dW-ps)*t+ps/2; vert(x,yAt(x)+rv*.9,topY-bh,Math.max(1.6,0.09*sc)); }); // montants
-      if(!wallSide&&hasHigh&&!noBraces){ const y0=topY-bh-Math.max(2,0.12*sc), dx=Math.max(0.3*sc,Math.min(0.45*dW,0.55*(y0-(yAt(xc)+rv))));
-        member(xc+sg*ps/2,y0,xc+sg*dx,yAt(xc+sg*dx)+rv*.95,Math.max(1.6,0.09*sc)); } // jambe de force du poteau haut vers l'arbalétrier
+      if(!wallSide&&hasHigh){ // contre-fiche centrale : du pied du poteau haut (sur l'entrait) au milieu de la pente, jusqu'au poteau suivant
+        const xs2=ts.map(t=>baseX+(dW-ps)*t+ps/2).filter(x=>Math.abs(x-xc)>1).sort((p,q)=>Math.abs(p-xc)-Math.abs(q-xc)), xn=xs2.length?xs2[0]:(highL?rx+rw:rx), xm=(xc+xn)/2;
+        member(xc+sg*ps/2,topY-bh,xm,yAt(xm)+rv*.95,Math.max(1.6,0.09*sc)); }
       rive([[xs,lyL],[xe,lyR]]);
       if(gout){ const g=gutterSec(svg,highL?xe:xs,(highL?lyR:lyL)+ed,sc,highL?1:-1); cpEnd[highL?'R':'L']={x:g.x,y:g.y}; }
       else cpEnd[highL?'R':'L']={x:(highL?xe:xs)+(highL?-1:1)*inset,y:(highL?lyR:lyL)+rv};

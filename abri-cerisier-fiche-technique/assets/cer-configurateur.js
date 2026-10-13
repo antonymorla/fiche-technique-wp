@@ -275,7 +275,8 @@
     var cv = first(M.couv); if (cv) cfg['f-couv'] = T.couv(cv.label);
     var CHOIX = { couv: !!cv }; // options réellement choisies : les autres gardent la valeur par défaut du dessin
     // Sous-face vue d'en dessous (carport) : planchettes, OSB (EPDM), feutre anti-condensation ou bac acier nu
-    cfg['f-sousface'] = cv ? (/planchette/i.test(cv.label) ? 'planchette' : /OSB/i.test(cv.label) ? 'osb' : /feutre/i.test(cv.label) ? 'feutre' : 'non') : '';
+    // (règle d'Antony, 13/10/2026 : le shingle a toujours sa sous-face en planchettes de pin autoclave ; le bac acier seul montre la charpente et les tôles)
+    cfg['f-sousface'] = cv ? (/planchette|shingle/i.test(cv.label) ? 'planchette' : /OSB/i.test(cv.label) ? 'osb' : /feutre/i.test(cv.label) ? 'feutre' : 'non') : '';
     var gt = first(M.gout); if (gt && /^oui/i.test(gt.label)) cfg['f-gout'] = 'oui';
     ST.ext = {};
     if (CFG.kind === 'carport') {
@@ -373,7 +374,8 @@
   var DOCK = window.matchMedia('(max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait)');
   function build() {
     var sum = form.closest('.summary') || form.parentNode;
-    document.body.classList.add('cer-plan-on');
+    document.body.classList.add('cer-plan-on', 'cer-page'); // cer-page : aussi posé par le serveur (body_class) ; cer-hero-on seulement si le nouveau titre est là
+    if (document.querySelector('.cer-hero')) document.body.classList.add('cer-hero-on');
     sum.classList.add('cer-plan-grid');
     P = document.createElement('aside');
     P.className = 'cer-plan';
@@ -385,7 +387,7 @@
       // onglets + dessin : bloc qui reste en haut du plein écran (téléphone) pendant qu'on règle les menuiseries juste dessous
       '<div class="cer-plan__vis">' +
       '<div class="cer-plan__tabs" role="tablist">' + VIEWS.map(function (v) { return '<button type="button" role="tab" data-v="' + v[0] + '">' + v[1] + '</button>'; }).join('') + '</div>' +
-      '<div class="cer-plan__stage"><svg id="cer-sv-main" xmlns="http://www.w3.org/2000/svg"></svg><div class="cer-plan__empty">Choisissez la largeur et la profondeur : le dessin apparaît ici.</div></div>' +
+      '<div class="cer-plan__stage"><svg id="cer-sv-main" xmlns="http://www.w3.org/2000/svg"></svg><div class="cer-plan__empty"><svg viewBox="0 0 200 120" aria-hidden="true"><path d="M30 104V54L100 18l70 36v50" fill="none" stroke="#b8b59c" stroke-width="2" stroke-dasharray="5 4"/><path d="M20 58 100 16l80 42" fill="none" stroke="#b8b59c" stroke-width="2.5"/><rect x="86" y="66" width="28" height="38" fill="none" stroke="#b8b59c" stroke-width="2" stroke-dasharray="5 4"/><path d="M10 104h180" stroke="#b8b59c" stroke-width="2"/></svg>Choisissez la largeur et la profondeur : votre ' + NOUN + ' se dessine ici, à l\u2019échelle, puis à chaque choix.</div></div>' +
       '</div>' +
       '<div class="cer-plan__warn"></div>' +
       '<details class="cer-plan__place"><summary>Placer mes portes et fenêtres</summary><div class="cer-plan__places"></div></details>' +
@@ -669,6 +671,7 @@
   function draw() {
     if (!P) return;
     var L = LAST, svg = P.querySelector('#cer-sv-main'), empty = P.querySelector('.cer-plan__empty');
+    document.body.classList.toggle('cer-sans-dims', !L); // panier, 3D et « Voir mon abri » attendent les dimensions
     Array.prototype.forEach.call(P.querySelectorAll('.cer-plan__tabs button'), function (b) { b.classList.toggle('on', b.getAttribute('data-v') === VIEW); });
     if (!L) { svg.style.display = 'none'; empty.style.display = ''; P.querySelector('.cer-plan__dims').innerHTML = ''; try { polish(); } catch (e) { if (window.console) console.warn('[Cerisier prix]', e); } return; } // prix tenu à jour même sans dessin (jamais un ancien prix)
     svg.style.display = ''; empty.style.display = 'none';
@@ -762,7 +765,32 @@
     var ORDER = ['Dimensions', 'Structure', 'Toiture', 'Menuiseries', 'Extension', 'Fermetures', 'Options', 'Livraison et pose'];
     return rows.map(function (r, i) { r.i = i; return r; }).sort(function (a, b) { return (ORDER.indexOf(a.g) - ORDER.indexOf(b.g)) || (a.i - b.i); });
   }
+  // Haut de page (maquette validée par Antony le 13/10/2026) : étape 1 marquée « Commencez ici », schéma largeur / profondeur, aide sous le panier
+  function depart() {
+    var s1 = form.querySelector('.wapf-section.TITRE'); if (!s1 || s1.classList.contains('cer-depart')) return;
+    s1.classList.add('cer-depart');
+    var ici = document.createElement('span'); ici.className = 'cer-ici'; ici.textContent = 'Commencez ici'; s1.appendChild(ici);
+    Array.prototype.forEach.call(s1.querySelectorAll(':scope > .wapf-section'), function (d) { d.classList.add('cer-dim'); });
+    var cp = CFG.kind === 'carport', txt = cp ? 'La <b>largeur</b> est le côté par lequel on entre ; la <b>profondeur</b> va de l\u2019avant vers l\u2019arrière.'
+      : 'La <b>largeur</b> est le côté de la façade, celui de la ' + (CFG.kind === 'garage' ? 'porte de garage' : 'porte') + ' ; la <b>profondeur</b> va de l\u2019avant vers l\u2019arrière.';
+    var sch = document.createElement('div'); sch.className = 'cer-schema';
+    sch.innerHTML = '<svg viewBox="0 0 150 92" aria-hidden="true"><rect x="34" y="12" width="82" height="52" rx="2" fill="#f3f1ea" stroke="#515136" stroke-width="2"/>' + (cp ? '' : '<rect x="66" y="61" width="18" height="6" fill="#515136"/>') +
+      '<path d="M34 80h82M34 76v8M116 76v8" stroke="#a5a38b" stroke-width="1.5"/><text x="75" y="91" font-size="10" text-anchor="middle" fill="#55574a" font-family="Jost,Arial">Largeur (' + (cp ? 'entrée' : 'façade') + ')</text>' +
+      '<path d="M128 12v52M124 12h8M124 64h8" stroke="#a5a38b" stroke-width="1.5"/><text x="140" y="42" font-size="10" fill="#55574a" font-family="Jost,Arial" transform="rotate(90 140 42)" text-anchor="middle">Profondeur</text>' +
+      '<text x="75" y="42" font-size="10" text-anchor="middle" fill="#7a7863" font-family="Jost,Arial">vu de dessus</text></svg><span>' + txt + '</span>';
+    var titre = s1.querySelector(':scope > .wapf-field-p:not(.cer-vg-cache)');
+    if (titre) titre.insertAdjacentElement('afterend', sch); else s1.insertBefore(sch, s1.firstChild);
+    var a = document.createElement('p'); a.className = 'cer-aide-panier'; a.textContent = 'Choisissez d\u2019abord la largeur et la profondeur'; form.insertAdjacentElement('afterend', a);
+  }
+  // sections WAPF dont tous les champs sont masqués (ex. titre d'étape suivant, vide au départ) : pas de cadre vide
+  function vides() {
+    Array.prototype.forEach.call(form.querySelectorAll('.wapf-section'), function (s) {
+      var vis = Array.prototype.some.call(s.querySelectorAll('.wapf-field-container'), function (c) { return !c.closest('.wapf-hide') && getComputedStyle(c).display !== 'none'; });
+      s.classList.toggle('cer-vide', !vis);
+    });
+  }
   function polish() {
+    try { depart(); vides(); } catch (e) { if (window.console) console.warn('[Cerisier haut de page]', e); }
     var tot = numTxt((form.querySelector('.blocdimpr1 .wapf-calc-text, .field-453ead0 .wapf-calc-text, .field-d0abad4 .wapf-calc-text') || {}).textContent);
     var base = numTxt((form.querySelector('.field-4a1fc24 .wapf-calc-text, .field-b53e07d .wapf-calc-text, .field-d0aafc5 .wapf-calc-text') || {}).textContent);
     var box = P.querySelector('.cer-plan__prix');
@@ -1095,7 +1123,8 @@
     var montrer = ST.cfg && ST.cfg['f-toit'] === 'TOIT_PLAT' && /^madrier/.test(ST.cfg['f-sys'] || '') && !masqueWapf(ref);
     if (!montrer) { if (el) el.remove(); return; }
     var L0 = (parseFloat(ST.cfg['f-lar']) || 0) / 100, P0 = (parseFloat(ST.cfg['f-pro']) || 0) / 100;
-    var txt = 'Toit plat en madriers : les madriers dépassent de 10 cm à chaque angle. Votre ' + (CFG.kind === 'garage' ? 'garage' : 'abri') + ' mesurera <b>' + fr(L0 + 0.2) + ' × ' + fr(P0 + 0.2) + ' m</b> hors tout (+20 cm en façade et en profondeur).';
+    // cotes données par Bérénice le 13/10/2026 : en madriers toit plat (28 et 45 mm), l'extérieur du bardage fait 17 cm de moins que la dimension choisie
+    var txt = 'Toit plat en madriers : votre ' + (CFG.kind === 'garage' ? 'garage' : 'abri') + ' de ' + fr(L0) + ' × ' + fr(P0) + ' m mesure <b>' + fr(L0 - 0.17) + ' × ' + fr(P0 - 0.17) + ' m</b> à l\u2019extérieur du bardage ; les madriers dépassent de 10 cm à chaque angle.';
     if (!el) { el = document.createElement('p'); el.className = 'cer-vg-tp'; ref.parentNode.insertBefore(el, ref.nextSibling); }
     if (el.innerHTML !== txt) el.innerHTML = txt;
   }

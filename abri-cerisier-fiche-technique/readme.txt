@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.12
+Stable tag: 3.2.13
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,14 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.13 =
+* HAUT DES CONFIGURATEURS (maquette validée par Antony) : vrai titre (« Configurez votre abri de jardin sur mesure »), une phrase et quatre repères ; étape 1 marquée « Commencez ici » avec un schéma largeur / profondeur ; panier, « Voir en 3D » et « Voir mon abri » attendent les dimensions ; plus de case vide, de partage, de SKU, d'étiquettes du thème ni de description courte (celle du garage annonçait un configurateur « en cours de développement ») ; sur téléphone, largeur et profondeur l'une sous l'autre.
+* CARPORT 1 PAN : contre-fiche centrale du pied du poteau haut au milieu de la pente (demi-ferme), en 3D et sur le plan.
+* JAMBES DE FORCE (règle d'Antony) : toujours, poteaux bois, capotés alu ou alu ; seule exception la charpente en lamellé-collé (QUADRO, écartement « Max 6 m lamellé-collé »).
+* SOUS-FACE DU CARPORT en 3D d'après la couverture : bac acier seul = charpente et tôles ; « + sous-toiture planchette » et shingle = planchettes au-dessus de la charpente ; OSB ; feutre. Toit plat : plafond au niveau du bandeau seulement avec l'option planchettes « intégration spots », sinon pannes et tôles.
+* TOIT PLAT EN MADRIERS : message aux cotes de Bérénice (l'extérieur du bardage fait 17 cm de moins que la dimension choisie).
+* VUE 3D : le sol ne clignote plus (dalle et ombre de contact n'étaient plus à la même hauteur), herbe moins scintillante.
 
 = 3.2.12 =
 * CARPORT : les champs de calcul « Largeur hors tout (Copy) » et « Profondeur hors tout (Copy) » (classe non2) ne s'affichent plus ; ils se superposaient au titre de l'étape 1.

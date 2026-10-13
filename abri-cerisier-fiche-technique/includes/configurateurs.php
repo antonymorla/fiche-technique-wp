@@ -208,3 +208,55 @@ add_action( 'init', function () {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'cer_cfg_nettoyage' );
 	}
 } );
+
+/**
+ * Haut de page des configurateurs (maquette validée par Antony le 13/10/2026) : un vrai titre, une phrase et quatre repères
+ * à la place de « Configurateur Abri De jardin » ; plus de partage, de SKU, d'étiquettes du thème ni de description courte
+ * (celle du garage annonçait encore un configurateur « en cours de développement »).
+ */
+function cer_cfg_entete( $kind ) {
+	$t = [
+		'abri'    => [ 'abri de jardin', 'la toiture, le bois et les portes', 'abri' ],
+		'garage'  => [ 'garage en bois', 'la toiture, le bois et la porte de garage', 'garage' ],
+		'carport' => [ 'carport en bois', 'la toiture, les poteaux et les côtés fermés', 'carport' ],
+	][ $kind ] ?? null;
+	if ( ! $t ) {
+		return '';
+	}
+	$svg = function ( $d ) { return '<svg viewBox="0 0 24 24" fill="none" stroke="#515136" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $d . '</svg>'; };
+	$reperes = [
+		[ $svg( '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>' ), 'Prix en direct' ],
+		[ $svg( '<path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>' ), 'Plan à l\'échelle et vue 3D' ],
+		[ $svg( '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/>' ), 'Devis gratuit' ],
+		[ $svg( '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>' ), 'En kit ou posé' ],
+	];
+	$li = '';
+	foreach ( $reperes as $r ) {
+		$li .= '<li>' . $r[0] . esc_html( $r[1] ) . '</li>';
+	}
+	return '<div class="cer-hero"><p class="k">Configurateur Abri Cerisier</p>'
+		. '<h1 class="product_title entry-title cer-titre">Configurez votre ' . esc_html( $t[0] ) . ' sur mesure</h1>'
+		. '<p class="cer-hero__txt">Commencez par les dimensions, puis ' . esc_html( $t[1] ) . ' : le prix et le plan de votre ' . esc_html( $t[2] ) . ' se mettent à jour à chaque choix.</p>'
+		. '<ul>' . $li . '</ul></div>';
+}
+add_action( 'template_redirect', function () {
+	if ( cer_cfg_actif_ici() ) {
+		add_filter( 'body_class', function ( $c ) { $c[] = 'cer-page'; $c[] = 'cer-sans-dims'; return $c; } ); // cer-sans-dims : retiré par le script dès que les dimensions sont choisies
+	}
+} );
+// juste avant le résumé du produit : les crochets du thème (Konte) sont tous posés
+add_action( 'woocommerce_before_single_product', function () {
+	$kind = cer_cfg_actif_ici();
+	if ( ! $kind ) {
+		return;
+	}
+	remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_title', 5 );
+	remove_action( 'woocommerce_single_product_summary', [ 'Konte_WooCommerce_Template_Product', 'product_title_with_badges' ], 5 );
+	remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_excerpt', 7 );
+	remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_excerpt', 20 );
+	remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40 );
+	remove_action( 'woocommerce_single_product_summary', [ 'Konte_WooCommerce_Template_Product', 'product_share' ], 35 );
+	add_action( 'woocommerce_single_product_summary', function () use ( $kind ) {
+		echo cer_cfg_entete( $kind ); // phpcs:ignore WordPress.Security.EscapeOutput -- échappé dans la fonction
+	}, 5 );
+} );

@@ -424,3 +424,35 @@
 .cer-vg__max { display: block; margin-top: 4px; font-size: 12px; color: #77755f; line-height: 1.3; }
 /* champs de calcul WAPF marqués « non2 » (copies techniques du carport : « Largeur hors tout (Copy) ») : jamais affichés, comme « non » dans le CSS du thème ; ils se superposaient au titre de l'étape 1 */
 .wapf-field-container.non2{display:none!important}
+
+/* ── Haut de page (maquette validée par Antony le 13/10/2026) : titre, phrase et repères ; étape 1 « Commencez ici » ;
+   rien d'actif tant que les dimensions ne sont pas choisies (classe cer-sans-dims sur body) ── */
+.cer-page .product-toolbar { padding: 14px 0 4px !important; }
+.cer-hero-on .product_title:not(.cer-titre), .cer-page .product_meta, .cer-page .product-share, .cer-page .woocommerce-product-details__short-description { display: none !important; }
+.cer-hero { margin: 0 0 20px; }
+.cer-hero .k { font: 600 11.5px/1.2 Jost, Futura, Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #7a7863; margin: 0; }
+.cer-page .cer-hero h1.cer-titre { font: 500 34px/1.15 Jost, Futura, Arial, sans-serif; margin: 8px 0 10px; color: #23251b; letter-spacing: -.01em; }
+.cer-hero .cer-hero__txt { margin: 0 0 14px; color: #55574a; font-size: 15.5px; line-height: 1.55; max-width: 620px; }
+.cer-hero ul { display: flex; gap: 8px; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+.cer-hero li { background: #f1efe7; border-radius: 999px; padding: 6px 12px 6px 9px; font: 500 13px Jost, Futura, Arial, sans-serif; color: #3d3d28; display: flex; gap: 6px; align-items: center; white-space: nowrap; margin: 0; }
+.cer-hero li svg { width: 16px; height: 16px; flex: none; }
+.cer-page .wapf-section.cer-depart { border: 1.5px solid #515136 !important; box-shadow: 0 6px 22px rgba(81, 81, 54, .10) !important; position: relative; }
+.cer-depart .cer-ici { position: absolute; top: -12px; left: 22px; background: #515136; color: #fff; font: 600 11.5px Jost, Futura, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+.cer-schema { display: flex; align-items: center; gap: 14px; margin: 0 0 14px; padding: 10px 12px; background: #f7f6f1; border-radius: 10px; color: #6b6a55; font-size: 13px; line-height: 1.4; }
+.cer-schema svg { width: 132px; height: auto; flex: none; }
+.cer-vide { display: none !important; }
+.cer-sans-dims .single_add_to_cart_button { opacity: .38; pointer-events: none; }
+.cer-aide-panier { display: none; text-align: center; font-size: 13px; color: #77755f; margin: 8px 0 16px; }
+.cer-sans-dims .cer-aide-panier { display: block; }
+.cer-sans-dims .cer-plan__3d, .cer-sans-dims .cer-plan-fab { display: none !important; }
+.cer-page .cer-plan__empty svg { display: block; width: 170px; height: auto; margin: 0 auto 10px; }
+@media (max-width: 700px) {
+  .cer-page .wapf-section.cer-depart { margin-top: 14px !important; }
+  .cer-hero { margin: 0 0 16px; }
+  .cer-page .cer-hero h1.cer-titre { font-size: 25px; margin: 6px 0 8px; }
+  .cer-hero .cer-hero__txt { font-size: 14.5px; margin-bottom: 12px; }
+  .cer-hero ul { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .cer-hero ul::-webkit-scrollbar { display: none; }
+  .cer-page .wapf-section.cer-dim { width: 100% !important; flex-basis: 100% !important; max-width: 100% !important; }
+  .cer-schema svg { width: 104px; }
+}
