@@ -203,7 +203,8 @@
       var z = E.isSliding(m) && !E.isDoubleM(m) ? m.lw : 0, dr = pl.rail === 'droite';
       return [c - m.lw / 2 - 10 - (dr ? 0 : z), c + m.lw / 2 + 10 + (dr ? z : 0)];
     };
-    var libre = function (w, sp) { return sp[0] >= 0 && sp[1] <= len(w) && used[w].every(function (u) { return sp[1] <= u[0] || sp[0] >= u[1]; }); };
+    // 0,5 cm de tolérance : la position est gardée au dixième de %, une porte calée à 10 cm de l'angle ne doit pas être repoussée pour 0,05 cm
+    var libre = function (w, sp) { return sp[0] >= -0.5 && sp[1] <= len(w) + 0.5 && used[w].every(function (u) { return sp[1] <= u[0] + 0.5 || sp[0] >= u[1] - 0.5; }); };
     var rang = function (m) { var pl = PLACE[m.key] || {}; return m.key === ACTIF ? 0 : (pl.auto ? 2 : 1); };
     // Tassement (remarque d'Antony, 13/10/2026 : porte de 80 + fenêtre de 53,5 sur 2 m « ça passe largement ») : quand une menuiserie posée
     // d'office ne trouve plus de place, les menuiseries posées d'office sur ce mur sont rangées côte à côte, à intervalles égaux ;
@@ -233,7 +234,7 @@
             if (libre(w, sp)) {
               poses[w].push({ m: m, pl: pl });
               if (m.key === ACTIF && i > 0) NOTE_PLACE = (m.siteLabel || m.label) + ' : pas assez de place sur ' + WLAB[pl.wall] + (E.isSliding(m) && !E.isDoubleM(m) ? ' (course de la coulissante comprise)' : '') + ', elle est placée sur ' + WLAB[w] + '.';
-              used[w].push(sp); pl.wall = w; pl.pos = Math.round(cs[j] / L * 100); return;
+              used[w].push(sp); pl.wall = w; pl.pos = Math.round(cs[j] / L * 1000) / 10; return;
             }
           }
         }
@@ -441,6 +442,7 @@
     P.querySelector('.cer-plan__tabs').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-v]'); if (!b) return; VIEW = b.getAttribute('data-v'); draw();
     });
+    glisser(P.querySelector('#cer-sv-main'));
     P.querySelector('.cer-plan__places').addEventListener('change', onPlace);
     P.querySelector('.cer-plan__real').addEventListener('click', onReal);
     P.querySelector('.cer-plan__places').addEventListener('input', onPlace);
@@ -471,7 +473,7 @@
     var WL = { face: 'Façade', gauche: 'Côté gauche', droite: 'Côté droit', fond: 'Fond' };
     var open = box.querySelector(':focus');
     if (open) return; // ne pas reconstruire pendant une saisie
-    box.innerHTML = ST.menus.map(function (m) {
+    box.innerHTML = '<p class="cer-plan__hint">Astuce : faites glisser une porte ou une fenêtre directement sur le dessin (façades ou plan), au doigt ou à la souris.</p>' + ST.menus.map(function (m) {
       return '<div class="cer-plan__pl" data-k="' + m.key + '"><div class="n">' + (m.siteLabel || m.label) + '</div>' +
         '<label>Mur <select class="w">' + walls.map(function (w) { return '<option value="' + w + '"' + (w === m.wall ? ' selected' : '') + '>' + WL[w] + '</option>'; }).join('') + '</select></label>' +
         '<label>Position <input class="p" type="range" min="5" max="95" value="' + m.pos + '"></label>' +
@@ -687,6 +689,122 @@
     if (!isNaN(tot) && tot > 0) PREV_TOT = tot;
   }
 
+  function trace(svg, L) {
+    svg.setAttribute('data-v', VIEW === 'plan' ? 'plan' : 'vue');
+    svg.removeAttribute('data-mf'); svg.removeAttribute('data-pf');
+    ST.scaleBar = true;                                   // barre d'échelle sur chaque vue
+    ST.scale = E.commonScale(L.d, 380, 280);              // les quatre élévations à la même échelle
+    ST.planScale = null;
+    if (VIEW === 'plan') { svg.setAttribute('viewBox', '0 0 480 340'); E.drawPlan(svg, L.d, 480, 340); }
+    else { svg.setAttribute('viewBox', '0 0 380 280'); E.drawElev(svg, L.d, VIEW, 380, 280); }
+    poignees(svg);
+  }
+  // ── Portes et fenêtres déplacées sur le dessin (demande d'Antony, 13/10/2026) : souris ou doigt, par pas de 10 cm ──
+  // Façades : glisser le long du mur (une fenêtre glissée vers le haut ou le bas change de hauteur, par pas de 5 cm).
+  // Plan : glisser d'un mur à l'autre. Les règles de place (10 cm des angles, jamais l'une sur l'autre) restent celles de separer().
+  var GLIS = null, SANS_CLIC = false, rafG = 0;
+  var murs = function () { return ST.type === 'carport' ? E.closList() : ['face', 'gauche', 'droite', 'fond']; };
+  var murCm = function (w) { var d = LAST.d; return ((w === 'face' || w === 'fond') ? d.L : d.P) * 100; };
+  // centre (cm depuis l'angle gauche vu de dehors) → position en %, bord gauche calé sur 10 cm, à 10 cm au moins des angles
+  function caler(w, c, lw) {
+    var Lc = murCm(w), e = Math.round((c - lw / 2) / 10) * 10;
+    e = Math.max(10, Math.min(Lc - 10 - lw, e));
+    return Math.round((e + lw / 2) / Lc * 1000) / 10;
+  }
+  function poignees(svg) {
+    if (!LAST || !ST.menus.length) return;
+    var NS = 'http://www.w3.org/2000/svg', mf = svg.getAttribute('data-mf'), pf = svg.getAttribute('data-pf'), d = LAST.d;
+    var hit = function (m, x, y, w, h) {
+      var r = document.createElementNS(NS, 'rect');
+      r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', Math.max(0, w)); r.setAttribute('height', Math.max(0, h)); r.setAttribute('rx', 2);
+      r.setAttribute('class', 'cer-mh' + (GLIS && GLIS.k === m.key ? ' on' : '')); r.setAttribute('data-k', m.key);
+      var tl = document.createElementNS(NS, 'title'); tl.textContent = (m.siteLabel || m.label) + ' : faites glisser pour la déplacer'; r.appendChild(tl);
+      svg.appendChild(r);
+    };
+    if (VIEW === 'plan' && pf) {
+      var f = JSON.parse(pf);
+      var along = function (w, t) { return w === 'face' ? [f.wx + t * f.dw, f.wy + f.dp] : w === 'fond' ? [f.wx + (1 - t) * f.dw, f.wy] : w === 'gauche' ? [f.wx, f.wy + (1 - t) * f.dp] : [f.wx + f.dw, f.wy + t * f.dp]; };
+      ST.menus.forEach(function (m) {
+        var half = m.lw / 2 / murCm(m.wall), t = m.pos / 100, a = along(m.wall, t - half), b = along(m.wall, t + half), hz = m.wall === 'face' || m.wall === 'fond';
+        hit(m, Math.min(a[0], b[0]) - (hz ? 0 : 11), Math.min(a[1], b[1]) - (hz ? 11 : 0), hz ? Math.abs(b[0] - a[0]) : 22, hz ? 22 : Math.abs(b[1] - a[1]));
+      });
+    } else if (mf) {
+      var g = JSON.parse(mf);
+      ST.menus.filter(function (m) { return m.wall === VIEW; }).forEach(function (m) {
+        var w = m.lw / 100 * g.sc, h = m.lh / 100 * g.sc;
+        hit(m, g.x0 + m.pos / 100 * g.w - w / 2, g.gnd - h - (m.seuil || 0) / 100 * g.sc, w, h);
+      });
+    }
+  }
+  var peutGlisser = function () { return !(DOCK.matches && !document.body.classList.contains('cer-plan-open')); }; // téléphone replié : un appui ouvre d'abord le plein écran
+  function svgPt(svg, e) { var m = svg.getScreenCTM(); if (!m) return null; var p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(m.inverse()); }
+  function glisser(svg) {
+    svg.addEventListener('pointerdown', function (e) {
+      var h = e.target.closest && e.target.closest('.cer-mh');
+      if (!h || !LAST || !peutGlisser() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      var k = h.getAttribute('data-k'), m = ST.menus.filter(function (x) { return x.key === k; })[0], p = svgPt(svg, e);
+      if (!m || !p) return;
+      e.preventDefault(); e.stopPropagation();
+      GLIS = { k: k, m: m, id: e.pointerId, x0: p.x, y0: p.y, pos0: m.pos, seuil0: m.seuil || 0, axe: null, bouge: false,
+        f: JSON.parse(svg.getAttribute(VIEW === 'plan' ? 'data-pf' : 'data-mf') || 'null'), plan: VIEW === 'plan', mur: VIEW };
+      if (!GLIS.f) { GLIS = null; return; }
+      try { svg.setPointerCapture(e.pointerId); } catch (x) { }
+      document.body.classList.add('cer-glisse'); indiceVu();
+    });
+    svg.addEventListener('pointermove', function (e) {
+      if (!GLIS || e.pointerId !== GLIS.id) return;
+      var p = svgPt(svg, e); if (!p) return;
+      var dx = p.x - GLIS.x0, dy = p.y - GLIS.y0, f = GLIS.f, m = GLIS.m;
+      if (!GLIS.axe) { if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return; GLIS.axe = GLIS.plan || m.type !== 'fenetre' || Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y'; }
+      GLIS.bouge = true; e.preventDefault();
+      var pl = PLACE[GLIS.k] || (PLACE[GLIS.k] = { wall: m.wall, pos: m.pos, rail: m.rail || 'gauche' });
+      pl.auto = false; ACTIF = GLIS.k;
+      if (GLIS.plan) { // le mur le plus proche du doigt, parmi ceux qui peuvent recevoir une menuiserie
+        var best = null;
+        murs().forEach(function (w) {
+          var hz = w === 'face' || w === 'fond', dist = hz ? Math.abs(p.y - (w === 'face' ? f.wy + f.dp : f.wy)) : Math.abs(p.x - (w === 'gauche' ? f.wx : f.wx + f.dw));
+          var t = w === 'face' ? (p.x - f.wx) / f.dw : w === 'fond' ? 1 - (p.x - f.wx) / f.dw : w === 'gauche' ? 1 - (p.y - f.wy) / f.dp : (p.y - f.wy) / f.dp;
+          if (t < -0.15 || t > 1.15) dist += 1e3; // hors du mur
+          if (!best || dist < best.d) best = { w: w, d: dist, t: Math.max(0, Math.min(1, t)) };
+        });
+        if (!best) return;
+        pl.wall = best.w; pl.pos = caler(best.w, best.t * murCm(best.w), m.lw);
+      } else if (GLIS.axe === 'x') {
+        pl.wall = GLIS.mur; pl.pos = caler(GLIS.mur, GLIS.pos0 / 100 * murCm(GLIS.mur) + dx / f.w * murCm(GLIS.mur), m.lw);
+      } else { // fenêtre : hauteur d'allège
+        var s = Math.round((GLIS.seuil0 - dy / f.sc * 100) / 5) * 5;
+        pl.seuil = Math.max(0, Math.min(m.seuilMax || 0, s));
+      }
+      if (!rafG) rafG = requestAnimationFrame(function () { rafG = 0; if (!GLIS) return; try { read(); trace(svg, LAST); } catch (x) { } });
+    });
+    var fin = function (e) {
+      if (!GLIS || e.pointerId !== GLIS.id) return;
+      var b = GLIS.bouge; GLIS = null;
+      try { svg.releasePointerCapture(e.pointerId); } catch (x) { }
+      document.body.classList.remove('cer-glisse');
+      if (b) { SANS_CLIC = true; setTimeout(function () { SANS_CLIC = false; }, 50); schedule(0, true); }
+    };
+    svg.addEventListener('pointerup', fin); svg.addEventListener('pointercancel', fin);
+    // iPhone : un doigt posé sur une menuiserie ne fait pas défiler la page
+    svg.addEventListener('touchstart', function (e) { if (e.target.closest && e.target.closest('.cer-mh') && peutGlisser()) e.preventDefault(); }, { passive: false });
+    svg.addEventListener('click', function (e) { if (SANS_CLIC) { e.stopPropagation(); e.preventDefault(); } }, true);
+  }
+  // Indication animée (main qui glisse) : la première fois qu'une menuiserie apparaît sur le dessin ; un rappel 45 s plus tard si rien n'a été déplacé
+  var indT = 0, indAt = 0, indN = (function () { try { return parseInt(sessionStorage.getItem('cerIndice') || '0', 10) || 0; } catch (e) { return 0; } })();
+  function indiceVu() { indN = 9; try { sessionStorage.setItem('cerIndice', '9'); } catch (e) { } var x = P && P.querySelector('.cer-indice'); if (x) x.remove(); }
+  function indice() {
+    if (indN >= 2 || (indN === 1 && Date.now() - indAt < 45000) || GLIS || !P || !peutGlisser() || document.body.classList.contains('cer-plan-min') || P.querySelector('.cer-indice')) return;
+    var st = P.querySelector('.cer-plan__stage'), h = st.querySelector('.cer-mh'); if (!h) return;
+    var rs = st.getBoundingClientRect(), rh = h.getBoundingClientRect(); if (!rs.width || !rh.width || rh.top < 0 || rh.bottom > window.innerHeight) return; // seulement si le client la voit
+    indN++; indAt = Date.now(); try { sessionStorage.setItem('cerIndice', String(indN)); } catch (e) { }
+    var m = ST.menus.filter(function (x) { return x.key === h.getAttribute('data-k'); })[0] || {};
+    var el = document.createElement('div'); el.className = 'cer-indice';
+    el.style.left = (rh.left - rs.left + rh.width / 2) + 'px'; el.style.top = (rh.top - rs.top + rh.height / 2) + 'px';
+    el.innerHTML = '<svg class="cer-indice__main" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.6-2.2L4 15.6a1.5 1.5 0 0 1 2.3-1.9L9 16" fill="#fff" stroke="#3c3d2a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '<span class="cer-indice__txt">Faites glisser ' + (m.type === 'fenetre' ? 'la fenêtre' : 'la porte') + ' pour la déplacer</span>';
+    st.appendChild(el);
+    clearTimeout(indT); indT = setTimeout(function () { el.classList.add('fin'); setTimeout(function () { el.remove(); }, 400); }, 4800);
+  }
   function draw() {
     if (!P) return;
     var L = LAST, svg = P.querySelector('#cer-sv-main'), empty = P.querySelector('.cer-plan__empty');
@@ -695,12 +813,7 @@
     if (!L) { svg.style.display = 'none'; empty.style.display = ''; P.querySelector('.cer-plan__dims').innerHTML = ''; try { polish(); } catch (e) { if (window.console) console.warn('[Cerisier prix]', e); } return; } // prix tenu à jour même sans dessin (jamais un ancien prix)
     svg.style.display = ''; empty.style.display = 'none';
     if (!shownOnce) { shownOnce = true; if (memoGet() !== 'min') document.body.classList.remove('cer-plan-min'); }
-    svg.setAttribute('data-v', VIEW === 'plan' ? 'plan' : 'vue');
-    ST.scaleBar = true;                                   // barre d'échelle sur chaque vue
-    ST.scale = E.commonScale(L.d, 380, 280);              // les quatre élévations à la même échelle
-    ST.planScale = null;
-    if (VIEW === 'plan') { svg.setAttribute('viewBox', '0 0 480 340'); E.drawPlan(svg, L.d, 480, 340); }
-    else { svg.setAttribute('viewBox', '0 0 380 280'); E.drawElev(svg, L.d, VIEW, 380, 280); }
+    trace(svg, L);
     P.querySelector('.cer-plan__dims').innerHTML = dimsList(L).map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
     realisations();
     var W = E.menuWarnings(L.d).filter(function (w) { return !/pas de prix/.test(w); });
@@ -713,6 +826,7 @@
     P.querySelector('.cer-plan__warn').innerHTML = W.map(function (w) { return '<p>' + w.replace(/Ouverture (\d+)/g, function (_, n) { var m = ST.menus[n - 1]; return m ? (m.siteLabel || m.label) : 'Ouverture ' + n; }) + '</p>'; }).join('');
     renderPlaces();
     polish();
+    try { indice(); } catch (e) { }
   }
   // Prix et détail de la configuration lus dans le configurateur du site (ses blocs du haut sont masqués)
   var money = function (v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; };
@@ -930,6 +1044,7 @@
     var fait = false;
     Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-container'), function (c) {
       if (!c.classList.contains('wapf-hide') && !c.closest('.wapf-hide')) return;
+      garder(c);
       Array.prototype.forEach.call(c.querySelectorAll('input'), function (i) {
         if (i.type === 'hidden' || i.type === 'button' || i.type === 'submit') return;
         if (i.type === 'radio' || i.type === 'checkbox') {
@@ -943,18 +1058,110 @@
     });
     return fait;
   }
+  // ── Choix gardés quand on change une option en amont (Antony, 13/10/2026 : passer d'ossature à madrier « fout le bordel ») ──
+  // La réponse d'une question masquée par les conditions est notée avant d'être effacée. Quand la question revient, ou que sa jumelle
+  // de l'autre système apparaît (« Porte classique ossature » / « Porte classique », « Hublot 91cm sur ossature » / « Hublot 91cm »),
+  // la même réponse est recochée. Une question obligatoire nouvelle qui bloque la suite (épaisseur des madriers, pignon) reçoit le choix
+  // le moins cher, signalé au client. Un modèle qui n'existe pas dans l'autre système reste à choisir, avec un mot pour le dire.
+  var GARDE = {}, GARDE_L = {}, CASCADE = false, reprises = 0, VUS = null; // VUS : questions visibles au passage précédent
+  var normQ = function (s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\(\+[^)]*\)/g, ' ')
+      .replace(/\b(sur\s+)?(l'\s*)?(ossature(\s+bois)?|madriers?)\b/g, ' ').replace(/[^a-z0-9,]+/g, ' ').trim();
+  };
+  var cleQ = function (c) {
+    var i = c.querySelector('input:not([type=hidden]), select'), m = i && /_clone_\d+/.exec(i.name || '');
+    return { nom: i ? String(i.name).replace(/\[\]$/, '') : '', lab: normQ((c.querySelector('.wapf-field-label') || {}).textContent) + (m ? m[0] : '') };
+  };
+  function garder(c) {
+    var ins = c.querySelectorAll('input[type=radio]:checked, input[type=checkbox]:checked'), nb = c.querySelector('input[type=number], input[type=text]'), v = null;
+    if (ins.length) v = { choix: Array.prototype.map.call(ins, function (i) { return i.getAttribute('data-wapf-label') || ''; }) };
+    else if (nb && nb.value !== '') v = { val: nb.value };
+    if (!v) return;
+    var k = cleQ(c); if (k.nom) GARDE[k.nom] = v; if (k.lab) GARDE_L[k.lab] = v; CASCADE = true;
+  }
+  function reprendre() {
+    var fait = false, vues = [], cachees = [];
+    var vide = function (c) {
+      var ins = c.querySelectorAll('input[type=radio], input[type=checkbox]'), nb = c.querySelector('input[type=number], input[type=text]');
+      return ins.length ? !Array.prototype.some.call(ins, function (i) { return i.checked; }) : (!!nb && nb.value === '');
+    };
+    Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-container'), function (c) {
+      if (/wapf-field-(calc|p|section)\b/.test(c.className) || !c.querySelector('input[type=radio], input[type=checkbox], input[type=number], input[type=text]')) return;
+      (c.classList.contains('wapf-hide') || c.closest('.wapf-hide') ? cachees : vues).push(c);
+    });
+    var avant = VUS; VUS = {}; vues.forEach(function (c) { VUS[cleQ(c).nom] = 1; });
+    vues.forEach(function (c) {
+      if (!vide(c)) {
+        // question qui réapparaît avec un choix par défaut du site (pente 14° du 1 pan après un 25° en 2 pans) : le choix du client l'emporte
+        var k0 = cleQ(c), g0 = avant && !avant[k0.nom] && (GARDE[k0.nom] || GARDE_L[k0.lab]);
+        if (!g0 || !g0.choix) return;
+        var r0 = Array.prototype.filter.call(c.querySelectorAll('input[type=radio]'), function (i) { return g0.choix.some(function (l) { return normQ(l) === normQ(i.getAttribute('data-wapf-label')); }); })[0];
+        delete GARDE[k0.nom]; delete GARDE_L[k0.lab];
+        if (r0 && !r0.checked) { cocher(r0); fait = true; }
+        return;
+      }
+      var ins = Array.prototype.slice.call(c.querySelectorAll('input[type=radio], input[type=checkbox]')), nb = c.querySelector('input[type=number], input[type=text]');
+      var k = cleQ(c), g = GARDE[k.nom] || GARDE_L[k.lab];
+      if (g) {
+        delete GARDE[k.nom]; delete GARDE_L[k.lab];
+        if (g.val != null && nb) { saisir(nb, g.val); fait = true; return; }
+        var pris = ins.filter(function (i) { return (g.choix || []).some(function (l) { return normQ(l) === normQ(i.getAttribute('data-wapf-label')); }); });
+        if (pris.length) { pris.forEach(cocher); fait = true; return; }
+        // modèle absent de cette version : le plus proche (mêmes mots et mêmes cotes), sinon le client choisit
+        var p2 = ins[0] && ins[0].type === 'radio' ? proche(ins, (g.choix || [])[0]) : null;
+        if (p2) { cocher(p2); mot(c, 'Votre modèle précédent n\u2019existe pas dans cette version : nous avons pris le plus proche, « ' + (p2.getAttribute('data-wapf-label') || '').trim() + ' ». Modifiez-le si besoin.'); fait = true; return; }
+        if (ins.length) mot(c, 'Votre choix précédent n\u2019existe pas dans cette version : choisissez à nouveau ici.');
+        return;
+      }
+    });
+    if (fait || !CASCADE) return fait;
+    // question nouvelle (obligatoire ou non : l'épaisseur des madriers ne l'est pas mais conditionne tout le reste) qui ferme le formulaire alors que des réponses du client attendent derrière elle (épaisseur des
+    // madriers après « Madrier ») : le choix le moins cher, pour que la suite revienne. Jamais ailleurs : une question que le client
+    // n'a pas encore abordée n'est pas cochée à sa place.
+    var c = vues[vues.length - 1];
+    if (!c || !vide(c) || GARDE[cleQ(c).nom] || GARDE_L[cleQ(c).lab]) return false;
+    var ins = Array.prototype.slice.call(c.querySelectorAll('input[type=radio]')); if (!ins.length) return false;
+    // une vraie réponse attend derrière (pas seulement les « Non » cochés d'office par nos dessins)
+    var vraie = function (g) { return g && (g.choix ? g.choix.some(function (l) { return !/^non\b/i.test(String(l).trim()); }) : (g.val !== '' && parseFloat(g.val) !== 0)); };
+    var attend = cachees.some(function (h) { return vraie(GARDE[cleQ(h).nom]) && (c.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING); });
+    if (!attend) return false;
+    var prix = function (i) { var v = numTxt(pastilleDe(c, i)); return isNaN(v) ? 0 : v; };
+    cocher(ins.slice().sort(function (a, b) { return prix(a) - prix(b); })[0]);
+    mot(c, 'Choisi d\u2019office pour garder la suite de votre configuration : modifiez-le si besoin.');
+    return true;
+  }
+  var MOTS_VIDES = /^(porte|fenetre|en|de|du|des|cm|m|l|h|x|avec|et|la|le|les|pour|sur|a)$/;
+  var jetons = function (s) { return normQ(s).replace(/(\d)\s*x\s*(\d)/g, '$1 $2').split(' ').filter(function (w) { return w && !MOTS_VIDES.test(w); }); };
+  function proche(ins, lab) {
+    if (!lab) return null;
+    var J = jetons(lab), best = null, bs = 0;
+    ins.forEach(function (i) {
+      var K = jetons(i.getAttribute('data-wapf-label')), s = 0;
+      J.forEach(function (w) { if (K.indexOf(w) >= 0) s += /\d/.test(w) ? 2 : 1; });
+      if (s > bs) { bs = s; best = i; }
+    });
+    return bs >= 2 ? best : null;
+  }
+  function mot(c, txt) {
+    var al = c.querySelector('.cer-repris'); if (!al) { al = document.createElement('p'); al.className = 'cer-vg-alerte cer-repris'; c.insertBefore(al, c.firstChild); }
+    al.textContent = txt; clearTimeout(al._t); al._t = setTimeout(function () { al.remove(); }, 12000);
+  }
   function schedule(ms, keepPlace) {
     clearTimeout(tmr);
     tmr = setTimeout(function () {
       try { if (purges < 3 && purgeMasques()) { purges++; schedule(150, keepPlace); return; } } catch (e) { if (window.console) console.warn('[Cerisier masqués]', e); }
       purges = 0;
+      // réponses en attente : recochées dès que leur question revient (à chaque passage, pas seulement juste après un effacement ;
+      // le passage tient aussi à jour la liste des questions visibles)
+      try { if (reprises < 15 && reprendre()) { reprises++; schedule(60, keepPlace); return; } } catch (e) { if (window.console) console.warn('[Cerisier reprise]', e); }
+      reprises = 0; CASCADE = false;
       try { read(); } catch (e) { LAST = null; if (window.console) console.warn('[Cerisier plan]', e); }
       draw();
       try { habiller(); } catch (e) { if (window.console) console.warn('[Cerisier habillage]', e); }
       try { vignettes(); } catch (e) { if (window.console) console.warn('[Cerisier vignettes]', e); }
       clearTimeout(imgTmr);
       imgTmr = setTimeout(function () { attach(); }, 1500);
-    }, ms == null ? 120 : ms);
+    }, reprises > 0 ? Math.min(ms == null ? 120 : ms, 60) : (ms == null ? 120 : ms)); // pendant une reprise, le formulaire réagit tout de suite : pas d'attente
   }
 
   // ── Vignettes (validées par Antony le 13/10/2026, mail à Bérénice du même jour) : extension de toiture, hauteur des murs,
@@ -984,9 +1191,9 @@
     } catch (er) { return null; }
   }
   // dessin du moteur pour une variante de la configuration en cours (débords, fermetures, rehausses), sans cotes ni textes
-  var CUR = { ext: { face: 0, fond: 0, gauche: 0, droite: 0 }, reh: 0 };
+  var CUR = { ext: { face: 0, fond: 0, gauche: 0, droite: 0 }, reh: 0, hcp: 0 };
   function picto(o) {
-    var sv = { cfg: ST.cfg, ext: ST.ext, scale: ST.scale, planScale: ST.planScale, scaleBar: ST.scaleBar, site: ST.site, picto: ST.picto, pr: ST.pictoReh, pp: ST.pictoPerson };
+    var sv = { cfg: ST.cfg, ext: ST.ext, scale: ST.scale, planScale: ST.planScale, scaleBar: ST.scaleBar, site: ST.site, picto: ST.picto, pr: ST.pictoReh, pp: ST.pictoPerson, pv: ST.pictoVehicule };
     try {
       ST.cfg = Object.assign({}, sv.cfg, o.cfg || {}); ST.ext = o.ext || {}; if (o.nreh != null) ST.cfg['f-reh'] = String(o.nreh);
       if (sv.site) {
@@ -996,16 +1203,17 @@
           if (s0.htL != null) s1.htL = r2(s0.htL - c.gauche - c.droite + e.gauche + e.droite);
           if (s0.htP != null) s1.htP = r2(s0.htP - c.face - c.fond + e.face + e.fond); }
         if (o.nreh != null && s0.hInt != null) s1.hInt = r2(s0.hInt + (o.nreh - CUR.reh) * 0.13);
+        if (o.hSite != null) s1.hInt = o.hSite; // carport : hauteur sous ferme donnée
         ST.site = s1;
       }
-      ST.picto = true; ST.pictoReh = o.reh || 0; ST.pictoPerson = o.person || false; ST.scale = o.scale || null; ST.planScale = null; ST.scaleBar = false;
+      ST.picto = true; ST.pictoReh = o.reh || 0; ST.pictoPerson = o.person || false; ST.pictoVehicule = o.veh || null; ST.scale = o.scale || null; ST.planScale = null; ST.scaleBar = false;
       var d = E.calcDims();
       if (o.fit) return E.elevFit(d, o.view, o.w, o.h);
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 ' + o.w + ' ' + o.h); svg.setAttribute('width', '100%'); svg.setAttribute('aria-hidden', 'true');
       if (o.view === 'plan') E.drawPlan(svg, d, o.w, o.h); else E.drawElev(svg, d, o.view, o.w, o.h);
       return o.hInt ? d.hInt : svg.outerHTML;
     } catch (er) { return ''; } finally {
-      ST.cfg = sv.cfg; ST.ext = sv.ext; ST.scale = sv.scale; ST.planScale = sv.planScale; ST.scaleBar = sv.scaleBar; ST.site = sv.site; ST.picto = sv.picto; ST.pictoReh = sv.pr; ST.pictoPerson = sv.pp;
+      ST.cfg = sv.cfg; ST.ext = sv.ext; ST.scale = sv.scale; ST.planScale = sv.planScale; ST.scaleBar = sv.scaleBar; ST.site = sv.site; ST.picto = sv.picto; ST.pictoReh = sv.pr; ST.pictoPerson = sv.pp; ST.pictoVehicule = sv.pv;
     }
   }
   var bloc = function (q, cle) { // conteneur des vignettes, juste sous le titre de la question
@@ -1147,6 +1355,63 @@
       cocher(oui); saisir(nombre(cont(R.n)), kk);
     }); }
   }
+  // 3 bis. Hauteur du carport (demande d'Antony, 13/10/2026 : « la rehausse du carport comme sur les abris ») : hauteur sous ferme
+  //    en cartes, chacune avec un véhicule à l'échelle et son prix lu dans le champ du site, plus une hauteur au centimètre.
+  //    Les prix suivent les paliers du site (2,10 m inclus ; jusqu'à 2,50 m ; 3,70 m ; 4,80 m).
+  var HCP = [[2.1, 'standard · voiture', 'voiture'], [2.5, 'utilitaire, SUV avec coffre', 'utilitaire'], [3, 'fourgon aménagé', 'fourgon'], [3.7, 'camping-car', 'campingcar'], [4.8, 'engin agricole, poids lourd', 'engin']];
+  function vgHauteurCp() {
+    var R = M.reh, q = R && cont(R.q); if (!q) return;
+    var b = q.querySelector('.cer-vg[data-vg="hcp"]');
+    if (masqueWapf(q) || !LAST) { if (b) b.remove(); return; }
+    var non = radioLab(R.q, /^non/i), oui = radioLab(R.q, /^oui/i); if (!non || !oui) return;
+    if (!oui.checked && !non.checked) { cocher(non); return; } // question obligatoire : le standard est vraiment coché (leçon du 13/10)
+    // champ de la hauteur : celui du type de poteau (12 × 12, 14 × 14, 12 × 12 capoté alu)
+    var po = first(M.pot), ix = po && /alu/i.test(po.label) ? 2 : po && /14/.test(po.label) ? 1 : 0;
+    var nc = R.n.map(cont).filter(function (c) { return c && !masqueWapf(c); })[0] || cont(R.n[ix]), n = nombre(nc); if (!n) return;
+    var lo = parseFloat(n.min) || 2.1, hi = parseFloat(n.max) || 4.8;
+    // poteau changé (12 × 12 → 14 × 14…) : le champ de hauteur n'est plus le même et arrive vide ou à 2,10 m ; la hauteur choisie suit
+    var fid = nc.getAttribute('for'), change = CUR.hcpF && CUR.hcpF !== fid; CUR.hcpF = fid;
+    if (oui.checked && CUR.hcp > lo && (n.value === '' || (change && Math.abs(valeur(n) - CUR.hcp) > 0.004))) { saisir(n, CUR.hcp); return; }
+    var h0 = oui.checked && valeur(n) > lo ? Math.round(valeur(n) * 100) / 100 : lo; CUR.hcp = h0;
+    cacher(q.querySelector('.wapf-field-input')); cacher(q.querySelector('.wapf-field-description')); R.n.forEach(function (f) { cacher(cont(f)); });
+    titreQ(q, 'Quelle hauteur de passage souhaitez-vous ?');
+    var prix = HCP.map(function (c) { return c[0] > lo ? prixFx(n, c[0]) : 0; }), libre = !HCP.some(function (c) { return Math.abs(c[0] - h0) < 0.005; });
+    var sig = JSON.stringify([h0, prix, libre && prixFx(n, h0), ST.cfg && [ST.cfg['f-toit'], ST.cfg['f-pente'], ST.cfg['f-lar'], ST.cfg['f-pro'], ST.cfg['f-pot'], ST.cfg['f-ados'], ST.cfg['f-bandeau'], ST.cfg['f-couv']]]);
+    if (b && b._sig === sig) return;
+    var foc = b && b.querySelector('.cer-vg__in:focus'); if (foc) return; // pas de reconstruction pendant la saisie
+    b = bloc(q, 'hcp'); b._sig = sig;
+    var W = 260, H = 230, sans = { 'f-clos': 'aucune' }, sc = picto({ cfg: sans, hSite: hi, view: 'face', w: W, h: H, fit: true });
+    var pill = function (v) { return v == null ? '' : v > 0.004 ? '+' + money0(Math.round(v * 100) / 100) : 'Inclus'; };
+    b.innerHTML = '<div class="cer-vg__g3">' + HCP.map(function (c, i) {
+      return '<div class="cer-vg__c' + (!libre && Math.abs(c[0] - h0) < 0.005 ? ' on' : '') + '" data-vg-h="' + c[0] + '"><span class="cer-vg__pic">' + picto({ cfg: sans, hSite: c[0], view: 'face', w: W, h: H, scale: sc, veh: c[2] }) + '</span>' +
+        '<b>' + mt(c[0]) + '</b><small>' + c[1] + '</small>' + (pill(prix[i]) ? '<span class="cer-pill' + (prix[i] > 0 ? '' : ' cer-pill--0') + '">' + pill(prix[i]) + '</span>' : '') + '</div>';
+    }).join('') +
+      '<div class="cer-vg__c cer-vg__c--libre' + (libre ? ' on' : '') + '" data-vg-h="libre"><span class="cer-vg__pic">' + picto({ cfg: sans, hSite: h0, view: 'face', w: W, h: H, scale: sc }) + '</span>' +
+        '<b>Sur mesure</b><small>de ' + mt(lo) + ' à ' + mt(hi) + '</small><span class="cer-vg__st"><input class="cer-vg__in" type="text" inputmode="decimal" data-vg-hin value="' + fr(h0) + '" aria-label="Hauteur sous ferme en mètres (ou en centimètres)"> m</span>' +
+        (libre && h0 > lo ? '<span class="cer-pill">' + pill(prixFx(n, h0)) + '</span>' : '') + '</div>' +
+      '</div><p class="cer-vg__leg">Hauteur sous ferme : le passage libre sous la charpente, au milieu. Véhicules à l\u2019échelle : voiture 1,50 m, utilitaire 2,30 m, fourgon aménagé 2,80 m, camping-car 3,30 m.</p>';
+    if (!b._ev) { b._ev = true;
+      var poser = function (v) {
+        var po2 = first(M.pot), ix2 = po2 && /alu/i.test(po2.label) ? 2 : po2 && /14/.test(po2.label) ? 1 : 0;
+        if (!(v > lo + 0.001)) { CUR.hcp = lo; cocher(non); return; }
+        CUR.hcp = v; cocher(oui);
+        var n2 = nombre(R.n.map(cont).filter(function (c) { return c && !masqueWapf(c); })[0] || cont(R.n[ix2])); if (n2) saisir(n2, v);
+      };
+      b.addEventListener('click', function (e) {
+        var c = e.target.closest('[data-vg-h]'); if (!c || e.target.closest('[data-vg-hin]')) return; e.preventDefault();
+        var v = c.getAttribute('data-vg-h');
+        if (v === 'libre') { var inp = c.querySelector('[data-vg-hin]'); if (inp) { inp.focus(); inp.select(); } return; }
+        poser(parseFloat(v));
+      });
+      b.addEventListener('change', function (e) {
+        var f = e.target.closest('[data-vg-hin]'); if (!f) return;
+        var v = parseFloat(String(f.value).replace(',', '.').replace(/[^\d.]/g, '')); if (isNaN(v)) return;
+        if (v > 10) v = v / 100; // saisie en centimètres
+        v = Math.round(Math.max(lo, Math.min(hi, v)) * 100) / 100; f.value = fr(v); f.blur(); poser(v);
+      });
+      b.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest('[data-vg-hin]')) { e.preventDefault(); e.target.blur(); } });
+    }
+  }
   // 4. Toit plat en madriers : le message des 20 cm seulement pour ces clients, avec leurs dimensions hors tout
   function vgToitPlat() {
     Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-p'), function (c) { if (/toit plat/i.test(c.textContent) && /majorer/i.test(c.textContent)) cacher(c); });
@@ -1224,6 +1489,7 @@
   }
   function vignettes() {
     if (CFG.kind !== 'carport') { vgExtension(); vgHauteur(); vgToitPlat(); vgAssortis(); }
+    else vgHauteurCp();
     vgProgression();
   }
 

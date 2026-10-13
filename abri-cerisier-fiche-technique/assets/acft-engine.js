@@ -1104,6 +1104,8 @@ function drawPlan(svg,d,vw=480,vh=340){
     }
   });
 
+  svg.setAttribute('data-pf',JSON.stringify({wx,wy,dw:drawW,dp:drawP}));
+
   // ── DIMENSION LINES ──────────────────────────────────
   // Exterior largeur (bottom, main)
   dimL(svg,wx,wy+drawP,wx+drawW,wy+drawP,`${d.L.toFixed(2)} m`,24);
@@ -1275,7 +1277,8 @@ function elevFit(d,side,vw,vh){
   if(ST.type==='carport'){
     const isFace=side==='face'||side==='fond', viewW=isFace?d.L:d.P;
     const oL=isFace?d.ovL:(side==='gauche'?d.ovF:d.ovB), oR=isFace?d.ovR:(side==='gauche'?d.ovB:d.ovF);
-    return Math.min((vw-100)/(viewW+oL+oR),(vh-75-8)/(d.hExt+d.rH));
+    const P=ST.picto?[12,12]:[100,75]; // marges de drawCarportElev (pictogramme : 6 px de chaque côté)
+    return Math.min((vw-P[0])/(viewW+oL+oR),(vh-P[1]-8)/(d.hExt+d.rH));
   }
   const g=getElevGeom(d,side), hasMenus=ST.menus.some(m=>m.wall===side), hasHT=(g.ovhgL+g.ovhgR)>0.01;
   const PAD=ST.picto?{t:6,b:6,l:6,r:6}:{t:25,b:hasMenus?(hasHT?80:65):(hasHT?55:45),l:55,r:50};
@@ -1474,6 +1477,9 @@ function drawElev(svg,d,side,vw=320,vh=260){
       sTxt(svg,mx+mW+5,my+mH+(gndY-my-mH)/2,`${m.seuil}`,6,'#999','start');
     }
   });
+
+  // repère du mur pour déplacer les menuiseries au doigt ou à la souris (configurateurs de vente)
+  svg.setAttribute('data-mf',JSON.stringify({x0:baseX,w:drawW,gnd:gndY,sc}));
 
   // Garage door (only facade)
   if(ST.type==='garage'&&side==='face'){
@@ -1903,6 +1909,7 @@ function drawCarportElev(svg,d,side,vw,vh){
     // 1 pan vu de profil : le poteau du côté haut monte jusqu'à la rive
     if(postsUp) postsUp();
     // Menuiseries posées sur un côté fermé
+    svg.setAttribute('data-mf',JSON.stringify({x0:baseX,w:dW,gnd:gndY,sc}));
     ST.menus.filter(m=>m.wall===side).forEach(m=>{
       const mW=(m.lw/100)*sc, mH=Math.min((m.lh/100)*sc,hpx-(m.seuil||0)/100*sc-2);
       const mx=baseX+(m.pos/100)*dW-mW/2, my=gndY-mH-(m.seuil||0)/100*sc;
@@ -1940,6 +1947,26 @@ function drawCarportElev(svg,d,side,vw,vh){
     sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`${np} poteaux — ${(esp-d.wt).toFixed(2)} m entre poteaux (entraxe ${esp.toFixed(2)} m)`,7,'#555');
   } else if(!wallSide&&np===1){
     sTxtBg(svg,baseX+dW/2,gndY-hpx*0.4,`1 poteau`,7,'#555');
+  }
+  // vignettes de hauteur du configurateur : un véhicule vu de face sous le carport, à l'échelle
+  if(ST.picto&&ST.pictoVehicule&&isFace) drawVehicule(svg,baseX+dW/2,gndY,sc,ST.pictoVehicule);
+}
+// Véhicule vu de face (silhouette) : voiture 1,50 m, utilitaire 2,30 m, fourgon aménagé 2,80 m, camping-car 3,30 m, engin 4,00 m
+function drawVehicule(svg,cx,y0,sc,k){
+  const V={voiture:[1.8,1.5],utilitaire:[2.0,2.3],fourgon:[2.05,2.8],campingcar:[2.3,3.3],engin:[2.5,4.0]}[k]; if(!V) return;
+  const w=V[0]*sc, h=V[1]*sc, x0=cx-w/2, col='rgba(60,58,48,.8)', vit='rgba(226,232,236,.9)', u=sc;
+  const rr=(x,y,ww,hh,r,f)=>{ const e=sRect(svg,x,y,ww,hh,f,'none',0); e.setAttribute('rx',r); return e; };
+  rr(x0+0.05*u,y0-0.32*u,0.26*u,0.32*u,0.04*u,'#24241f'); rr(x0+w-0.31*u,y0-0.32*u,0.26*u,0.32*u,0.04*u,'#24241f'); // roues
+  const yb=y0-0.2*u;
+  if(k==='voiture'){
+    rr(x0,yb-0.62*u,w,0.62*u,0.14*u,col);                                       // caisse
+    sPath(svg,`M${x0+0.16*u},${yb-0.6*u} L${x0+0.34*u},${y0-h+0.05*u} Q${x0+0.38*u},${y0-h} ${x0+0.46*u},${y0-h} L${x0+w-0.46*u},${y0-h} Q${x0+w-0.38*u},${y0-h} ${x0+w-0.34*u},${y0-h+0.05*u} L${x0+w-0.16*u},${yb-0.6*u} Z`,'none',0,col);
+    sPath(svg,`M${x0+0.3*u},${yb-0.66*u} L${x0+0.42*u},${y0-h+0.1*u} L${x0+w-0.42*u},${y0-h+0.1*u} L${x0+w-0.3*u},${yb-0.66*u} Z`,'none',0,vit); // pare-brise
+  } else {
+    rr(x0,y0-h,w,h-0.2*u,0.16*u,col);                                            // caisse
+    const yv=y0-Math.min(1.95,h/u-0.35)*u, hv=Math.min(0.85,h/u*0.3)*u;
+    rr(x0+0.14*u,yv,w-0.28*u,hv,0.06*u,vit);                                     // pare-brise
+    if(k==='campingcar') sRect(svg,x0+0.1*u,y0-h+0.25*u,w-0.2*u,0.04*u,'rgba(226,232,236,.45)','none',0); // capucine
   }
 }
 

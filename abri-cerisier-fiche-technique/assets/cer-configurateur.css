@@ -458,3 +458,13 @@
 
 /* profondeur d'extension tapée au clavier (demande d'Antony, 13/10/2026) : en mètres (1,10) ou en centimètres (110) */
 .cer-vg__in { width: 62px; text-align: center; border: 1px solid #d9d5c7 !important; border-radius: 8px !important; padding: 4px 2px !important; font: 600 14px Jost, Futura, Arial, sans-serif; background: #fff !important; color: #23251b; margin: 0 !important; min-height: 0 !important; height: 32px; }
+/* Menuiseries déplacées sur le dessin (13/10/2026) : zone de prise invisible, contour au survol et pendant le glisser, main animée la première fois */
+.cer-mh { fill: transparent; stroke: none; cursor: grab; touch-action: none; }
+.cer-mh:hover, .cer-mh.on { fill: rgba(194, 65, 12, .08); stroke: #c2410c; stroke-width: 1.4; stroke-dasharray: 4 2; }
+.cer-glisse, .cer-glisse .cer-mh { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+.cer-indice { position: absolute; z-index: 3; pointer-events: none; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; transition: opacity .35s; }
+.cer-indice.fin { opacity: 0; }
+.cer-plan__stage svg.cer-indice__main { width: 30px; height: 30px; aspect-ratio: auto; flex: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); animation: cer-glisse-main 1.6s ease-in-out infinite; }
+.cer-indice__txt { background: #3c3d2a; color: #fff; font-size: 12px; line-height: 1.3; padding: 5px 9px; border-radius: 6px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); }
+@keyframes cer-glisse-main { 0%, 100% { transform: translateX(-18px); } 50% { transform: translateX(18px); } }
+@media (prefers-reduced-motion: reduce) { .cer-indice__main { animation: none; } }

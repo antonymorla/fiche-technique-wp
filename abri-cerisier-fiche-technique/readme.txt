@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.15
+Stable tag: 3.3.0
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,11 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.0 =
+* PORTES ET FENÊTRES DÉPLACÉES SUR LE DESSIN (demande d'Antony du 13/10/2026) : à la souris ou au doigt, sur les façades (le long du mur, par pas de 10 cm, à 10 cm au moins des angles ; une fenêtre glissée vers le haut ou le bas change de hauteur, par pas de 5 cm) et sur le plan (d'un mur à l'autre). Les règles de place restent les mêmes (jamais l'une sur l'autre). Une main animée montre le geste la première fois ; la page ne défile pas quand on tient une menuiserie au doigt.
+* CHOIX GARDÉS QUAND ON CHANGE UNE OPTION EN AMONT : passer d'ossature à madrier (ou de 2 pans à toit plat, etc.) ne vide plus le reste de la configuration. Les réponses des questions qui disparaissent sont notées et recochées quand elles reviennent, ou sur la question jumelle de l'autre système ; un modèle qui n'existe pas dans l'autre système est remplacé par le plus proche, avec un message ; la nouvelle question qui bloquait la suite (épaisseur des madriers, orientation) reçoit le choix le moins cher, avec un message. Une pente choisie (25°) n'est plus écrasée par le 14° par défaut d'une autre toiture.
+* CARPORT, HAUTEUR DE PASSAGE EN VIGNETTES (comme la rehausse des abris) : 2,10 m (inclus), 2,50 m, 3,00 m, 3,70 m, 4,80 m, chacune avec un véhicule à l'échelle (voiture, utilitaire, fourgon aménagé, camping-car, engin) et son prix lu dans le champ du site, plus une hauteur sur mesure au centimètre. La hauteur choisie suit quand on change de poteau.
 
 = 3.2.15 =
 * DONNÉES DES CONFIGURATEURS (décisions d'Antony du 13/10/2026, appliquées par un module à usage unique, sauvegarde cer_fix_lot2_sauvegarde) : pente 14° gratuite et cochée d'office (18° gratuite, 25° et 35° payantes comme avant) ; bac acier sur les 1 et 2 pans (abri et garage : seul, sous-toiture, panneaux isolés 40/60/80 ; carport : seul, sous-toiture, feutre anti-condensation), au m² de toiture réelle (pente comprise) ; carport : plots béton + pieds galva cumulables ; images des fenêtres fixes sur ossature remises à l'endroit.
