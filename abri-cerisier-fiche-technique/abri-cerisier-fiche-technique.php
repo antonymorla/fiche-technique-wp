@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
- * Version:           3.0.9
+ * Version:           3.1.0
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '3.0.9' );
+define( 'ACFT_VERSION',  '3.1.0' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -32,6 +32,10 @@ if ( ! function_exists( 'cer_cfg_produits' ) ) {
 }
 if ( ! function_exists( 'cer_devis_pdf' ) ) {
     require_once ACFT_DIR . 'includes/devis-cerisier.php';
+}
+// Vue 3D, réalité augmentée et dossier mairie (Réglages → Fiche Technique → « Vue 3D et dossier mairie »)
+if ( ! function_exists( 'cer3d_mode' ) ) {
+    require_once ACFT_DIR . 'includes/vue3d.php';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -527,6 +531,9 @@ add_action( 'admin_init', function() {
     register_setting( 'acft_group', 'cer_cfg_mode', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'tous'; },
     ] );
+    register_setting( 'acft_group', 'cer_3d_mode', [
+        'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
+    ] );
     register_setting( 'acft_group', 'acft_slug', [
         'sanitize_callback' => function( $v ) {
             $v = sanitize_title( $v );
@@ -595,6 +602,17 @@ function acft_settings_page() {
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="tous" <?php checked( $mode, 'tous' ); ?> /> Tous les visiteurs</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="test" <?php checked( $mode, 'test' ); ?> /> Test : seulement avec <code>?apercu=plan</code> dans l'adresse</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="off" <?php checked( $mode, 'off' ); ?> /> Désactivé (configurateurs et devis d'origine)</label>
+                </fieldset>
+                <?php submit_button( 'Enregistrer' ); ?>
+            </div>
+            <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
+                <h2 style="margin-top:0">Vue 3D et dossier mairie</h2>
+                <p>Bouton « Voir en 3D » sur les configurateurs (rotation, réalité augmentée, insertion sur une photo du jardin) et dossier mairie en PDF, après saisie obligatoire des coordonnées (liste : menu <a href="<?php echo esc_url( admin_url( 'edit.php?post_type=cer_dossier' ) ); ?>">Dossiers mairie</a>, aucun mail automatique).</p>
+                <?php $m3 = function_exists( 'cer3d_mode' ) ? cer3d_mode() : 'test'; ?>
+                <fieldset>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="tous" <?php checked( $m3, 'tous' ); ?> /> Tous les visiteurs</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="test" <?php checked( $m3, 'test' ); ?> /> Test : seulement après un passage par <code>?apercu=3d</code> (cookie de 30 jours)</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="off" <?php checked( $m3, 'off' ); ?> /> Désactivé</label>
                 </fieldset>
                 <?php submit_button( 'Enregistrer' ); ?>
             </div>

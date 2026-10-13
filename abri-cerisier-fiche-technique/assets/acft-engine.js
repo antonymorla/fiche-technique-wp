@@ -202,17 +202,20 @@ function sPath(p,d,stroke,sw,fill,dash){
   if(dash)e.setAttribute('stroke-dasharray',dash);p.appendChild(e);
 }
 function sTxt(p,x,y,s,sz=10,fill='#333',anchor='middle',weight=''){
+  if(ST.picto) return;
   const t=svgEl('text',{x,y,'font-family':'Arial,sans-serif','font-size':sz,fill,
     'text-anchor':anchor,'dominant-baseline':'central'});
   if(weight)t.setAttribute('font-weight',weight);t.textContent=s;p.appendChild(t);
 }
 function sTxtBg(p,x,y,s,sz=10,fill='#333'){
+  if(ST.picto) return;
   const w=s.length*sz*0.55+6;
   sRect(p,x-w/2,y-sz*0.65,w,sz*1.3,'white','none',0);
   sTxt(p,x,y,s,sz,fill);
 }
 
 function sArrow(p,x1,y1,x2,y2,col='#3d3d28',sz=5){
+  if(ST.picto) return;
   const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
   if(len<1)return;
   const ux=dx/len,uy=dy/len;
@@ -222,6 +225,7 @@ function sArrow(p,x1,y1,x2,y2,col='#3d3d28',sz=5){
 
 /* dimension line: from (x1,y1) to (x2,y2), offset perpendicular by `off` px */
 function dimL(p,x1,y1,x2,y2,label,off=28,col='#3d3d28'){
+  if(ST.picto) return;
   const dx=x2-x1,dy=y2-y1,isH=Math.abs(dx)>Math.abs(dy);
   const ox=isH?0:off, oy=isH?off:0;
   const lx1=x1+ox,ly1=y1+oy,lx2=x2+ox,ly2=y2+oy;
@@ -334,7 +338,91 @@ function texPat(svg,attrs,build){
   return `url(#${id})`;
 }
 // Lames de bardage / madriers. ox,oy = origine (bas du mur) pour caler les lames sur le sol
+// Bois photographié (vue 3D) : photo du pin autoclave vert (texture SketchUp d'Abri Cerisier, raccordable dans les deux sens).
+// ST.boisPhoto={url,w,h,m:[largeur,hauteur en mètres]}. Une seule copie de l'image par dessin, réutilisée par les motifs.
+const PIN_VERT=['#bdb07e','#c4b886'];
+function photoBois(svg,sc,vertical){
+  const B=ST.boisPhoto, defs=texDefs(svg), key=(vertical?'v':'h')+Math.round(sc*100);
+  let img=defs.querySelector('image[data-bois]');
+  if(!img){ img=svgEl('image',{id:`${svg.id||'sv'}-boisimg${++TEXN}`,'data-bois':1,href:B.url,x:0,y:0,width:B.w,height:B.h,preserveAspectRatio:'none'}); defs.appendChild(img); }
+  const w=B.m[0]*sc, h=B.m[1]*sc;
+  let p=defs.querySelector(`pattern[data-bois="${key}"]`);
+  if(!p){
+    p=svgEl('pattern',{id:`${svg.id||'sv'}-bois${++TEXN}`,'data-bois':key,patternUnits:'userSpaceOnUse',width:w,height:h});
+    if(vertical) p.setAttribute('patternTransform','rotate(90)');
+    p.appendChild(svgEl('use',{href:'#'+img.id,transform:`scale(${w/B.w},${h/B.h})`}));
+    defs.appendChild(p);
+  }
+  return {url:`url(#${p.id})`,w,h};
+}
+// Masque à bord fondu (ellipse) : un nœud découpé dans la photo se fond dans le fil de la lame
+function masqueNoeud(svg){
+  const defs=texDefs(svg); let m=defs.querySelector('mask[data-noeud]'); if(m) return m.id;
+  const gid=`${svg.id||'sv'}-ng${++TEXN}`, gr=svgEl('radialGradient',{id:gid});
+  gr.appendChild(svgEl('stop',{offset:'0.45','stop-color':'#fff'})); gr.appendChild(svgEl('stop',{offset:'1','stop-color':'#000'})); defs.appendChild(gr);
+  m=svgEl('mask',{id:`${svg.id||'sv'}-nm${++TEXN}`,'data-noeud':1,maskUnits:'objectBoundingBox',maskContentUnits:'objectBoundingBox',x:0,y:0,width:1,height:1});
+  m.appendChild(svgEl('rect',{x:0,y:0,width:1,height:1,fill:`url(#${gid})`})); defs.appendChild(m);
+  return m.id;
+}
+// Lames en bois photographié : chaque lame prend une bande SANS nœud de la photo (position et sens du fil tirés au hasard) ;
+// les nœuds de la photo sont reposés un par un au hasard (taille, sens), avec de petits nœuds, pour éviter un motif qui se répète tous les mètres
+function patBoardsPhoto(svg,f,sc,ox,oy,tone){
+  const B=ST.boisPhoto, vert=f.dir==='v', ph=photoBois(svg,sc,vert), phH=vert?photoBois(svg,sc,false):ph, k0=ph.w/B.w, [,dk,lt]=f.c.map(c=>shade(c,tone));
+  const zones=(B.zones||[[0,B.h]]).map(z=>[z[0]*k0,z[1]*k0]), noeuds=B.noeuds||[], mid=noeuds.length?masqueNoeud(svg):null;
+  const bande=(R,lg)=>{ const ok=zones.filter(z=>z[1]-z[0]>=lg), z=ok.length?ok[Math.floor(R()*ok.length)]:[0,ph.h]; return z[0]+R()*Math.max(0,z[1]-z[0]-lg); };
+  const voile=(p,x,y,w,h,k)=>{ if(Math.abs(k)>.004) p.appendChild(svgEl('rect',{x,y,width:w,height:h,fill:k<0?'#000':'#fff',opacity:Math.min(.55,Math.abs(k))})); };
+  // nœud de la photo centré en (x,y) ; tourné d'un quart de tour sur une lame verticale ; taille limitée à la largeur de la lame
+  const noeud=(p,R,x,y,larg)=>{
+    const n=noeuds[Math.floor(R()*noeuds.length)], kh=n[3]*k0, s=Math.min(.42+R()*.5,larg*.9/kh), fl=R()<.5?-1:1;
+    const g=svgEl('g',{transform:`translate(${x},${y})${vert?' rotate(90)':''} scale(${fl*s},${s}) translate(${-n[0]*k0},${-n[1]*k0})`});
+    g.appendChild(svgEl('rect',{x:(n[0]-n[2]/2)*k0,y:(n[1]-n[3]/2)*k0,width:n[2]*k0,height:kh,fill:phH.url,mask:`url(#${mid})`})); p.appendChild(g);
+  };
+  const petit=(p,R,x,y)=>{ const r=(.0035+R()*.0045)*sc, a=vert?r*.8:r*1.25, b=vert?r*1.25:r*.8;
+    p.appendChild(svgEl('ellipse',{cx:x,cy:y,rx:a*1.9,ry:b*1.9,fill:'none',stroke:'#7d6a35','stroke-width':r*.55,opacity:.22}));
+    p.appendChild(svgEl('ellipse',{cx:x,cy:y,rx:a,ry:b,fill:'#5d4a20',opacity:.55})); };
+  if(!vert){
+    const bh=Math.max(2.2,f.board*sc), N=7, W=Math.max(90,6*sc), R=rng(Math.round(bh*97)+N), m2=W/sc*N*bh/sc;
+    return texPat(svg,{width:W,height:bh*N,x:ox,y:oy-bh*N*Math.ceil(1000/(bh*N))},p=>{
+      for(let i=0;i<N;i++){
+        const y=i*bh, dx=R()*ph.w, dy=bande(R,bh), inv=R()<.5;
+        const g=svgEl('g',{transform:inv?`translate(${dx+W},${y-dy}) scale(-1,1)`:`translate(${-dx},${y-dy})`});
+        g.appendChild(svgEl('rect',{x:dx,y:dy,width:W,height:bh,fill:ph.url})); p.appendChild(g);
+        voile(p,0,y,W,bh,(R()-.5)*.14+Math.min(0,tone));
+      }
+      if(mid) for(let n=Math.round(m2*1.6);n>0;n--){ const i=Math.floor(R()*N); noeud(p,R,W*(.06+.88*R()),i*bh+bh*(.42+.16*R()),bh); }
+      for(let n=Math.round(m2*5);n>0;n--){ const i=Math.floor(R()*N); petit(p,R,W*R(),i*bh+bh*(.2+.6*R())); }
+      for(let i=0;i<N;i++){ const y=i*bh;
+        p.appendChild(svgEl('rect',{x:0,y,width:W,height:Math.max(.35,bh*.05),fill:lt,opacity:.45}));
+        p.appendChild(svgEl('rect',{x:0,y:y+bh-Math.max(.55,bh*.07),width:W,height:Math.max(.55,bh*.07),fill:dk,opacity:.9})); }
+    });
+  }
+  const Ra=rng(4242), seq=f.alea?Array.from({length:24},()=>f.boards[Math.floor(Ra()*f.boards.length)]):f.boards;
+  const reps=Math.max(1,Math.ceil(12/seq.length)), all=[].concat(...Array.from({length:reps},()=>seq)); // assez de lames pour varier
+  const ws=all.map(w=>Math.max(1.6,w*sc)), gap=f.gap?Math.max(.45,f.gap*sc):0, W=ws.reduce((a,b)=>a+b,0)+gap*ws.length;
+  const sp=0.6*sc, H=Math.max(60,(f.screws?Math.ceil(4*sc/sp)*sp:4*sc)), R=rng(Math.round(W*31));
+  return texPat(svg,{width:W,height:H,x:ox,y:oy},p=>{
+    p.appendChild(svgEl('rect',{x:0,y:0,width:W,height:H,fill:gap?(f.gapC||'#1e1f1c'):dk}));
+    const xs=[]; let x=0;
+    ws.forEach(w=>{
+      const r=bande(R,w), s=R()*ph.w, inv=R()<.5;
+      const g=svgEl('g',{transform:inv?`translate(${x+r+w},${s+H}) scale(1,-1)`:`translate(${x+r+w},${-s})`});
+      g.appendChild(svgEl('rect',{x:-(r+w),y:s,width:w,height:H,fill:ph.url})); p.appendChild(g);
+      voile(p,x,0,w,H,(R()-.5)*.14+Math.min(0,tone)); xs.push([x,w]); x+=w+gap;
+    });
+    const m2=W/sc*H/sc*(gap?.8:1);
+    xs.forEach(([x0,w])=>{ if(w<1.6) return;
+      if(mid) for(let n=Math.round(w/sc*H/sc*1.6+R()*.6);n>0;n--) noeud(p,R,x0+w*(.42+.16*R()),H*(.06+.88*R()),w);
+      for(let n=Math.round(w/sc*H/sc*5);n>0;n--) petit(p,R,x0+w*(.2+.6*R()),H*R()); });
+    xs.forEach(([x0,w])=>{
+      const ed=Math.min(w*.08,Math.max(.6,0.012*sc));
+      p.appendChild(svgEl('rect',{x:x0,y:0,width:Math.max(.3,ed),height:H,fill:lt,opacity:.45}));
+      if(!gap) p.appendChild(svgEl('rect',{x:x0+w-Math.max(.45,ed),y:0,width:Math.max(.45,ed),height:H,fill:dk,opacity:.9}));
+      if(f.screws&&w>2.5) for(let y=sp*.5;y<H;y+=sp) p.appendChild(svgEl('circle',{cx:x0+w*.5,cy:y,r:Math.max(.3,0.005*sc),fill:dk,opacity:.85}));
+    });
+  });
+}
 function patBoards(svg,f,sc,ox,oy,tone=0){
+  if(ST.boisPhoto&&f.c&&PIN_VERT.includes(f.c[0])) return patBoardsPhoto(svg,f,sc,ox,oy,tone);
   const [b0,dk,lt]=f.c.map(c=>shade(c,tone));
   if(f.dir==='h'){
     const bh=Math.max(2.2,f.board*sc), N=3, W=Math.max(90,bh*16), R=rng(Math.round(bh*97)+N);
@@ -717,7 +805,8 @@ function cornerTops(g,baseY,drawW,sc,d){
   const k=g.rH*sc/(drawW||1), top={L:[baseY,0],R:[baseY,0]};
   if(g.roofT==='trapL') top.L=[baseY-g.rH*sc,k];
   if(g.roofT==='trapR') top.R=[baseY-g.rH*sc,k];
-  if((g.roofT==='slope1'||g.roofT==='slope2')&&d){ const ey=baseY+(g.ovhgTop||0)*Math.tan(d.penteRad||0)*sc; top.L=[ey,0]; top.R=[ey,0]; }
+  // côté égout : en élévation le bord d'une extension masque le haut du mur ; en vue 3D (murSeul) le mur monte jusqu'au toit
+  if((g.roofT==='slope1'||g.roofT==='slope2')&&d&&!ST.murSeul){ const ey=baseY+(g.ovhgTop||0)*Math.tan(d.penteRad||0)*sc; top.L=[ey,0]; top.R=[ey,0]; }
   return top;
 }
 function drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
@@ -861,7 +950,7 @@ function drawExtElev(svg,d,side,baseX,gndY,sc,real,W,wallY){
 
 function drawPlan(svg,d,vw=480,vh=340){
   clr(svg);
-  const PAD=70;
+  const PAD=ST.picto?10:70;
   const avW=vw-PAD*2, avH=vh-PAD*2;
   const sc=ST.planScale||Math.min(avW/d.htL, avH/d.htP);
   svg.setAttribute('data-sc',sc);
@@ -954,7 +1043,7 @@ function drawPlan(svg,d,vw=480,vh=340){
   drawPostRow(wx+drawW+d.ovR*sc-postSz/2,wy,wx+drawW+d.ovR*sc-postSz/2,wy+drawP,d.ovR);
 
   // Fermetures des extensions
-  EXg.seg.forEach(s=>sLine(svg,pX(s.x0),pY(s.y0),pX(s.x1),pY(s.y1),'#5c3d1e',3,EXg.type==='ajouree'?'4 2':''));
+  EXg.seg.forEach(s=>sLine(svg,pX(s.x0),pY(s.y0),pX(s.x1),pY(s.y1),ST.picto?'#c2410c':'#5c3d1e',ST.picto?7:3,EXg.type==='ajouree'?'4 2':''));
 
   // Menuiseries — position comptée de gauche à droite sur l'élévation vue de l'extérieur
   // (fond : depuis le côté droit ; gauche : depuis la façade ; droite : depuis le fond)
@@ -1015,6 +1104,7 @@ function drawPlan(svg,d,vw=480,vh=340){
 
   drawScaleBar(svg,sc);
   // Légende (en bas du SVG, sous le dessin)
+  if(ST.picto) return;
   const legX=8, legY=vh-14;
   sRect(svg,legX,legY,6,6,'#f0f3ea','#515136',.5,'3 2');
   sTxt(svg,legX+9,legY+3,'Extension toiture',5,'#888','start');
@@ -1148,7 +1238,7 @@ function elevFit(d,side,vw,vh){
     return Math.min((vw-100)/(viewW+oL+oR),(vh-75-8)/(d.hExt+d.rH));
   }
   const g=getElevGeom(d,side), hasMenus=ST.menus.some(m=>m.wall===side), hasHT=(g.ovhgL+g.ovhgR)>0.01;
-  const PAD={t:25,b:hasMenus?(hasHT?80:65):(hasHT?55:45),l:55,r:50};
+  const PAD=ST.picto?{t:6,b:6,l:6,r:6}:{t:25,b:hasMenus?(hasHT?80:65):(hasHT?55:45),l:55,r:50};
   const maxH=g.wallH+(g.roofT==='flat'?flatTopH(d):(g.roofT==='edge'?0.2:g.rH))+(d.base||0);
   return Math.min((vw-PAD.l-PAD.r)/(g.w+g.ovhgL+g.ovhgR),(vh-PAD.t-PAD.b-8)/maxH);
 }
@@ -1156,7 +1246,7 @@ function elevFit(d,side,vw,vh){
 function commonScale(d,vw,vh){ return Math.min(...['face','gauche','droite','fond'].map(s=>elevFit(d,s,vw,vh))); }
 // Barre d'échelle graphique (1 ou 2 m selon la place), en haut à gauche de la vue
 function drawScaleBar(svg,sc,x=10,y=12){
-  if(!ST.scaleBar) return;
+  if(!ST.scaleBar||ST.picto) return;
   const L=sc>=45?1:(sc>=22?2:5), w=L*sc, h=3.2;
   sRect(svg,x,y,w/2,h,'#3d3d28','#3d3d28',.6); sRect(svg,x+w/2,y,w/2,h,'#fff','#3d3d28',.6);
   sTxt(svg,x,y+h+7,'0',6,'#555','middle'); sTxt(svg,x+w/2,y+h+7,String(L/2).replace('.',','),6,'#555','middle'); sTxt(svg,x+w,y+h+7,L+' m',6,'#555','middle');
@@ -1169,7 +1259,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   const g=getElevGeom(d,side);
   const hasMenus=ST.menus.some(m=>m.wall===side);
   const hasHT=(g.ovhgL+g.ovhgR)>0.01;
-  const PAD={t:25,b:hasMenus?(hasHT?80:65):(hasHT?55:45),l:55,r:50};
+  const PAD=ST.picto?{t:6,b:6,l:6,r:6}:{t:25,b:hasMenus?(hasHT?80:65):(hasHT?55:45),l:55,r:50};
   const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
 
   const soub=d.base||0; // surélévation totale : soubassement + lambourdes et plancher
@@ -1188,9 +1278,16 @@ function drawElev(svg,d,side,vw=320,vh=260){
 
   const real=isReal();
   if(real){
-    drawGround(svg,PAD.l/2,vw-PAD.r/2,solY);
+    if(!ST.murSeul) drawGround(svg,PAD.l/2,vw-PAD.r/2,solY);
     if(d.sys!=='ossature'&&!d.isQuadro) drawMadrierCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
     sRect(svg,baseX,baseY,drawW,wallHpx,patBoards(svg,wallFin(d),sc,baseX,gndY),'none',0); // contour tracé après le pignon : mur et pignon d'un seul tenant
+    if(ST.murSeul){ // mur seul (vue 3D) : le pignon ou l'acrotère, dessinés d'habitude avec le toit, sont bardés comme le mur
+      const rh=g.rH*sc, X1=baseX, X2=baseX+drawW, pat=patBoards(svg,wallFin(d),sc,baseX,gndY);
+      if(g.roofT==='triangle') sPoly(svg,[[X1,baseY+.5],[X1+drawW/2,baseY-rh],[X2,baseY+.5]],pat,'none',0);
+      else if(g.roofT==='trapL') sPoly(svg,[[X1,baseY+.5],[X1,baseY-rh],[X2,baseY+.5]],pat,'none',0);
+      else if(g.roofT==='trapR') sPoly(svg,[[X1,baseY+.5],[X2,baseY-rh],[X2,baseY+.5]],pat,'none',0);
+      else if(g.roofT==='flat'&&d.isQuadro) sRect(svg,X1,baseY-d.rH*sc,drawW,d.rH*sc+.5,pat,'none',0);
+    }
   } else {
   // Ground + hatch
   sLine(svg,PAD.l/2,solY,vw-PAD.r/2,solY,'#888',2);
@@ -1229,7 +1326,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
     sRect(svg,baseX,gndY,drawW,Math.max(1,yL-gndY),real?shade(wd[0],.08):'#f3f3f3',real?wd[1]:'#777',.5); // chant de la lame de plancher
   }
   // Roof
-  drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
+  if(!ST.murSeul) drawRoof(svg,d,g,baseX,baseY,drawW,oL,oR,sc,vw);
   if(real){ // contour du mur, pignon compris (les lames de façade montent sans coupure jusqu'à la rive)
     const rh=g.rH*sc, X1=baseX, X2=baseX+drawW;
     const pts=g.roofT==='triangle'?[[X1,gndY],[X1,baseY],[X1+drawW/2,baseY-rh],[X2,baseY],[X2,gndY]]
@@ -1239,6 +1336,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
       :(g.roofT==='slope1'||g.roofT==='slope2')?[[X1,gndY],[X1,cornerTops(g,baseY,drawW,sc,d).L[0]],[X2,cornerTops(g,baseY,drawW,sc,d).L[0]],[X2,gndY]] // côté égout : s'arrête au bas du toit
       :[[X1,gndY],[X1,baseY],[X2,baseY],[X2,gndY]];
     sPoly(svg,pts,'none','#3a3828',1.2);
+    if(ST.murSeul) svg.setAttribute('data-mur',JSON.stringify({pts,sc,baseX,gndY,solY,drawW,baseY,w:g.w,wallH:g.wallH,rH:g.rH,roofT:g.roofT}));
   }
   if(real&&d.sys==='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawOssatureCorners(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
   if(real&&d.sys!=='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
@@ -1270,20 +1368,20 @@ function drawElev(svg,d,side,vw=320,vh=260){
     // flat, slope1, slope2 : toit plat à baseY ou baseY-rHpx
     return g.roofT==='flat'?baseY:baseY-rHpx;
   }
-  if(g.ovhgL>0.50){
+  if(g.ovhgL>0.50&&!ST.murSeul){
     const topY=roofYat(-oL/sc*sc); // Y du toit au bord extérieur gauche
     // Utilise dx négatif = à gauche du mur
     const ry=roofYat(-oL);
     sRect(svg,baseX-oL,ry,postW,solY-ry,postCol,postStroke,1);
     if(real) sRect(svg,baseX-oL,ry,Math.max(.6,postW*.18),solY-ry,'#d2c799','none',0);
   }
-  if(g.ovhgR>0.50){
+  if(g.ovhgR>0.50&&!ST.murSeul){
     const ry=roofYat(drawW+oR);
     sRect(svg,baseX+drawW+oR-postW,ry,postW,solY-ry,postCol,postStroke,1);
     if(real) sRect(svg,baseX+drawW+oR-postW,ry,Math.max(.6,postW*.18),solY-ry,'#d2c799','none',0);
   }
   // Extension face au spectateur (vue côté égout) : ses deux poteaux d'angle, devant le mur, dans l'alignement de la façade et du fond
-  if((g.roofT==='slope1'||g.roofT==='slope2')&&(g.ovhgTop||0)>0.50){
+  if((g.roofT==='slope1'||g.roofT==='slope2')&&(g.ovhgTop||0)>0.50&&!ST.murSeul){
     const ey=baseY+g.ovhgTop*Math.tan(d.penteRad||0)*sc;
     [baseX,baseX+drawW-postW].forEach(x=>{
       sRect(svg,x,ey,postW,solY-ey,postCol,postStroke,1);
@@ -1292,7 +1390,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
 
   // Gouttière : côté égout seulement (rien sur le côté haut d'un 1 pan), descente au coin jusqu'au sol
-  if(fv('f-gout')==='oui'&&g.roofT!=='edge'){
+  if(fv('f-gout')==='oui'&&g.roofT!=='edge'&&!ST.murSeul){
     const kk=g.rH*sc/((g.roofT==='triangle'?drawW/2:drawW)||1);
     const dropE=(g.ovhgTop||0)*Math.tan(d.penteRad||0)*sc;
     const endY={}; let runY=null;
@@ -1351,7 +1449,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
 
   // Fermetures et plancher des extensions (abri bûches)
-  drawExtElev(svg,d,side,baseX,solY,sc,real,g.w,gndY);
+  if(!ST.murSeul) drawExtElev(svg,d,side,baseX,solY,sc,real,g.w,gndY);
 
   // ── DIMENSION LINES ──────────────────────────────────
   const roofTopY=baseY-(g.roofT==='flat'?flatTopH(d)*sc:(g.roofT==='edge'?0:g.rH*sc));
@@ -1422,8 +1520,8 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
 
   // ── WALL THICKNESS (subtle bottom dashes) ──
-  sLine(svg,baseX,gndY-3,baseX+wt,gndY-3,'#b0bec5',.7);
-  sLine(svg,baseX+drawW-wt,gndY-3,baseX+drawW,gndY-3,'#b0bec5',.7);
+  if(!ST.picto){ sLine(svg,baseX,gndY-3,baseX+wt,gndY-3,'#b0bec5',.7);
+  sLine(svg,baseX+drawW-wt,gndY-3,baseX+drawW,gndY-3,'#b0bec5',.7); }
 
   drawScaleBar(svg,sc);
 
@@ -1436,6 +1534,10 @@ function drawElev(svg,d,side,vw=320,vh=260){
     if(!boxes.some(([a,b,c,e])=>k*drawW>a&&k*drawW<b&&ky*wallHpx>c&&ky*wallHpx<e)){ intK=k; intY=ky; break outer; }
   }
   sTxtBg(svg,baseX+drawW*intK,gndY-wallHpx*intY,g.roofT==='edge'?`int. sous faîte ${(d.hInt+d.rH).toFixed(2)} m`:`int. ${d.hInt.toFixed(2)} m`,7,'#3498db');
+  if(ST.picto&&ST.pictoReh>0){ const hb=ST.pictoReh*0.13*sc; sRect(svg,baseX,gndY-wallHpx,drawW,hb,'rgba(194,65,12,.28)','#c2410c',1.4); }
+  if(ST.picto&&ST.pictoPerson){ const h=1.75*sc, px=baseX+drawW*(ST.pictoPerson===true?.8:ST.pictoPerson), y0=solY;
+    sPath(svg,`M${px-0.13*sc},${y0} L${px-0.12*sc},${y0-h*.55} Q${px-0.15*sc},${y0-h*.83} ${px},${y0-h*.84} Q${px+0.15*sc},${y0-h*.83} ${px+0.12*sc},${y0-h*.55} L${px+0.13*sc},${y0} Z`,'none',0,'rgba(60,58,48,.78)');
+    const c=svgEl('circle',{cx:px,cy:y0-h*.92,r:0.1*sc,fill:'rgba(60,58,48,.78)'}); svg.appendChild(c); }
 
 }
 
@@ -1444,7 +1546,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
 // Posts only — no walls
 // ════════════════════════════════════════════════════════
 function drawCarportElev(svg,d,side,vw,vh){
-  const PAD={t:25,b:50,l:55,r:45};
+  const PAD=ST.picto?{t:6,b:6,l:6,r:6}:{t:25,b:50,l:55,r:45};
   const avW=vw-PAD.l-PAD.r, avH=vh-PAD.t-PAD.b;
   const isFace=side==='face'||side==='fond';
   const viewW=isFace?d.L:d.P;

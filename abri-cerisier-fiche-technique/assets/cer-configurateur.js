@@ -161,6 +161,11 @@
     walls.forEach(function (w) { used[w] = []; });
     if (gW && used.face) used.face.push([d.L * 50 - gW / 2 - 10, d.L * 50 + gW / 2 + 10]);
     var fits = function (w, a, b) { return a >= 10 && b <= len(w) - 10 && used[w].every(function (u) { return b <= u[0] || a >= u[1]; }); };
+    list.forEach(function (m) { // les menuiseries placées par le client occupent déjà leur place
+      var pl = PLACE[m.key]; if (!pl || pl.auto || !used[pl.wall]) return;
+      var c = pl.pos / 100 * len(pl.wall), z = E.isSliding(m) && !E.isDoubleM(m) ? m.lw : 0, dr = pl.rail === 'droite';
+      used[pl.wall].push([c - m.lw / 2 - 15 - (dr ? 0 : z), c + m.lw / 2 + 15 + (dr ? z : 0)]);
+    });
     var order = list.slice().sort(function (a, b) { return (a.type === 'porte' ? 0 : 1) - (b.type === 'porte' ? 0 : 1); });
     order.forEach(function (m) {
       var pl = PLACE[m.key];
@@ -178,6 +183,44 @@
         }
       }
       if (!done) PLACE[m.key] = { wall: walls[0] || 'face', pos: 50, rail: 'gauche', auto: true };
+    });
+  }
+  // Règle d'Antony (13/10/2026) : deux menuiseries ne se chevauchent jamais, porte de garage comprise.
+  // Mur par mur : largeur + 10 cm de jeu de chaque côté (donc 10 cm au moins des angles), plus la course d'une coulissante.
+  // Celle que le client déplace garde sa place ; les autres glissent à la place libre la plus proche, sinon passent sur un autre mur.
+  var ACTIF = null, SANS_PLACE = [], NOTE_PLACE = '';
+  var WLAB = { face: 'la façade', gauche: 'le côté gauche', droite: 'le côté droit', fond: 'le fond' };
+  function separer(list, d, gW) {
+    var walls = ST.type === 'carport' ? E.closList().slice() : ['face', 'gauche', 'droite', 'fond'];
+    SANS_PLACE = []; NOTE_PLACE = '';
+    if (!walls.length) return;
+    var len = function (w) { return (w === 'face' || w === 'fond') ? d.L * 100 : d.P * 100; };
+    var used = {}; walls.forEach(function (w) { used[w] = []; });
+    if (gW && used.face) used.face.push([d.L * 50 - gW / 2 - 10, d.L * 50 + gW / 2 + 10]);
+    var span = function (m, pl, c) {
+      var z = E.isSliding(m) && !E.isDoubleM(m) ? m.lw : 0, dr = pl.rail === 'droite';
+      return [c - m.lw / 2 - 10 - (dr ? 0 : z), c + m.lw / 2 + 10 + (dr ? z : 0)];
+    };
+    var libre = function (w, sp) { return sp[0] >= 0 && sp[1] <= len(w) && used[w].every(function (u) { return sp[1] <= u[0] || sp[0] >= u[1]; }); };
+    var rang = function (m) { var pl = PLACE[m.key] || {}; return m.key === ACTIF ? 0 : (pl.auto ? 2 : 1); };
+    list.slice().sort(function (a, b) { return rang(a) - rang(b); }).forEach(function (m) {
+      var pl = PLACE[m.key] || (PLACE[m.key] = { wall: walls[0], pos: 50, rail: 'gauche', auto: true });
+      if (walls.indexOf(pl.wall) < 0) pl.wall = walls[0];
+      var essais = [pl.wall].concat(walls.filter(function (w) { return w !== pl.wall; }));
+      for (var i = 0; i < essais.length; i++) {
+        var w = essais[i], L = len(w), c0 = i === 0 ? pl.pos / 100 * L : L / 2;
+        for (var dl = 0; dl <= L; dl += 2) {
+          var cs = dl ? [c0 + dl, c0 - dl] : [c0];
+          for (var j = 0; j < cs.length; j++) {
+            var sp = span(m, pl, cs[j]);
+            if (libre(w, sp)) {
+              if (m.key === ACTIF && i > 0) NOTE_PLACE = (m.siteLabel || m.label) + ' : pas assez de place sur ' + WLAB[pl.wall] + (E.isSliding(m) && !E.isDoubleM(m) ? ' (course de la coulissante comprise)' : '') + ', elle est placée sur ' + WLAB[w] + '.';
+              used[w].push(sp); pl.wall = w; pl.pos = Math.round(cs[j] / L * 100); return;
+            }
+          }
+        }
+      }
+      SANS_PLACE.push(m.siteLabel || m.label);
     });
   }
 
@@ -287,7 +330,10 @@
     var keys = {};
     men.menus.forEach(function (m) { keys[m.key] = 1; });
     Object.keys(PLACE).forEach(function (k) { if (!keys[k]) delete PLACE[k]; });
-    autoPlace(men.menus, d, CFG.kind === 'garage' && men.gdoor ? gW : 0);
+    // garage : la porte de garage est toujours dessinée au milieu de la façade, sa place est toujours réservée
+    var gRes = CFG.kind === 'garage' ? (gW || parseFloat(cfg['f-pglw']) || 237) : 0;
+    autoPlace(men.menus, d, gRes);
+    separer(men.menus, d, gRes);
     // Hauteur des fenêtres (règle d'Antony) : haut à 8 cm sous le haut du mur, réglable par le client ; une fenêtre placée sous la course
     // d'une porte coulissante du même mur passe sous le rail (posé au-dessus de la porte, sur toute la course)
     var wallLen = function (w) { return (w === 'face' || w === 'fond') ? d.L : d.P; };
@@ -377,7 +423,7 @@
   function onPlace(e) {
     var row = e.target.closest('[data-k]'); if (!row) return;
     var k = row.getAttribute('data-k'), pl = PLACE[k] || {};
-    pl.auto = false;
+    pl.auto = false; ACTIF = k;
     pl.wall = row.querySelector('.w').value; pl.pos = parseInt(row.querySelector('.p').value, 10) || 50;
     var r = row.querySelector('.r'); if (r) pl.rail = r.value;
     var h = row.querySelector('.h');
@@ -629,6 +675,8 @@
     P.querySelector('.cer-plan__dims').innerHTML = dimsList(L).map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
     realisations();
     var W = E.menuWarnings(L.d).filter(function (w) { return !/pas de prix/.test(w); });
+    if (NOTE_PLACE) W.unshift(NOTE_PLACE);
+    if (SANS_PLACE.length) W.unshift('Plus de place sur les murs pour : ' + SANS_PLACE.join(', ') + '. Agrandissez l\u2019abri ou retirez une menuiserie.');
     P.querySelector('.cer-plan__warn').innerHTML = W.map(function (w) { return '<p>' + w.replace(/Ouverture (\d+)/g, function (_, n) { var m = ST.menus[n - 1]; return m ? (m.siteLabel || m.label) : 'Ouverture ' + n; }) + '</p>'; }).join('');
     renderPlaces();
     polish();

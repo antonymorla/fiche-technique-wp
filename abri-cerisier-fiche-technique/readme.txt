@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.0.9
+Stable tag: 3.1.0
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,12 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.1.0 =
+* MENUISERIES : deux menuiseries ne peuvent plus se superposer, ni chevaucher la porte de garage (réservée au milieu de la façade). Celle que le client vient de déplacer reste où il l'a mise si la place est libre ; sinon elle glisse à la place libre la plus proche, puis sur un autre mur avec un message. S'il n'y a plus de place nulle part, le panneau le dit
+* VUE 3D (lien privé : ajouter ?apercu=3d à l'adresse du configurateur, réglage « Vue 3D et dossier mairie » : désactivé / test / tous) : bouton « Voir en 3D » dans le panneau. Murs, portes et fenêtres dessinés par le moteur du configurateur, bois photographié (texture pin autoclave vert des modèles SketchUp, nœuds placés au hasard), couvertures des modèles SketchUp (shingles, tuiles, bac acier), poteaux massifs au fil continu, gouttières demi-rondes RAL 7016 des deux côtés avec descente coudée contre le mur, QUADRO avec membrane EPDM 5 cm sous l'acrotère et sortie coudée Ø 12 cm. Réalité augmentée (iPhone : Quick Look ; Android : Scene Viewer ; ordinateur : QR code) et montage sur une photo du jardin
+* DOSSIER MAIRIE (même lien privé) : coordonnées obligatoires (nom, prénom, téléphone, email, adresse du terrain), enregistrées dans le menu « Dossiers mairie » de l'administration, aucun mail automatique. Parcelle cadastrale trouvée seule (API Carto IGN), implantation de l'abri sur la photo aérienne avec distances aux limites, PDF : DP1 à DP8 (ou PCMI1 à PCMI8 au-delà de 20 m²) — situation, masse, coupe cotée, notice, façades, vue de dessus, insertion, photos
+* 3D : sur le côté de l'égout, le mur monte jusqu'au toit même quand le bord d'une extension le masque en élévation 2D
 
 = 3.0.9 =
 * PRIX : une dimension sur-mesure hors des bornes du champ (ex. profondeur sous 2 m, sans prix dans les grilles) n'affiche plus de prix : le panneau indique « Profondeur : 2 m minimum » et le navigateur le signale dès la saisie. Le panier la refuse (minimum posé dans les champs WAPF le 12/10/2026, réglable dans « Minimum »)
