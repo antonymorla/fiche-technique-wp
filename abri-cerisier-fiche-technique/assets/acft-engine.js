@@ -705,7 +705,8 @@ function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
   }
   if(g.roofT==='triangle'){
     const ty=baseY-roofH, px=baseX+drawW/2, k=roofH/(drawW/2||1);
-    sPoly(svg,[[baseX,baseY],[px,ty],[baseX+drawW,baseY]],wallPat,'none',0);
+    // pignon descendu de 0,6 px sous l'égout : recouvre le haut du mur (même motif, même origine), plus de liseré clair d'anticrénelage (audit du 14/10)
+    sPoly(svg,[[baseX,baseY+.6],[px,ty],[baseX+drawW,baseY+.6]],wallPat,'none',0);
     // Pignon d'ossature 2 pans (vignettes du site) : classique = lames horizontales et montant central ;
     // biseauté = lames à 45° en V de part et d'autre du montant. Tous les autres pignons : lames horizontales.
     if(d.sys==='ossature'){
@@ -722,7 +723,7 @@ function drawRoofReal(svg,d,g,baseX,baseY,drawW,oL,oR,sc){
   }
   if(g.roofT==='trapL'||g.roofT==='trapR'){
     const ty=baseY-roofH, k=roofH/(drawW||1), L=g.roofT==='trapL';
-    sPoly(svg,L?[[baseX,baseY],[baseX,ty],[baseX+drawW,baseY]]:[[baseX,baseY],[baseX+drawW,baseY],[baseX+drawW,ty]],wallPat,'none',0);
+    sPoly(svg,L?[[baseX,baseY+.6],[baseX,ty],[baseX+drawW,baseY+.6]]:[[baseX,baseY+.6],[baseX+drawW,baseY+.6],[baseX+drawW,ty]],wallPat,'none',0);
 
     riveBand(L?[[rx,ty-k*oL],[rx+rw,baseY+k*oR]]:[[rx,baseY+k*oL],[rx+rw,ty-k*oR]]);
     sTxtBg(svg,baseX+drawW*(L?.35:.65),baseY-roofH*.28,`${d.pente}°`,8,'#555');
