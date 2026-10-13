@@ -791,14 +791,14 @@ window.CerVue3D = (function () {
         var q = P3(cp, 0); colliers(q[0], q[2], z ? -g.s : 0, z ? 0 : -g.s, 0.14, yv);
       });
     }
-    // ── terrasse (plancher extérieur) posée par le client sur le plan de masse : lames de 145 mm photographiées, teinte du bardage
-    //    (une seule teinte d'autoclave), sur lambourdes, 12 cm au-dessus du sol ; lames perpendiculaires au mur qu'elle touche ──
+    // ── terrasse (plancher extérieur) posée par le client sur le plan de masse : lames de 145 mm photographiées, toujours en pin
+    //    autoclave vert (Antony, 13/10/2026), sur lambourdes, 12 cm au-dessus du sol ; lames perpendiculaires au mur qu'elle touche ──
     var TR = E.terrasse ? E.terrasse(d) : null, TB = null;
     if (TR) {
       var tL = TR.x1 - TR.x0, tP = TR.y1 - TR.y0, tx = (TR.x0 + TR.x1) / 2 - L / 2, tz = P / 2 - (TR.y0 + TR.y1) / 2;
       var colle = function (a, b) { return Math.abs(a - b) < 0.02; };
       var sens = colle(TR.y1, 0) || colle(TR.y0, P) ? 'v' : colle(TR.x1, 0) || colle(TR.x0, L) ? 'h' : (tL >= tP ? 'h' : 'v');
-      var finT = Object.assign({}, E.wallFin(d) === E.FINITIONS.sr_brun ? E.FINITIONS.sr_brun : E.FINITIONS.sr_vert, { dir: sens, board: 0.145 });
+      var finT = Object.assign({}, E.FINITIONS.sr_vert, { dir: sens, board: 0.145 });
       var lames = boite(tL, 0.027, tP, matMotif(finT)); lames.position.set(tx, 0.1065, tz); G.add(lames);
       var lamb = boite(Math.max(0.1, tL - 0.06), 0.093, Math.max(0.1, tP - 0.06), new THREE.MeshStandardMaterial({ color: 0x3a3226, roughness: 0.95 }), true);
       lamb.position.set(tx, 0.0465, tz); G.add(lamb);

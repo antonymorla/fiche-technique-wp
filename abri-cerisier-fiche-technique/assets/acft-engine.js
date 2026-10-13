@@ -919,8 +919,8 @@ function terrasse(d){
   const T=ST.terrasse; if(!T||ST.type==='carport'||!(T.L>0)||!(T.P>0)) return null;
   return {x0:T.x,x1:T.x+T.L,y0:T.y,y1:T.y+T.P,terr:true};
 }
-// teinte des lames de plancher : celle du bardage quand il est en autoclave brun, sinon autoclave vert (une seule teinte d'autoclave)
-function floorCol(d){ return (wallFin(d)===FINITIONS.sr_brun?FINITIONS.sr_brun:FINITIONS.sr_vert).c; }
+// lames de plancher et de terrasse : toujours en pin autoclave vert (Antony, 13/10/2026)
+function floorCol(d){ return FINITIONS.sr_vert.c; }
 function extGeom(d){
   const {L,P}=d, out={seg:[],floor:[],type:fv('f-ext-ferm')};
   const T0=terrasse(d); if(T0) out.floor.push(T0);
@@ -1071,10 +1071,10 @@ function drawPlan(svg,d,vw=480,vh=340){
   const EXg=extGeom(d), pX=x=>wx+x*sc, pY=y=>wy+(d.P-y)*sc;
   EXg.floor.forEach(f=>{
     const x0=pX(f.x0), x1=pX(f.x1), y0=pY(f.y1), y1=pY(f.y0), vert=(f.x1-f.x0)<(f.y1-f.y0);
-    sRect(svg,x0,y0,x1-x0,y1-y0,'#eadfcb','#8a6d48',.6);
+    sRect(svg,x0,y0,x1-x0,y1-y0,'#e8e3c7','#857a50',.6); // pin autoclave vert
     const st=Math.max(2.5,0.12*sc);
-    if(vert) for(let y=y0+st;y<y1;y+=st) sLine(svg,x0,y,x1,y,'#b89b72',.4);
-    else for(let x=x0+st;x<x1;x+=st) sLine(svg,x,y0,x,y1,'#b89b72',.4);
+    if(vert) for(let y=y0+st;y<y1;y+=st) sLine(svg,x0,y,x1,y,'#b3a776',.4);
+    else for(let x=x0+st;x<x1;x+=st) sLine(svg,x,y0,x,y1,'#b3a776',.4);
     if(f.terr&&!ST.picto){ // terrasse : nom, largeur et profondeur, cotées du côté opposé à l'abri
       sTxtBg(svg,(x0+x1)/2,(y0+y1)/2,`Terrasse ${(f.x1-f.x0).toFixed(2)} × ${(f.y1-f.y0).toFixed(2)} m`,7,'#6b5432');
       const bas=(y0+y1)/2>wy+drawP/2, dro=(x0+x1)/2>=wx+drawW/2-1; // centrée : profondeur cotée à droite, loin de la cote hors tout

@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.3.1
+Stable tag: 3.3.2
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,9 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.2 =
+* TERRASSE TOUJOURS EN PIN AUTOCLAVE VERT (Antony, 13/10/2026), quel que soit le bardage : plan, façades et 3D. Texte du site sous « plancher extérieur » remplacé (abri et garage, module à usage unique, sauvegarde cer_fix_terrasse_sauvegarde) : « Terrasse en pin autoclave vert. Vous la placez où vous voulez autour de l'abri et réglez sa taille directement sur le plan de masse. »
 
 = 3.3.1 =
 * TERRASSE SUR LE PLAN DE MASSE (plancher extérieur, demande d'Antony du 13/10/2026) : bouton « Positionner sur le plan de masse » sous ses dimensions ; sur le plan, la terrasse se glisse (pas de 10 cm, jamais sur l'abri) et s'agrandit par son coin rond, ce qui met à jour largeur et profondeur, donc le prix. Posée d'office devant la façade, ou sous l'extension de toiture s'il y en a une. Dessinée sur le plan (cotes, plan agrandi pour l'englober), au sol sur les façades, en 3D (lames de 145 mm de la teinte du bardage, sur lambourdes, sans herbe dessous) et jointe à la commande. Le plancher n'est plus dessiné sous l'extension quand la terrasse est ailleurs.
