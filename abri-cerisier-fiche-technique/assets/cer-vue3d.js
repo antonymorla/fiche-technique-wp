@@ -44,6 +44,18 @@ window.CerVue3D = (function () {
       .then(function (r) { return { GLTFExporter: r[0].GLTFExporter, USDZExporter: r[1].USDZExporter }; });
   }
   var CFG = function () { return window.CER_3D || {}; };
+  // pendant le chargement : un abri qui se construit (lames du mur une à une, toiture, porte), en boucle
+  var CHARGE_CSS = '.cer3d .ch{flex-direction:column;gap:14px;font-weight:500}.cer3d .ch svg{width:min(260px,60vw);height:auto}' +
+    '@keyframes cer3dL{0%,8%{opacity:0;transform:translateY(-14px)}18%,86%{opacity:1;transform:none}100%{opacity:0}}' +
+    '.cer3d .ch .l,.cer3d .ch .t,.cer3d .ch .p{opacity:0;animation:cer3dL 3.2s ease-out infinite;transform-box:fill-box}';
+  var CHARGE_HTML = (function () {
+    var l = ''; for (var i = 0; i < 7; i++) l += '<rect class="l" x="50" y="' + (150 - (i + 1) * 13) + '" width="160" height="12" rx="1.5" fill="#bdb07e" stroke="#857a50" stroke-width="1" style="animation-delay:' + (i * 0.16) + 's"/>';
+    return '<svg viewBox="0 0 260 190" aria-hidden="true"><line x1="10" y1="151" x2="250" y2="151" stroke="#6f8a48" stroke-width="4" stroke-linecap="round"/>' + l +
+      '<polygon class="t" points="36,61 130,12 224,61 210,61 130,26 50,61" fill="#43474b" style="animation-delay:1.2s"/>' +
+      '<polygon class="t" points="50,61 130,26 210,61" fill="#d2c799" stroke="#857a50" stroke-width="1" style="animation-delay:1.05s"/>' +
+      '<rect class="p" x="112" y="95" width="36" height="55" fill="#a99a62" stroke="#5f5333" stroke-width="1.5" style="animation-delay:1.45s"/></svg>' +
+      '<span>Construction de votre abri en 3D…</span>';
+  })();
   var texUrl = function (f) { return (CFG().tex || SRC.replace(/[^\/]*$/, 'tex/')) + f; };
   // couvertures : fichier, largeur et hauteur réelles de l'image en mètres (tailles des matières SketchUp)
   var TOITS = { shingle_n: ['couv-shingle-noir.jpg', 1, 0.657], shingle_b: ['couv-shingle-brun.jpg', 1, 0.655], shingle_v: ['couv-shingle-vert.jpg', 1, 0.655],
@@ -84,10 +96,10 @@ window.CerVue3D = (function () {
   function dessin(w, h, f) { var c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); return c; }
   function hex(h, k) { var n = parseInt(h.slice(1), 16), f = function (v) { return Math.max(0, Math.min(255, Math.round(v * (1 + k)))); }; return 'rgb(' + f(n >> 16) + ',' + f((n >> 8) & 255) + ',' + f(n & 255) + ')'; }
   // bois massif : quatre bandes de la photo, fil vertical ; la texture se répète en miroir le long du fil, donc sans raccord visible
-  function boisMassifPhoto() {
-    var V = BOIS.vert, S = Math.round(0.12 * V.w), c = document.createElement('canvas'); c.width = 4 * S; c.height = V.w;
+  function boisMassifPhoto(V) {
+    V = V || BOIS.vert; var S = Math.round(0.12 * V.w), c = document.createElement('canvas'); c.width = 4 * S; c.height = V.w;
     var g = c.getContext('2d');
-    var zs = V.zones.map(function (z) { return [z[0], Math.min(z[1], V.h) - S]; }).filter(function (z) { return z[1] >= z[0]; }); // bandes sans gros nœud
+    var zs = (V.zones || [[0, V.h]]).map(function (z) { return [z[0], Math.min(z[1], V.h) - S]; }).filter(function (z) { return z[1] >= z[0]; }); // bandes sans gros nœud
     for (var k = 0; k < 4; k++) { var z = zs[Math.floor(Math.random() * zs.length)] || [0, V.h - S], r = z[0] + Math.random() * (z[1] - z[0]); g.save(); g.translate(k * S + S, 0); g.rotate(Math.PI / 2); g.drawImage(V.img, 0, r, V.w, S, 0, 0, V.w, S); g.restore(); }
     return c;
   }
@@ -193,8 +205,11 @@ window.CerVue3D = (function () {
     };
     // pièce de bois massif : fil dans le sens de la longueur, d'une seule traite ; chaque face prend une bande différente de la photo
     var BV = !!(BOIS && BOIS.vert);
-    var massif = function (w, h, dd, axe) {
-      var m = boite(w, h, dd, M.massif, true), geo = m.geometry, uv = geo.attributes.uv, pos = geo.attributes.position;
+    // bois de la teinte du bardage (rives, bandeaux, tableaux : règle d'Antony) ; les poteaux et la structure restent en autoclave vert
+    var phB = (E.wallFin(d) || {}).ph;
+    M.bard = phB && phB !== 'vert' && BOIS && BOIS[phB] ? new THREE.MeshStandardMaterial({ map: (function () { var t = canvasTex(THREE, boisMassifPhoto(BOIS[phB]), true); t.wrapT = THREE.MirroredRepeatWrapping; return t; })(), roughness: 0.8 }) : M.massif;
+    var massif = function (w, h, dd, axe, mat) {
+      var m = boite(w, h, dd, mat || M.massif, true), geo = m.geometry, uv = geo.attributes.uv, pos = geo.attributes.position;
       var ax = axe === 'x' ? 0 : axe === 'z' ? 2 : 1, len = [w, h, dd][ax], v0 = Math.random() * 2;
       var co = function (i) { return [pos.getX(i), pos.getY(i), pos.getZ(i)][ax]; };
       for (var f = 0; f < 6; f++) {
@@ -297,9 +312,9 @@ window.CerVue3D = (function () {
         var pm = new THREE.Mesh(pg, mat); pm.position.set(o.a + w / 2, Math.max(o.v0, 0) + h / 2, z); pm.receiveShadow = true; grp.add(pm);
         // tableaux (épaisseur de l'ouverture) en bois massif
         [[o.a, Math.max(o.v0, 0) + h / 2, 0.02, h], [o.b, Math.max(o.v0, 0) + h / 2, 0.02, h], [o.a + w / 2, o.v1, w + 0.02, 0.02]].forEach(function (t, n) {
-          var tb = n < 2 ? massif(0.02, t[3], ep) : massif(t[2], 0.02, ep, 'x'); tb.position.set(t[0], t[1], -sg * ep / 2); grp.add(tb); // tableaux sur toute l'épaisseur
+          var tb = n < 2 ? massif(0.02, t[3], ep, undefined, M.bard) : massif(t[2], 0.02, ep, 'x', M.bard); tb.position.set(t[0], t[1], -sg * ep / 2); grp.add(tb); // tableaux sur toute l'épaisseur
         });
-        if (!o.porte) { var ap = massif(w + 0.06, 0.03, prof + 0.05, 'x'); ap.position.set(o.a + w / 2, o.v0 - 0.015, z / 2 + sg * 0.025); grp.add(ap); } // appui de fenêtre
+        if (!o.porte) { var ap = massif(w + 0.06, 0.03, prof + 0.05, 'x', M.bard); ap.position.set(o.a + w / 2, o.v0 - 0.015, z / 2 + sg * 0.025); grp.add(ap); } // appui de fenêtre
         if (o.vitre) { var vg = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.02, h - 0.02), M.verre); vg.position.set(o.a + w / 2, Math.max(o.v0, 0) + h / 2, z + sg * 0.012); grp.add(vg); }
       });
       if (!oss && ST.type !== 'carport') { // madriers : les rangs dépassent de 10 cm à chaque angle (bois de bout), coiffés d'un U en bois si l'option est prise
@@ -358,7 +373,7 @@ window.CerVue3D = (function () {
       mm.rotation.z = ang; mm.position.set(xc, sous(xc, (za + zb) / 2) + ep / 2 / Math.cos(ang), (za + zb) / 2); G.add(mm); };
     var panZ = function (za, zb, ang) { var w = (zb - za) / Math.cos(ang), zc = (za + zb) / 2, mm = boite(X1 - X0, ep, w, mats());
       mm.rotation.x = ang; mm.position.set((X0 + X1) / 2, sous(0, zc) + ep / 2 / Math.cos(ang), zc); G.add(mm); };
-    var rive = function (xa, xb, z, ang) { var w = (xb - xa) / Math.cos(ang), r = massif(w, 0.2, 0.028, 'x'); r.rotation.z = ang; r.position.set((xa + xb) / 2, sous((xa + xb) / 2, 0) - 0.03, z); G.add(r); };
+    var rive = function (xa, xb, z, ang) { var w = (xb - xa) / Math.cos(ang), r = massif(w, 0.2, 0.028, 'x', M.bard); r.rotation.z = ang; r.position.set((xa + xb) / 2, sous((xa + xb) / 2, 0) - 0.03, z); G.add(r); };
     var gout = []; // égouts : { axe: 'z' (le long de la profondeur) ou 'x' (le long de la largeur), e: coordonnée du bord du toit, s: côté (-1 / +1) }
     if (d.toit === '2PANS') {
       pan(X0, 0, ZB, ZF, a); pan(0, X1, ZB, ZF, -a);
@@ -382,13 +397,13 @@ window.CerVue3D = (function () {
       cvt(X1 - X0 + 0.04, 0.09, (X0 + X1) / 2, ZF); cvt(X1 - X0 + 0.04, 0.09, (X0 + X1) / 2, ZB); cvt(0.09, ZF - ZB, X0, (ZF + ZB) / 2); cvt(0.09, ZF - ZB, X1, (ZF + ZB) / 2);
       cvt(L + 0.04, 0.09, 0, P / 2); cvt(L + 0.04, 0.09, 0, -P / 2); cvt(0.09, P, -L / 2, 0); cvt(0.09, P, L / 2, 0);
       // extensions du QUADRO : bandeau bardé jusqu'à la couvertine
-      var hb2 = top - y0t, bd = function (xa, xb, za, zb) { if (xb - xa < 0.02 || zb - za < 0.02) return; var mm = boite(xb - xa, hb2, zb - za, [M.massif, M.massif, M.epdm, matSous, M.massif, M.massif]); mm.position.set((xa + xb) / 2, y0t + hb2 / 2, (za + zb) / 2); G.add(mm); };
+      var hb2 = top - y0t, bd = function (xa, xb, za, zb) { if (xb - xa < 0.02 || zb - za < 0.02) return; var MB = matMotif(E.wallFin(d)), mm = boite(xb - xa, hb2, zb - za, [MB, MB, M.epdm, matSous, MB, MB]); mm.position.set((xa + xb) / 2, y0t + hb2 / 2, (za + zb) / 2); G.add(mm); };
       bd(X0, X1, P / 2, ZF); bd(X0, X1, ZB, -P / 2); bd(X0, -L / 2, -P / 2, P / 2); bd(L / 2, X1, -P / 2, P / 2);
       // évacuation : un tuyau traverse l'acrotère au fond, au ras de la membrane, puis un coude et la descente le long du mur
       gout.push({ t: 'quadro', y: bas + 0.03 });
     } else {
       // toit plat : bandeau de 39 cm tout autour, couverture EPDM, gouttière cachée derrière le bandeau
-      var hb = 0.39, tp = boite(X1 - X0, hb, ZF - ZB, [M.massif, M.massif, matCouv, matSous, M.massif, M.massif]); tp.position.set((X0 + X1) / 2, y0t + hb / 2, (ZF + ZB) / 2); G.add(tp);
+      var hb = 0.39, MB2 = matMotif(E.wallFin(d)), tp = boite(X1 - X0, hb, ZF - ZB, [MB2, MB2, matCouv, matSous, MB2, MB2]); tp.position.set((X0 + X1) / 2, y0t + hb / 2, (ZF + ZB) / 2); G.add(tp);
       gout.push({ t: 'plat', y: y0t });
     }
     var TOIT = G.children.slice(nToit0);
@@ -445,7 +460,7 @@ window.CerVue3D = (function () {
     var EX = E.extGeom ? E.extGeom(d) : { seg: [] };
     if (EX.seg.length) {
       var matF = new THREE.MeshStandardMaterial({ roughness: 0.88, side: THREE.DoubleSide });
-      attente.push(motif(E, function (svg) { return E.patBoards(svg, EX.type === 'ajouree' ? E.FINITIONS.ps_vert_ajoure : E.FINITIONS.sr_vert_v, 256, 0, 512); }, 256).then(function (c) {
+      attente.push(motif(E, function (svg) { return E.patBoards(svg, E.extFin ? E.extFin(d, EX.type) : (EX.type === 'ajouree' ? E.FINITIONS.ps_vert_ajoure : E.FINITIONS.sr_vert_v), 256, 0, 512); }, 256).then(function (c) {
         if (!c) return; var t = canvasTex(THREE, c, true); t.repeat.set(0.5, 0.5); matF.map = t; matF.needsUpdate = true; }));
       EX.seg.forEach(function (s) {
         var xa = s.x0 - L / 2, xb = s.x1 - L / 2, za = P / 2 - s.y0, zb = P / 2 - s.y1, len = Math.hypot(xb - xa, zb - za);
@@ -533,8 +548,9 @@ window.CerVue3D = (function () {
 
   // ───────── fenêtre ─────────
   var ouvert = null;
-  var CSS = '.cer3d{position:fixed;inset:0;z-index:100000;background:rgba(30,30,24,.6);display:flex;align-items:center;justify-content:center;padding:14px;font-family:Jost,Futura,Arial,sans-serif}' +
-    '.cer3d .b{position:relative;width:min(1180px,100%);height:min(800px,100%);background:#cfdbe4;border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}' +
+  var CSS = '.cer3d{position:fixed;inset:0;z-index:100000;background:rgba(30,30,24,.6);display:flex;align-items:center;justify-content:center;padding:10px;font-family:Jost,Futura,Arial,sans-serif}' +
+    '.cer3d .b{position:relative;width:100%;height:100%;background:#cfdbe4;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}' +
+    '@media (max-width:700px){.cer3d{padding:0}.cer3d .b{border-radius:0}}' + CHARGE_CSS +
     '.cer3d .zone{position:relative;width:100%;height:100%}.cer3d .zone img.fond{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}' +
     '.cer3d canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important;touch-action:none}' +
     '.cer3d .x{position:absolute;top:12px;right:12px;z-index:3;width:40px!important;height:40px!important;min-width:0!important;padding:0!important;margin:0!important;border-radius:50%!important;border:0!important;background:#fff!important;color:#2b2b22!important;font:400 26px/40px Arial,sans-serif!important;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}' +
@@ -552,7 +568,7 @@ window.CerVue3D = (function () {
     if (ouvert) fermer();
     var nom = E.ST.type === 'garage' ? 'garage' : E.ST.type === 'carport' ? 'carport' : 'abri';
     var ov = document.createElement('div'); ov.className = 'cer3d';
-    ov.innerHTML = '<style>' + CSS + '</style><div class="b"><div class="zone"><div class="ch">Préparation de la vue 3D…</div></div>' +
+    ov.innerHTML = '<style>' + CSS + '</style><div class="b"><div class="zone"><div class="ch">' + CHARGE_HTML + '</div></div>' +
       '<span class="t">Votre ' + nom + ' en 3D · glissez pour tourner</span><button class="x" type="button" aria-label="Fermer">×</button>' +
       '<div class="v"><button data-v="trois" class="on">3/4</button><button data-v="face">Devant</button><button data-v="gauche">Gauche</button><button data-v="droite">Droite</button><button data-v="fond">Derrière</button><button data-v="dessus">Dessus</button><button data-v="int">Intérieur</button><button data-v="tour">Tourner</button>' +
       '<button data-a="ar" class="fort">Voir chez moi (réalité augmentée)</button><button data-a="photo">Sur une photo de mon jardin</button></div></div>';
@@ -779,5 +795,5 @@ window.CerVue3D = (function () {
     return exporteurs().then(function (X) { var sc = modeleExport();
       return Promise.all([new Promise(function (res, rej) { new X.GLTFExporter().parse(sc, res, rej, { binary: true }); }), new X.USDZExporter().parse(sc)]); });
   }
-  return { ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null, fichiersAR: fichiersAR };
+  return { CHARGE_HTML: CHARGE_HTML, CHARGE_CSS: CHARGE_CSS, ouvrir: ouvrir, fermer: fermer, capture: capture, vue: function (v) { if (ouvert) ouvert.vers(v); }, montage: null, fichiersAR: fichiersAR };
 })();

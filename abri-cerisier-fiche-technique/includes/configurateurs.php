@@ -69,7 +69,7 @@ add_action( 'wp_enqueue_scripts', function () {
 	wp_enqueue_style( 'cer-configurateur', $url . 'cer-configurateur.css', [], $v( 'cer-configurateur.css' ) );
 	wp_enqueue_script( 'cer-plan-moteur', $url . 'acft-engine.js', [], $v( 'acft-engine.js' ), true );
 	wp_enqueue_script( 'cer-configurateur', $url . 'cer-configurateur.js', [ 'cer-plan-moteur' ], $v( 'cer-configurateur.js' ), true );
-	wp_add_inline_script( 'cer-plan-moteur', 'window.CER_CFG=' . wp_json_encode( [ 'kind' => $kind, 'version' => CER_CFG_VERSION ] ) . ';', 'before' );
+	wp_add_inline_script( 'cer-plan-moteur', 'window.CER_CFG=' . wp_json_encode( [ 'kind' => $kind, 'version' => CER_CFG_VERSION, 'assortis' => '0' !== get_option( 'cer_menus_assortis', '1' ) ] ) . ';', 'before' );
 }, 30 );
 
 // WP Rocket : nos scripts s'exécutent tout de suite (pas de retardement ni de regroupement)

@@ -1095,8 +1095,32 @@
       '<div class="bar">' + etapes.map(function (e, i) { return '<i class="' + (e.fait ? 'd' : i === cur ? 'c' : '') + '"></i>'; }).join('') + '</div>' +
       '<div class="n">' + etapes.map(function (e, i) { return '<span data-i="' + i + '" class="' + (e.fait ? 'd' : i === cur ? 'c' : '') + '">' + (e.fait ? '✓ ' : '') + e.n + '</span>'; }).join('') + '</div>';
   }
+  // 5. Menuiseries bois assorties au bardage (règle d'Antony, 13/10/2026 ; réglage « Menuiseries bois assorties au bardage ») :
+  //    une porte ou une fenêtre en autoclave d'une autre teinte que le bardage n'est plus proposée ; alu, PVC et modèles sans teinte restent.
+  //    Si la menuiserie cochée n'est plus de la bonne teinte (bardage changé, ou choix par défaut du site), elle passe au même modèle dans la bonne teinte.
+  var TEINTES = [['vert', /autoclave vert/i, 'autoclave vert'], ['brun', /autoclave brun/i, 'autoclave brun'], ['gris', /autoclave gris/i, 'autoclave gris'], ['noir', /autoclave noir|douglas noir/i, 'autoclave noir'], ['ayous', /ayous/i, 'ayous']];
+  var teinteDe = function (l) { if (/\balu\b|pvc|capotage/i.test(l)) return null; for (var i = 0; i < TEINTES.length; i++) if (TEINTES[i][1].test(l)) return TEINTES[i]; return null; };
+  var norme = function (l) { return String(l || '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+  function vgAssortis() {
+    if (CFG.assortis === false || !M.men || !ST.cfg) return;
+    var sys = ST.cfg['f-sys'] || '', b = ST.cfg['f-bard'] || '';
+    var cible = /^madrier/.test(sys) && ST.cfg['f-toit'] !== 'QUADRO' ? 'vert' : { sr_vert: 'vert', sr_brun: 'brun', srn_gris: 'gris', douglas_noir: 'noir', ayous125: 'ayous', ayous_alea: 'ayous' }[b];
+    var T = cible && TEINTES.filter(function (t) { return t[0] === cible; })[0];
+    Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-container'), function (c) {
+      if ((M.men.specific || []).indexOf(c.getAttribute('for')) < 0) return;
+      var ins = Array.prototype.slice.call(c.querySelectorAll('input[type=radio]'));
+      ins.forEach(function (i) {
+        var l = i.getAttribute('data-wapf-label') || '', t = teinteDe(l), autre = !!(T && t && t[0] !== T[0]), sw = i.closest('.wapf-swatch') || i.closest('label');
+        if (autre && i.checked && !masqueWapf(c)) { // même modèle dans la teinte du bardage
+          var vise = norme(l.replace(t[1], T[2])), eq = ins.filter(function (x) { return norme(x.getAttribute('data-wapf-label')) === vise; })[0];
+          if (eq) { cocher(eq); autre = true; } else autre = false; // pas d'équivalent : on la laisse visible (le choix du client reste lisible)
+        }
+        if (sw) cacher(sw, autre && !i.checked);
+      });
+    });
+  }
   function vignettes() {
-    if (CFG.kind !== 'carport') { vgExtension(); vgHauteur(); vgToitPlat(); }
+    if (CFG.kind !== 'carport') { vgExtension(); vgHauteur(); vgToitPlat(); vgAssortis(); }
     vgProgression();
   }
 

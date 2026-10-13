@@ -81,9 +81,10 @@ add_action( 'wp_enqueue_scripts', function () {
 	}
 	list( $url, $dir ) = cer_cfg_assets();
 	$v = function ( $f ) use ( $dir ) { return CER_CFG_VERSION . '-' . ( file_exists( $dir . $f ) ? filemtime( $dir . $f ) : 0 ); };
-	wp_enqueue_script( 'cer-vue3d', $url . 'cer-vue3d.js', [ 'cer-plan-moteur' ], $v( 'cer-vue3d.js' ), true );
-	wp_enqueue_script( 'cer-mairie', $url . 'cer-mairie.js', [ 'cer-vue3d' ], $v( 'cer-mairie.js' ), true );
-	wp_add_inline_script( 'cer-vue3d', 'window.CER_3D=' . wp_json_encode( [
+	// la vue 3D (cer-vue3d.js, Three.js, textures) n'est téléchargée qu'au clic sur « Voir en 3D » : seule son adresse est donnée à la page
+	wp_enqueue_script( 'cer-mairie', $url . 'cer-mairie.js', [ 'cer-plan-moteur' ], $v( 'cer-mairie.js' ), true );
+	wp_add_inline_script( 'cer-mairie', 'window.CER_3D=' . wp_json_encode( [
+		'vue3d'  => add_query_arg( 'ver', $v( 'cer-vue3d.js' ), $url . 'cer-vue3d.js' ),
 		'rest'   => esc_url_raw( rest_url( 'cer/v1/' ) ),
 		'jeton'  => cer3d_jeton(),
 		'site'   => home_url( '/' ),

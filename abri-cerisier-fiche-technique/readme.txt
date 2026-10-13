@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.1
+Stable tag: 3.2.2
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,10 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.2 =
+* MENUISERIES ASSORTIES AU BARDAGE (règle d'Antony, réglage « Menuiseries bois assorties au bardage », activé) : une porte ou une fenêtre en autoclave d'une autre teinte que le bardage n'est plus proposée (vert, brun, gris, noir, ayous) ; alu, PVC et modèles sans teinte restent. La menuiserie cochée passe au même modèle dans la bonne teinte (ex. porte verte cochée par défaut sur un abri brun → porte brune). Vérifié : abri ossature brun.
+* VUE 3D (module toujours désactivé) : rives, bandeaux, tableaux et fermetures d'extension dans la teinte du bardage ; poteaux et structure en autoclave vert. Vue 3D téléchargée seulement au clic (la page n'emporte plus cer-vue3d.js), abri qui se construit pendant le chargement, fenêtre en plein écran.
 
 = 3.2.1 =
 * STABILITÉ : le module « Vue 3D et dossier mairie » n'est plus chargé du tout quand le réglage est sur « Désactivé ». Il est désactivé depuis le 13/10/2026 à 12h40, après deux pannes 500 du site (10h00-10h15 et 12h20-12h31) qui ont cessé chaque fois qu'il ne l'était plus. Cause non établie : journal des erreurs fatales et des requêtes lentes ajouté (mu-plugin cer-journal-erreurs.php, wp-content/cer-journal/).

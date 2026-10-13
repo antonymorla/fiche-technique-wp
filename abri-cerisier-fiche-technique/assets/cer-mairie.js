@@ -360,7 +360,7 @@
     var pr = projet(), I = {};
     Promise.all([situation(14, 1100, 760).then(function (u) { I.sit1 = u; }), situation(17, 1100, 760).then(function (u) { I.sit2 = u; })])
       .then(function () { etat('Plans et façades…'); return Promise.all(['face', 'droite', 'gauche', 'fond'].map(function (s) { return vueMoteur(s, 380, 280).then(function (u) { I[s] = u; }); }).concat([vueMoteur('plan', 480, 340).then(function (u) { I.plan = u; })])); })
-      .then(function () { etat('Vue 3D du projet…'); fermerTemp(); return window.CerVue3D ? window.CerVue3D.capture().then(function (u) { I.insertion = u; }) : null; })
+      .then(function () { etat('Vue 3D du projet…'); fermerTemp(); return charger3D().then(function (V) { return V.capture(); }).then(function (u) { I.insertion = u; }, function () { I.insertion = null; }); })
       .then(function () { rouvrir(); etat('Mise en page du PDF…'); return logo().then(function (l) { I.logo = l; return jspdf(); }); })
       .then(function (J) { var doc = construirePdf(J, pr, I); var nom = 'dossier-mairie-' + (D.client.nom || 'abri').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.pdf';
         doc.save(nom);
@@ -524,8 +524,27 @@
     d.innerHTML = '<style>.cer-plan__3d{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}.cer-plan__3d button{flex:1 1 140px;border:0;border-radius:22px;padding:10px 14px;font:600 14px Jost,Futura,Arial,sans-serif;cursor:pointer;background:#515136;color:#fff}.cer-plan__3d button.sec{background:#f1efe7;color:#2b2b22}</style>' +
       '<button type="button" data-a="3d">Voir en 3D</button><button type="button" class="sec" data-a="mairie">Mon dossier mairie (PDF)</button>';
     vis.appendChild(d);
-    d.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; if (b.dataset.a === '3d') window.CerVue3D && window.CerVue3D.ouvrir(); else ouvrir(); });
+    d.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; if (b.dataset.a === '3d') voir3D(); else ouvrir(); });
     return true;
+  }
+  // vue 3D téléchargée au premier clic seulement (window.CER_3D.vue3d) ; l'abri qui se construit s'affiche pendant ce temps
+  var charge3d = null;
+  function charger3D() {
+    if (window.CerVue3D) return Promise.resolve(window.CerVue3D);
+    if (charge3d) return charge3d;
+    return (charge3d = new Promise(function (res, rej) { var sc = document.createElement('script'); sc.src = C().vue3d; sc.async = true;
+      sc.onload = function () { window.CerVue3D ? res(window.CerVue3D) : rej(new Error('vue 3D')); }; sc.onerror = function () { charge3d = null; rej(new Error('vue 3D')); }; document.head.appendChild(sc); }));
+  }
+  var ATTENTE = '<svg viewBox="0 0 260 190" style="width:min(260px,60vw)" aria-hidden="true"><line x1="10" y1="151" x2="250" y2="151" stroke="#6f8a48" stroke-width="4" stroke-linecap="round"/>' +
+    [0, 1, 2, 3, 4, 5, 6].map(function (i) { return '<rect class="l" x="50" y="' + (150 - (i + 1) * 13) + '" width="160" height="12" rx="1.5" fill="#bdb07e" stroke="#857a50" style="animation-delay:' + (i * 0.16) + 's"/>'; }).join('') +
+    '<polygon class="l" points="36,61 130,12 224,61 210,61 130,26 50,61" fill="#43474b" style="animation-delay:1.2s"/></svg><span>Construction de votre abri en 3D…</span>';
+  function voir3D() {
+    var w = document.createElement('div'); w.className = 'cer3d-attente';
+    w.innerHTML = '<style>.cer3d-attente{position:fixed;inset:0;z-index:100000;background:rgba(207,219,228,.97);display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;font:500 16px Jost,Futura,Arial,sans-serif;color:#2b2b22}' +
+      '@keyframes cer3dA{0%,8%{opacity:0;transform:translateY(-14px)}18%,86%{opacity:1;transform:none}100%{opacity:0}}.cer3d-attente .l{opacity:0;animation:cer3dA 3.2s ease-out infinite;transform-box:fill-box}</style>' + ATTENTE;
+    document.body.appendChild(w);
+    charger3D().then(function (V) { var p = V.ouvrir(); w.remove(); return p; })
+      .catch(function () { w.querySelector('span').textContent = 'La vue 3D n\u2019a pas pu se charger. Réessayez dans un instant.'; setTimeout(function () { w.remove(); }, 2500); });
   }
   var n = 0, t = setInterval(function () { if (boutons() || ++n > 60) clearInterval(t); }, 500);
   window.CerMairie = { ouvrir: ouvrir, projet: projet };

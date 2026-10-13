@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
- * Version:           3.2.1
+ * Version:           3.2.2
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '3.2.1' );
+define( 'ACFT_VERSION',  '3.2.2' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -532,6 +532,9 @@ add_action( 'admin_init', function() {
     register_setting( 'acft_group', 'cer_cfg_mode', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'tous'; },
     ] );
+    register_setting( 'acft_group', 'cer_menus_assortis', [
+        'sanitize_callback' => function( $v ) { return '0' === (string) $v ? '0' : '1'; },
+    ] );
     register_setting( 'acft_group', 'cer_3d_mode', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
     ] );
@@ -604,6 +607,7 @@ function acft_settings_page() {
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="test" <?php checked( $mode, 'test' ); ?> /> Test : seulement avec <code>?apercu=plan</code> dans l'adresse</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_cfg_mode" value="off" <?php checked( $mode, 'off' ); ?> /> Désactivé (configurateurs et devis d'origine)</label>
                 </fieldset>
+                <p style="margin-top:14px"><input type="hidden" name="cer_menus_assortis" value="0" /><label><input type="checkbox" name="cer_menus_assortis" value="1" <?php checked( get_option( 'cer_menus_assortis', '1' ), '1' ); ?> /> Menuiseries bois assorties au bardage : seules les portes et fenêtres de la même teinte que le bardage sont proposées (autoclave vert, brun, gris, noir, ayous) ; alu, PVC et modèles sans teinte restent proposés. Si le bardage change, la menuiserie passe au même modèle dans la bonne teinte.</label></p>
                 <?php submit_button( 'Enregistrer' ); ?>
             </div>
             <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
