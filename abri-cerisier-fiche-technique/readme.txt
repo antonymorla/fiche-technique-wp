@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.6
+Stable tag: 3.2.7
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,10 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.7 =
+* EXTENSIONS (règle d'Antony) : dans la pente (côtés gauche et droit d'un 2 pans, côté bas d'un 1 pan), l'extension garde au moins 1 m de poteau. Profondeur au plus affichée sous chaque côté, « + » bloqué au-delà, valeur trop grande ramenée avec un message qui conseille une rehausse. Exemple : garage 2 pans à 25°, 2,50 m au plus (3,50 m à 18°).
+* Le correctif de l'en-tête mobile passe dans le CSS additionnel du thème (tout le site).
 
 = 3.2.6 =
 * DOSSIER MAIRIE RÉSERVÉ À L'ÉQUIPE (décision d'Antony, crainte de la concurrence) : le bouton n'apparaît qu'aux personnes connectées au back-office (droit « edit_posts » : administrateurs, gestionnaires, éditeurs ; jamais les comptes clients), et le point d'entrée refuse les autres. Nouveau réglage « Dossier mairie » : l'équipe seulement (par défaut) / tous les visiteurs / personne.

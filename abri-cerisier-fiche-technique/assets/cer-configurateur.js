@@ -953,6 +953,17 @@
   };
   var NOM = { abri: 'L’abri', garage: 'Le garage' };
   // 1. Extension de toiture : oui / non, profondeur de chaque côté, côtés fermés vus de dessus
+  // Règle d'Antony (13/10/2026) : une extension dans la pente (côté égout) garde au moins 1 m de poteau ;
+  // profondeur au plus, par pas de 0,5 m (débord standard compris). Infini sur les autres côtés et les toits plats.
+  function extMax(k) {
+    var E = window.CerPlan; if (!E || !E.calcDims || CFG.kind === 'carport') return Infinity;
+    var d = E.calcDims(); if (!d || d.isFlat) return Infinity;
+    var desc = d.toit === '2PANS' ? (k === 'gauche' || k === 'droite') : d.toit === '1PAN' ? k === d.orient : false, t = Math.tan(d.penteRad || 0);
+    if (!desc || t <= 0) return Infinity;
+    var std = { face: 0.20, fond: 0.10, gauche: 0.20, droite: 0.20 }[k] || 0.2;
+    var m = ((d.base || 0) + d.hExt - 1.0) / t - std; // hauteur au-dessus d'1 m de poteau, divisée par la pente
+    return Math.max(0, Math.floor(m * 2 + 1e-6) / 2);
+  }
   function vgExtension() {
     var X = M.ext, q = X && cont(X.q); if (!q) return;
     var b = q.querySelector('.cer-vg[data-vg="ext"]');
@@ -961,6 +972,8 @@
     var K = ['face', 'gauche', 'droite', 'fond'], NOMS = { face: 'Devant', gauche: 'À gauche', droite: 'À droite', fond: 'Derrière' };
     var inp = {}; K.forEach(function (k) { inp[k] = nombre(cont(X.m[k])); });
     K.forEach(function (k) { CUR.ext[k] = oui.checked ? valeur(inp[k]) : 0; });
+    var MX = {}, rabot = []; K.forEach(function (k) { MX[k] = extMax(k);
+      if (CUR.ext[k] > MX[k] + 1e-6 && inp[k]) { rabot.push(k); saisir(inp[k], MX[k] >= 0.5 ? MX[k] : ''); CUR.ext[k] = MX[k] >= 0.5 ? MX[k] : 0; } });
     // champs d'origine cachés : boutons oui/non, quatre cases, image, questions de remplissage
     cacher(q.querySelector('.wapf-field-input')); cacher(q.querySelector('.wapf-field-description'));
     K.forEach(function (k) { cacher(cont(X.m[k])); cacher(cont(X.rq[k])); cacher(cont(X.rs[k])); });
@@ -976,7 +989,7 @@
     K.forEach(function (k) { var rq = cont(X.rq[k]); if (!rq || masqueWapf(rq) || !(CUR.ext[k] > 0)) return;
       var o2 = radioLab(X.rq[k], /^oui/i), n2 = radioLab(X.rq[k], /^non/i); if (n2 && o2 && !o2.checked && !n2.checked) cocher(n2); });
     var sig = JSON.stringify([oui.checked, non.checked, CUR.ext, K.map(function (k) { return [pastilleDe(cont(X.m[k])), COTES[k].map(function (c) { var x = cases[k][c[0]]; return x ? [x.checked, pastilleDe(null, x)] : 0; })]; }),
-      ST.cfg && [ST.cfg['f-toit'], ST.cfg['f-orient'], ST.cfg['f-sys'], ST.cfg['f-bard'], ST.cfg['f-couv'], ST.cfg['f-lar'], ST.cfg['f-pro'], ST.cfg['f-reh'], ST.cfg['f-pente']], (ST.menus || []).length]);
+      ST.cfg && [ST.cfg['f-toit'], ST.cfg['f-orient'], ST.cfg['f-sys'], ST.cfg['f-bard'], ST.cfg['f-couv'], ST.cfg['f-lar'], ST.cfg['f-pro'], ST.cfg['f-reh'], ST.cfg['f-pente']], (ST.menus || []).length, MX, rabot]);
     if (b && b._sig === sig) return;
     b = bloc(q, 'ext'); b._sig = sig;
     var sans = { 'f-ext-ferm': 'non' }, Z = { face: 0, fond: 0, gauche: 0, droite: 0 }, ex = K.some(function (k) { return CUR.ext[k] > 0; }) ? Object.assign({}, CUR.ext) : { gauche: 1.5 }; // « Oui » : l'extension déjà choisie, sinon une à gauche
@@ -989,8 +1002,11 @@
         var m = CUR.ext[k], pill = m ? pastilleDe(cont(X.m[k])) : '', o = {}; o[k] = m || 1.5;
         return '<div class="cer-vg__c' + (m ? ' on' : '') + '" data-vg-cote="' + k + '"><span class="cer-vg__pic">' + picto({ cfg: sans, ov: o, view: vue[k], w: 260, h: 190 }) + '</span><b>' + NOMS[k] + '</b>' +
           '<span class="cer-vg__st"><button type="button" data-vg-pas="-1" aria-label="Moins profond">−</button><span class="' + (m ? '' : 'z') + '">' + (m ? mt(m) : '0 m') + '</span><button type="button" data-vg-pas="1" aria-label="Plus profond">+</button></span>' +
-          (pill ? '<span class="cer-pill' + (/^Inclus/.test(pill) ? ' cer-pill--0' : '') + '">' + pill + '</span>' : '') + '</div>';
+          (pill ? '<span class="cer-pill' + (/^Inclus/.test(pill) ? ' cer-pill--0' : '') + '">' + pill + '</span>' : '') +
+          (MX[k] < Infinity ? '<small class="cer-vg__max">' + (MX[k] >= 0.5 ? mt(MX[k]) + ' au plus, pour garder 1 m de poteau' : 'Pente trop forte : ajoutez une rehausse') + '</small>' : '') + '</div>';
       }).join('') + '</div>';
+      if (rabot.length) html += '<p class="cer-vg-alerte">' + rabot.map(function (k) { return 'Extension ' + NOMS[k].toLowerCase() + ' ramenée à ' + (MX[k] >= 0.5 ? mt(MX[k]) : '0 m'); }).join(', ') +
+        ' : au-delà, le toit descendrait à moins d\u20191 m du sol au bout de l\u2019extension. Pour une extension plus profonde, ajoutez une rehausse (hauteur des murs).</p>';
       var ferm = K.filter(function (k) { return CUR.ext[k] > 0 && cont(X.rq[k]); });
       if (ferm.length) {
         html += '<p class="cer-vg__h">Fermer des côtés ? <span>(touchez pour fermer, vu de dessus)</span></p>';
@@ -1008,12 +1024,13 @@
       var t = e.target.closest('button');
       if (!t) { // clic sur un côté encore à 0 : 1 m d'office, puis − / + pour régler
         var cc = e.target.closest('[data-vg-cote]'); if (!cc) return; var kc = cc.getAttribute('data-vg-cote');
-        if (!(CUR.ext[kc] > 0)) saisir(nombre(cont(X.m[kc])), 1); return; }
+        if (!(CUR.ext[kc] > 0) && extMax(kc) >= 0.5) saisir(nombre(cont(X.m[kc])), Math.min(1, extMax(kc))); return; }
       e.preventDefault();
       if (t.getAttribute('data-vg-ext')) { cocher(t.getAttribute('data-vg-ext') === 'oui' ? oui : non); return; }
       var pas = t.getAttribute('data-vg-pas');
       if (pas) { var k = t.closest('[data-vg-cote]').getAttribute('data-vg-cote'), v = CUR.ext[k], d = +pas, i = nombre(cont(X.m[k])), mx = i && parseFloat(i.max) || 5;
         var nv = d > 0 ? (v < 1 ? 1 : Math.min(mx, Math.floor(v * 2 + 1e-9) / 2 + 0.5)) : (v <= 1 ? 0 : Math.ceil(v * 2 - 1e-9) / 2 - 0.5);
+        if (d > 0) { var lim = extMax(k); if (lim < 0.5) return; nv = Math.min(nv, lim); } // 1 m de poteau au moins
         saisir(i, nv ? nv : ''); return; }
       var fk = t.getAttribute('data-vg-ferm');
       if (fk) { var cb = radioLab(X.rs[fk], new RegExp('^' + t.getAttribute('data-vg-case') + '$', 'i'), 'checkbox'), rqO = radioLab(X.rq[fk], /^oui/i), rqN = radioLab(X.rq[fk], /^non/i);
