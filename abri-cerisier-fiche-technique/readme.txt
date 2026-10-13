@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.1.1
+Stable tag: 3.2.1
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,28 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.1 =
+* STABILITÉ : le module « Vue 3D et dossier mairie » n'est plus chargé du tout quand le réglage est sur « Désactivé ». Il est désactivé depuis le 13/10/2026 à 12h40, après deux pannes 500 du site (10h00-10h15 et 12h20-12h31) qui ont cessé chaque fois qu'il ne l'était plus. Cause non établie : journal des erreurs fatales et des requêtes lentes ajouté (mu-plugin cer-journal-erreurs.php, wp-content/cer-journal/).
+* VIGNETTES : boutons − / + plus visibles et qui ne débordent plus (2 colonnes si la place manque) ; toucher un côté d'extension met 1 m d'office ; la carte « Oui » montre l'extension choisie.
+* U DE FINITION (règle d'Antony) : ce sont des U en bois qui coiffent le bout des madriers aux angles, dessinés en bois au lieu de l'aluminium.
+* VUE 3D (module désactivé pour l'instant) : bouts de madriers qui dépassent de 10 cm aux angles (bois de bout), U en bois si l'option est prise ; shingle recomposé à l'échelle (bardeaux de 33 cm, rangs de 14,3 cm) sans motif qui se répète.
+
+= 3.2.0 =
+* VIGNETTES (pour tous, validées par Antony le 13/10/2026) :
+  * extension de toiture en dessins : oui ou non, profondeur de chaque côté avec − / +, côtés fermés vus de dessus en orange ;
+  * hauteur des murs choisie sur le dessin : rehausses en orange, silhouette de 1,75 m, prix calculé par la formule du site ;
+  * barre de progression « Étape X sur N », qui reste visible en haut ;
+  * message des 20 cm du toit plat montré seulement aux toits plats en madriers, avec les dimensions hors tout.
+  * Les champs du site restent la seule source des prix : ils sont cachés et remplis par les vignettes. Contrôlé : même prix par les vignettes, par les champs et au panier (abri 6 767,12 €, garage 6 901,80 €, ordinateur et téléphone). Une extension non fermée répond « Non » d'elle-même à la question obligatoire « fermer cette extension ? ».
+* TEXTES : titres et textes d'aide corrigés dans la configuration WAPF (accents, « bûcher », « côtés », « Quelle orientation »…), par un correctif à usage unique avec sauvegarde (option cer_fix_textes_sauvegarde). Les libellés des choix ne sont pas modifiés, car ils servent à reconnaître les menuiseries.
+* VUE 3D (lien privé) :
+  * bardages brun, gris, noir et ayous en bois photographié (textures du dossier « 4• Textures ») ;
+  * intérieur : face intérieure des madriers, ou ossature 45×70 tous les 60 cm (lisses, sablière, linteaux, appuis, montants de pignon) avec pare-pluie, laine de roche, ou doublage OSB, contreplaqué (texture tripli) ou lambris sapin selon les options choisies ; plancher ou dalle ;
+  * charpente en pannes perpendiculaires aux pignons (faîtière, au plus 1 m entre pannes), avec ferme intermédiaire au-delà de 5 m de portée ;
+  * bouton « Intérieur » qui soulève la couverture.
+* PHOTO DU JARDIN : champ fichier rattaché à la page (iPhone), photo ramenée à 2 400 px. L'abri se glisse au doigt sur le sol, se tourne et se règle en taille (pincement ou curseurs), avec la hauteur de vue et le soleil.
+* DOSSIER MAIRIE : la carte de la parcelle se cadre sur la parcelle entière, se déplace et se zoome (glisser, deux doigts, molette, boutons). L'abri se déplace à part, avec les parcelles voisines rechargées en chemin.
 
 = 3.1.1 =
 * RÉALITÉ AUGMENTÉE (iPhone) : le toit manquait et les murs de côté apparaissaient noirs dans Quick Look (le format USDZ ignore les pièces à plusieurs matières et n'affiche qu'une face). Les pans de toit sont découpés par matière et chaque surface reçoit ses deux faces à l'export. Contrôlé avec la bibliothèque USD officielle (pxr) : toit présent, murs à double face, aucune pièce déplacée

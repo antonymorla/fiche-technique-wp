@@ -363,3 +363,55 @@
 /* Hauteur des fenêtres (panneau de placement) */
 .cer-plan__pl .hv { grid-column: 1 / -1; font-size: 12px; color: var(--cer-olive-dk); font-weight: 600; margin: -2px 0 2px; font-variant-numeric: tabular-nums; }
 .cer-plan__pl .hr { grid-column: 1 / -1; font-size: 11.5px; color: var(--cer-doux); }
+
+/* ── Vignettes (13/10/2026) : extension de toiture, hauteur des murs, barre de progression, message du toit plat ── */
+.cer-vg-cache { display: none !important; }
+.cer-plan-on .cer-vg { margin: 6px 0 4px; }
+.cer-plan-on .cer-vg *, .cer-plan-on .cer-prog * { box-sizing: border-box; }
+.cer-plan-on .cer-vg__g2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+.cer-plan-on .cer-vg__g3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.cer-plan-on .cer-vg__g4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; }
+.cer-plan-on [data-vg-cote] { cursor: pointer; }
+.cer-plan-on .cer-vg__c { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; margin: 0; border: 1px solid #e3dfd3; border-radius: 16px; background: #fff; padding: 10px 10px 12px; text-align: center; line-height: 1.3; color: #2b2b22; font: inherit; cursor: pointer; box-shadow: none; text-transform: none; letter-spacing: 0; min-height: 0; }
+.cer-plan-on .cer-vg__c:hover { border-color: #b9b39c; background: #fdfcf9; }
+.cer-plan-on .cer-vg__c.on { border-color: #515136; box-shadow: 0 0 0 1.5px #515136 inset; background: #fbfaf6; }
+.cer-plan-on .cer-vg__c.on::after { content: '✓'; position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background: #515136; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+.cer-plan-on .cer-vg__pic { display: block; width: 100%; background: #fbfaf7; border-radius: 10px; }
+.cer-plan-on .cer-vg__pic svg { display: block; width: 100%; height: auto; }
+.cer-plan-on .cer-vg__c b { display: block; font-size: 15.5px; font-weight: 600; margin-top: 6px; }
+.cer-plan-on .cer-vg__c small { display: block; font-size: 12.5px; color: #77755f; }
+.cer-plan-on .cer-vg__c .cer-pill { margin-top: 6px; }
+.cer-plan-on .cer-vg__h { font-size: 15.5px; font-weight: 600; margin: 20px 0 10px; color: #3d3d28; }
+.cer-plan-on .cer-vg__h span { font-weight: 400; color: #77755f; font-size: 13.5px; }
+.cer-plan-on .cer-vg__s { font-size: 13.5px; font-weight: 600; margin: 12px 0 8px; color: #3d3d28; }
+.cer-plan-on .cer-vg__st { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; width: 100%; max-width: 170px; }
+.cer-plan-on .cer-vg__st button { flex: 0 0 34px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; min-height: 0; padding: 0; margin: 0; border: 0; border-radius: 50%; background: #515136; color: #fff; font: 700 20px/1 Arial, sans-serif; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.cer-plan-on .cer-vg__st button:hover { background: #3d3d28; }
+.cer-plan-on .cer-vg__st span { flex: 1 1 auto; min-width: 0; border: 1px solid #e3dfd3; border-radius: 10px; padding: 6px 2px; font-weight: 600; font-size: 14px; background: #fff; white-space: nowrap; }
+.cer-plan-on .cer-vg__st span.z { color: #77755f; font-weight: 400; }
+.cer-plan-on .cer-vg__leg { font-size: 12.5px; color: #77755f; margin: 8px 0 0; }
+.cer-plan-on .cer-vg__leg u { text-decoration: none; display: inline-block; vertical-align: middle; margin: 0 4px 0 8px; }
+.cer-plan-on .cer-vg__leg u.r { width: 14px; height: 9px; border-radius: 2px; background: rgba(194,65,12,.28); border: 1px solid #c2410c; margin-left: 0; }
+.cer-plan-on .cer-vg__leg u.p { width: 6px; height: 12px; border-radius: 3px; background: rgba(60,58,48,.78); }
+.cer-plan-on .cer-vg-tp { margin: 8px 0 12px; padding: 10px 14px; border-radius: 12px; background: #fdf3e7; border: 1px solid #f0d2ad; color: #6b3d0f; font-size: 14px; line-height: 1.45; }
+.cer-plan-on .cer-prog { position: sticky; top: var(--cer-prog-top, 0px); z-index: 60; width: 100%; background: rgba(255,255,255,.97); border: 1px solid #e3dfd3; border-radius: 16px; padding: 12px 16px 10px; margin: 0 0 14px; box-shadow: 0 6px 18px rgba(43,43,34,.06); }
+.cer-plan-on .cer-prog .t { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between; align-items: baseline; font-size: 14px; }
+.cer-plan-on .cer-prog .t b { font-size: 15px; font-weight: 600; }
+.cer-plan-on .cer-prog .t span { color: #77755f; font-size: 13px; }
+.cer-plan-on .cer-prog .bar { display: flex; gap: 4px; margin: 9px 0 7px; }
+.cer-plan-on .cer-prog .bar i { flex: 1; height: 7px; border-radius: 4px; background: #e3dfd3; }
+.cer-plan-on .cer-prog .bar i.d { background: #515136; }
+.cer-plan-on .cer-prog .bar i.c { background: #9a9c6c; }
+.cer-plan-on .cer-prog .n { display: flex; gap: 4px; }
+.cer-plan-on .cer-prog .n span { flex: 1; font-size: 10.5px; color: #77755f; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.cer-plan-on .cer-prog .n span.d { color: #515136; }
+.cer-plan-on .cer-prog .n span.c { color: #2b2b22; font-weight: 600; }
+@media (max-width: 600px) {
+  .cer-plan-on .cer-vg__g4, .cer-plan-on .cer-vg__g3 { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .cer-plan-on .cer-vg__g3[data-ferm] { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+  .cer-plan-on .cer-vg__st { gap: 4px; }
+  .cer-plan-on .cer-vg__st button { flex-basis: 32px; width: 32px; height: 32px; font-size: 18px; }
+  .cer-plan-on .cer-vg__st span { min-width: 0; padding: 4px 6px; font-size: 13.5px; }
+  .cer-plan-on .cer-prog { border-radius: 12px; margin: 0 0 12px; padding: 10px 14px 9px; width: 100%; }
+  .cer-plan-on .cer-prog .n { display: none; }
+}

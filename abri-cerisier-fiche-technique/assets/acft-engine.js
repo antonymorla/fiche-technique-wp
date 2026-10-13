@@ -265,17 +265,17 @@ function dimL(p,x1,y1,x2,y2,label,off=28,col='#3d3d28'){
 // Teintes relevées sur les visuels du site abri-cerisier.fr
 // ════════════════════════════════════════════════════════
 const FINITIONS={
-  madrier:     {label:'Madrier épicéa autoclave',          dir:'h', board:0.14,  c:['#c4b886','#8a7f55','#d8ceA2']},
-  sr_vert:     {label:'Sapin rouge autoclave vert 21×130', dir:'h', board:0.13,  c:['#bdb07e','#857a50','#d2c799']},
-  sr_brun:     {label:'Sapin rouge autoclave brun 21×130', dir:'h', board:0.13,  c:['#9e7642','#664826','#b48c57']},
-  ayous125:    {label:'Ayous 21×125',                      dir:'h', board:0.125, c:['#b8916a','#86633f','#caa780']},
-  srn_gris:    {label:'SRN 20×70 gris (vertical ajouré)',  dir:'v', boards:[0.07], gap:0.012, vary:.26, screws:true, c:['#8f9087','#5c5d57','#a8a9a1']},
-  douglas_noir:{label:'Douglas noir (vertical ajouré)',    dir:'v', boards:[0.07], gap:0.012, gapC:'#0d0d0c', vary:.18, screws:true, c:['#3c3d38','#1f201c','#56574f']},
+  madrier:     {label:'Madrier épicéa autoclave', ph:'vert',          dir:'h', board:0.14,  c:['#c4b886','#8a7f55','#d8ceA2']},
+  sr_vert:     {label:'Sapin rouge autoclave vert 21×130', ph:'vert', dir:'h', board:0.13,  c:['#bdb07e','#857a50','#d2c799']},
+  sr_brun:     {label:'Sapin rouge autoclave brun 21×130', ph:'brun', dir:'h', board:0.13,  c:['#9e7642','#664826','#b48c57']},
+  ayous125:    {label:'Ayous 21×125', ph:'ayous',                      dir:'h', board:0.125, c:['#b8916a','#86633f','#caa780']},
+  srn_gris:    {label:'SRN 20×70 gris (vertical ajouré)', ph:'gris',  dir:'v', boards:[0.07], gap:0.012, vary:.26, screws:true, c:['#8f9087','#5c5d57','#a8a9a1']},
+  douglas_noir:{label:'Douglas noir (vertical ajouré)', ph:'noir',    dir:'v', boards:[0.07], gap:0.012, gapC:'#0d0d0c', vary:.18, screws:true, c:['#3c3d38','#1f201c','#56574f']},
   dibond:      {label:'Dibond (panneaux composite)',       dir:'v', boards:[1.25], gap:0.006, gapC:'#1d1e20', c:['#4a4c50','#35373a','#5c5f63']},
   bac_bandeau: {label:'Bac acier RAL 7016 (bandeau)',      dir:'v', boards:[0.25], c:['#43474b','#25282b','#62676c']},
-  sr_vert_v:   {label:'Pin sylvestre vert (vertical)',     dir:'v', boards:[0.13], c:['#bdb07e','#857a50','#d2c799']},
-  ps_vert_ajoure:{label:'Pin sylvestre vert vertical ajouré 20×60', dir:'v', boards:[0.06], gap:0.012, vary:.12, c:['#bdb07e','#857a50','#d2c799']},
-  ayous_alea:  {label:'Ayous 21×45 et 21×90 (vertical)',   dir:'v', boards:[0.09,0.045], alea:true, gap:0.006, gapC:'#2b1a0d', c:['#8a5f34','#5a3b1d','#a2764a']},
+  sr_vert_v:   {label:'Pin sylvestre vert (vertical)', ph:'vert',     dir:'v', boards:[0.13], c:['#bdb07e','#857a50','#d2c799']},
+  ps_vert_ajoure:{label:'Pin sylvestre vert vertical ajouré 20×60', ph:'vert', dir:'v', boards:[0.06], gap:0.012, vary:.12, c:['#bdb07e','#857a50','#d2c799']},
+  ayous_alea:  {label:'Ayous 21×45 et 21×90 (vertical)', ph:'ayous',   dir:'v', boards:[0.09,0.045], alea:true, gap:0.006, gapC:'#2b1a0d', c:['#8a5f34','#5a3b1d','#a2764a']},
 };
 const COUVERTURES={
   bac:      {label:'Bac acier gris RAL 7016', kind:'bac',     c:['#43474b','#25282b','#62676c']},
@@ -338,17 +338,17 @@ function texPat(svg,attrs,build){
   return `url(#${id})`;
 }
 // Lames de bardage / madriers. ox,oy = origine (bas du mur) pour caler les lames sur le sol
-// Bois photographié (vue 3D) : photo du pin autoclave vert (texture SketchUp d'Abri Cerisier, raccordable dans les deux sens).
-// ST.boisPhoto={url,w,h,m:[largeur,hauteur en mètres]}. Une seule copie de l'image par dessin, réutilisée par les motifs.
-const PIN_VERT=['#bdb07e','#c4b886'];
-function photoBois(svg,sc,vertical){
-  const B=ST.boisPhoto, defs=texDefs(svg), key=(vertical?'v':'h')+Math.round(sc*100);
-  let img=defs.querySelector('image[data-bois]');
-  if(!img){ img=svgEl('image',{id:`${svg.id||'sv'}-boisimg${++TEXN}`,'data-bois':1,href:B.url,x:0,y:0,width:B.w,height:B.h,preserveAspectRatio:'none'}); defs.appendChild(img); }
+// Bois photographié (vue 3D) : photos des textures SketchUp d'Abri Cerisier (dossier « 4• Textures »), raccordables, fil horizontal.
+// ST.boisPhoto={vert:{url,w,h,m:[largeur,hauteur en mètres],zones,noeuds,petits}, brun:{…}, gris, noir, ayous} ; la finition choisit sa photo (clé ph).
+// Une seule copie de chaque image par dessin, réutilisée par les motifs.
+function photoBois(svg,sc,vertical,B){
+  const defs=texDefs(svg), key=B.id+(vertical?'v':'h')+Math.round(sc*100);
+  let img=defs.querySelector(`image[data-bois="${B.id}"]`);
+  if(!img){ img=svgEl('image',{id:`${svg.id||'sv'}-boisimg${++TEXN}`,'data-bois':B.id,href:B.url,x:0,y:0,width:B.w,height:B.h,preserveAspectRatio:'none'}); defs.appendChild(img); }
   const w=B.m[0]*sc, h=B.m[1]*sc;
-  let p=defs.querySelector(`pattern[data-bois="${key}"]`);
+  let p=defs.querySelector(`pattern[data-boisp="${key}"]`);
   if(!p){
-    p=svgEl('pattern',{id:`${svg.id||'sv'}-bois${++TEXN}`,'data-bois':key,patternUnits:'userSpaceOnUse',width:w,height:h});
+    p=svgEl('pattern',{id:`${svg.id||'sv'}-bois${++TEXN}`,'data-boisp':key,patternUnits:'userSpaceOnUse',width:w,height:h});
     if(vertical) p.setAttribute('patternTransform','rotate(90)');
     p.appendChild(svgEl('use',{href:'#'+img.id,transform:`scale(${w/B.w},${h/B.h})`}));
     defs.appendChild(p);
@@ -366,8 +366,8 @@ function masqueNoeud(svg){
 }
 // Lames en bois photographié : chaque lame prend une bande SANS nœud de la photo (position et sens du fil tirés au hasard) ;
 // les nœuds de la photo sont reposés un par un au hasard (taille, sens), avec de petits nœuds, pour éviter un motif qui se répète tous les mètres
-function patBoardsPhoto(svg,f,sc,ox,oy,tone){
-  const B=ST.boisPhoto, vert=f.dir==='v', ph=photoBois(svg,sc,vert), phH=vert?photoBois(svg,sc,false):ph, k0=ph.w/B.w, [,dk,lt]=f.c.map(c=>shade(c,tone));
+function patBoardsPhoto(svg,f,sc,ox,oy,tone,B){
+  const vert=f.dir==='v', ph=photoBois(svg,sc,vert,B), phH=vert?photoBois(svg,sc,false,B):ph, k0=ph.w/B.w, [,dk,lt]=f.c.map(c=>shade(c,tone));
   const zones=(B.zones||[[0,B.h]]).map(z=>[z[0]*k0,z[1]*k0]), noeuds=B.noeuds||[], mid=noeuds.length?masqueNoeud(svg):null;
   const bande=(R,lg)=>{ const ok=zones.filter(z=>z[1]-z[0]>=lg), z=ok.length?ok[Math.floor(R()*ok.length)]:[0,ph.h]; return z[0]+R()*Math.max(0,z[1]-z[0]-lg); };
   const voile=(p,x,y,w,h,k)=>{ if(Math.abs(k)>.004) p.appendChild(svgEl('rect',{x,y,width:w,height:h,fill:k<0?'#000':'#fff',opacity:Math.min(.55,Math.abs(k))})); };
@@ -390,7 +390,7 @@ function patBoardsPhoto(svg,f,sc,ox,oy,tone){
         voile(p,0,y,W,bh,(R()-.5)*.14+Math.min(0,tone));
       }
       if(mid) for(let n=Math.round(m2*1.6);n>0;n--){ const i=Math.floor(R()*N); noeud(p,R,W*(.06+.88*R()),i*bh+bh*(.42+.16*R()),bh); }
-      for(let n=Math.round(m2*5);n>0;n--){ const i=Math.floor(R()*N); petit(p,R,W*R(),i*bh+bh*(.2+.6*R())); }
+      for(let n=Math.round(m2*(B.petits==null?5:B.petits));n>0;n--){ const i=Math.floor(R()*N); petit(p,R,W*R(),i*bh+bh*(.2+.6*R())); }
       for(let i=0;i<N;i++){ const y=i*bh;
         p.appendChild(svgEl('rect',{x:0,y,width:W,height:Math.max(.35,bh*.05),fill:lt,opacity:.45}));
         p.appendChild(svgEl('rect',{x:0,y:y+bh-Math.max(.55,bh*.07),width:W,height:Math.max(.55,bh*.07),fill:dk,opacity:.9})); }
@@ -412,7 +412,7 @@ function patBoardsPhoto(svg,f,sc,ox,oy,tone){
     const m2=W/sc*H/sc*(gap?.8:1);
     xs.forEach(([x0,w])=>{ if(w<1.6) return;
       if(mid) for(let n=Math.round(w/sc*H/sc*1.6+R()*.6);n>0;n--) noeud(p,R,x0+w*(.42+.16*R()),H*(.06+.88*R()),w);
-      for(let n=Math.round(w/sc*H/sc*5);n>0;n--) petit(p,R,x0+w*(.2+.6*R()),H*R()); });
+      for(let n=Math.round(w/sc*H/sc*(B.petits==null?5:B.petits));n>0;n--) petit(p,R,x0+w*(.2+.6*R()),H*R()); });
     xs.forEach(([x0,w])=>{
       const ed=Math.min(w*.08,Math.max(.6,0.012*sc));
       p.appendChild(svgEl('rect',{x:x0,y:0,width:Math.max(.3,ed),height:H,fill:lt,opacity:.45}));
@@ -422,7 +422,8 @@ function patBoardsPhoto(svg,f,sc,ox,oy,tone){
   });
 }
 function patBoards(svg,f,sc,ox,oy,tone=0){
-  if(ST.boisPhoto&&f.c&&PIN_VERT.includes(f.c[0])) return patBoardsPhoto(svg,f,sc,ox,oy,tone);
+  const BP=ST.boisPhoto&&f.ph&&ST.boisPhoto[f.ph];
+  if(BP) return patBoardsPhoto(svg,f,sc,ox,oy,tone,Object.assign({id:f.ph},BP));
   const [b0,dk,lt]=f.c.map(c=>shade(c,tone));
   if(f.dir==='h'){
     const bh=Math.max(2.2,f.board*sc), N=3, W=Math.max(90,bh*16), R=rng(Math.round(bh*97)+N);
@@ -784,15 +785,17 @@ function gableBoards(svg,fin,pts,dir,sc){
   for(let o=-R+sp*.5;o<=R;o+=sp) g.appendChild(svgEl('line',{x1:cx+nx*o-ux*R,y1:cy+ny*o-uy*R,x2:cx+nx*o+ux*R,y2:cy+ny*o+uy*R,stroke:fin.c[2]||fin.c[0],'stroke-width':Math.max(.4,0.006*sc),opacity:.35}));
 }
 // Profilés aluminium d'angle (option « profil U ») : coiffent les abouts des madriers aux angles
+// U de finition (règle d'Antony, 13/10/2026) : un U en BOIS coiffe le bout des madriers à chaque angle et cache les coupes ;
+// vu en élévation, on voit sa joue de 10 cm, en bois massif, fil vertical (ossature : couvre-angle de 5 cm)
 function drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,top){
-  const oss=d.sys==='ossature', cw=oss?Math.max(2,0.05*sc):0.10*sc, hl=Math.max(.6,cw*.18);
+  const oss=d.sys==='ossature', cw=oss?Math.max(2,0.05*sc):0.10*sc, hl=Math.max(.6,cw*.12), fin=FINITIONS.madrier;
+  const pat=patBoards(svg,{dir:'v',boards:[cw/sc],c:fin.c,ph:fin.ph},sc,baseX,gndY,.04);
   top=top||{L:[baseY,0],R:[baseY,0]};
   [['L',oss?baseX:baseX-cw],['R',oss?baseX+drawW-cw:baseX+drawW]].forEach(([k,x])=>{
-    const [ty,sl]=top[k], out=k==='L'?x:x+cw, inn=k==='L'?x+cw:x; // bord extérieur / intérieur du profilé
+    const [ty,sl]=top[k];
     const tOut=ty-sl*(oss?0:cw), tIn=ty;
-    sPoly(svg,[[x,gndY],[x,k==='L'?tOut:tIn],[x+cw,k==='L'?tIn:tOut],[x+cw,gndY]],'#c4c8cc','#868b90',.7);
-    sRect(svg,x+hl,Math.max(tOut,tIn),hl,gndY-Math.max(tOut,tIn),'#e2e4e6','none',0);
-    sRect(svg,x+cw-hl*2,Math.max(tOut,tIn),hl,gndY-Math.max(tOut,tIn),'#9da2a7','none',0);
+    sPoly(svg,[[x,gndY],[x,k==='L'?tOut:tIn],[x+cw,k==='L'?tIn:tOut],[x+cw,gndY]],pat,shade(fin.c[1],-.3),.8);
+    sRect(svg,k==='L'?x:x+cw-hl,Math.max(tOut,tIn),hl,gndY-Math.max(tOut,tIn),shade(fin.c[1],-.15),'none',0); // chant du U, côté extérieur
   });
 }
 // Angles en madrier, vus en élévation (vignettes du site) : les madriers de la façade dépassent de 10 cm de chaque côté,
@@ -1340,7 +1343,7 @@ function drawElev(svg,d,side,vw=320,vh=260){
   }
   if(real&&d.sys==='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawOssatureCorners(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
   if(real&&d.sys!=='ossature'&&!d.isQuadro&&fv('f-profu')!=='oui') drawMadrierEnds(svg,d,baseX,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d));
-  if(real&&fv('f-profu')==='oui') drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d)); // profilés alu : coiffent les angles
+  if(real&&fv('f-profu')==='oui') drawAluCorners(svg,d,baseX,baseY,drawW,gndY,sc,cornerTops(g,baseY,drawW,sc,d)); // U de finition en bois : coiffent les angles
 
   // Poteaux de soutien (débord > 50 cm)
   // Un seul poteau à l'extrémité, hauteur = du sol au dessous du toit à ce point

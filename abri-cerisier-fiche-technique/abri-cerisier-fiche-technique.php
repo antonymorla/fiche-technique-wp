@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
- * Version:           3.1.1
+ * Version:           3.2.1
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '3.1.1' );
+define( 'ACFT_VERSION',  '3.2.1' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -33,8 +33,9 @@ if ( ! function_exists( 'cer_cfg_produits' ) ) {
 if ( ! function_exists( 'cer_devis_pdf' ) ) {
     require_once ACFT_DIR . 'includes/devis-cerisier.php';
 }
-// Vue 3D, réalité augmentée et dossier mairie (Réglages → Fiche Technique → « Vue 3D et dossier mairie »)
-if ( ! function_exists( 'cer3d_mode' ) ) {
+// Vue 3D, réalité augmentée et dossier mairie (Réglages → Fiche Technique → « Vue 3D et dossier mairie »).
+// Réglé sur « Désactivé », le module n'est pas chargé du tout (le 13/10/2026, deux pannes 500 du site ont cessé dès qu'il ne l'était plus ; cause non établie).
+if ( ! function_exists( 'cer3d_mode' ) && 'off' !== get_option( 'cer_3d_mode', 'test' ) ) {
     require_once ACFT_DIR . 'includes/vue3d.php';
 }
 
@@ -608,7 +609,8 @@ function acft_settings_page() {
             <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
                 <h2 style="margin-top:0">Vue 3D et dossier mairie</h2>
                 <p>Bouton « Voir en 3D » sur les configurateurs (rotation, réalité augmentée, insertion sur une photo du jardin) et dossier mairie en PDF, après saisie obligatoire des coordonnées (liste : menu <a href="<?php echo esc_url( admin_url( 'edit.php?post_type=cer_dossier' ) ); ?>">Dossiers mairie</a>, aucun mail automatique).</p>
-                <?php $m3 = function_exists( 'cer3d_mode' ) ? cer3d_mode() : 'test'; ?>
+                <?php $m3 = get_option( 'cer_3d_mode', 'test' ); ?>
+                <?php if ( 'off' === $m3 ) : ?><p style="color:#9a3412">Désactivé : le module n'est pas chargé (13/10/2026, pannes du site en cours d'analyse).</p><?php endif; ?>
                 <fieldset>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="tous" <?php checked( $m3, 'tous' ); ?> /> Tous les visiteurs</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="test" <?php checked( $m3, 'test' ); ?> /> Test : seulement après un passage par <code>?apercu=3d</code> (cookie de 30 jours)</label>

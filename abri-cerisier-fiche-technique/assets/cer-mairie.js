@@ -52,6 +52,8 @@
     '.cermr .err{color:#9a3412;font-size:13px;grid-column:1/-1;min-height:1em}.cermr .sugg{position:relative}.cermr .sugg ul{position:absolute;left:0;right:0;top:100%;z-index:3;margin:2px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid #d9d5c7;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.12)}' +
     '.cermr .sugg li{padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}.cermr .sugg li:hover{background:#f1efe7}' +
     '.cermr .masse{position:relative;width:100%;aspect-ratio:4/3;max-height:62vh;background:#ddd;border-radius:12px;overflow:hidden;touch-action:none}.cermr .masse canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab}' +
+    '.cermr .zm{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px}.cermr .zm button,.cermr .pas{width:40px!important;height:40px!important;padding:0!important;margin:0!important;border:0!important;border-radius:10px!important;background:rgba(255,255,255,.95)!important;color:#2b2b22!important;font:600 20px/40px Arial!important;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2)}' +
+    '.cermr .ici{position:absolute;bottom:10px;right:10px;border:0!important;border-radius:18px!important;padding:8px 12px!important;margin:0!important;background:rgba(255,255,255,.95)!important;color:#2b2b22!important;font:600 13px Jost,Arial,sans-serif!important;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2)}' +
     '.cermr .rot{display:flex;align-items:center;gap:10px;margin:10px 0}.cermr .rot input{flex:1}.cermr .info{font-size:14px;line-height:1.5}.cermr .alerte{color:#9a3412}' +
     '.cermr .ph{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cermr .ph label{border:1px dashed #cfcab8;border-radius:12px;padding:12px;min-height:110px;align-content:start}.cermr .ph img{max-width:100%;max-height:140px;border-radius:8px;margin-top:6px}' +
     '@media (max-width:640px){.cermr form,.cermr .ph{grid-template-columns:1fr}.cermr .b{padding:18px 14px}}';
@@ -172,66 +174,130 @@
   }
 
   // ───────── 2. implantation sur la parcelle ─────────
-  var Z_MASSE = 19;
+  // Carte déplaçable : un doigt (ou la souris) sur l'abri le déplace, ailleurs il fait glisser la carte ; deux doigts ou la molette zooment.
+  // Repère « monde » : pixels Web Mercator du niveau 19 (photos IGN les plus fines, environ 19 cm) ; la vue a un centre et un facteur d'agrandissement.
+  var Z_MASSE = 19, TUILES = {};
+  function tuileCache(c, x, y, z, redessiner) {
+    var k = c.l + '/' + z + '/' + x + '/' + y, t = TUILES[k];
+    if (!t) { t = TUILES[k] = { ok: false }; tuile(c, x, y, z).then(function (im) { t.ok = true; t.im = im; redessiner(); }); }
+    return t;
+  }
   function etape2() {
-    var pa = D.parcelle, c = D.client;
-    var b = corps(1, 'Placez votre ' + (E.ST.type === 'garage' ? 'garage' : E.ST.type === 'carport' ? 'carport' : 'abri') + ' sur votre terrain',
-      pa ? 'Parcelle ' + esc(pa.section + ' ' + pa.numero) + ' à ' + esc(pa.commune) + ' (' + fr(pa.contenance, 0) + ' m²). Faites glisser l\'abri à sa place et tournez-le : les distances aux limites se calculent seules.'
-        : 'Nous n\'avons pas trouvé la parcelle cadastrale de cette adresse : placez l\'abri sur la photo aérienne.',
-      '<div class="masse"><canvas></canvas></div><div class="rot"><span>Orientation</span><input type="range" min="-180" max="180" step="1" value="' + ((D.place && D.place.rot) || 0) + '"><span class="deg"></span></div>' +
+    var pa = D.parcelle, c = D.client, nomA = E.ST.type === 'garage' ? 'garage' : E.ST.type === 'carport' ? 'carport' : 'abri';
+    var b = corps(1, 'Placez votre ' + nomA + ' sur votre terrain',
+      pa ? 'Parcelle ' + esc(pa.section + ' ' + pa.numero) + ' à ' + esc(pa.commune) + ' (' + fr(pa.contenance, 0) + ' m²). Faites glisser l\'' + nomA + ' à sa place ; faites glisser la carte pour vous déplacer, zoomez avec deux doigts, la molette ou les boutons.'
+        : 'Nous n\'avons pas trouvé la parcelle cadastrale de cette adresse : placez l\'' + nomA + ' sur la photo aérienne.',
+      '<div class="masse"><canvas></canvas><div class="zm"><button type="button" data-z="1" aria-label="Zoomer">+</button><button type="button" data-z="-1" aria-label="Dézoomer">−</button><button type="button" data-z="0" aria-label="Voir toute la parcelle">⤢</button></div>' +
+      '<button type="button" class="ici">Amener l\'' + nomA + ' au centre de la vue</button></div>' +
+      '<div class="rot"><span>Orientation</span><button type="button" class="pas" data-r="-15">↺</button><input type="range" min="-180" max="180" step="1" value="' + ((D.place && D.place.rot) || 0) + '"><button type="button" class="pas" data-r="15">↻</button><span class="deg"></span></div>' +
       '<div class="info"></div><div class="act"><button type="button" class="sec" data-a="retour">Retour</button><button type="button" data-a="suite">Continuer</button></div>');
     var cv = b.querySelector('canvas'), W = 1200, H = 900; cv.width = W; cv.height = H; var g = cv.getContext('2d');
-    var centre = pa ? centroide(pa.anneaux[0]) : [c.lon, c.lat];
-    // cadrage : la parcelle occupe environ 70 % de la vue, entre 22 m et 160 m de large
-    var larg = 30;
-    if (pa) { var xs = [], ys = []; pa.anneaux.forEach(function (a) { a.forEach(function (q) { var p = px(q[0], q[1], Z_MASSE); xs.push(p[0]); ys.push(p[1]); }); });
-      var m19 = mpp(centre[1], Z_MASSE); larg = Math.max((Math.max.apply(null, xs) - Math.min.apply(null, xs)) * m19, (Math.max.apply(null, ys) - Math.min.apply(null, ys)) * m19 * W / H) / 0.7; }
-    larg = Math.min(160, Math.max(22, larg));
-    var kz = W / (larg / mpp(centre[1], Z_MASSE));
-    b.querySelector('.info').textContent = 'Chargement de la photo aérienne…';
-    Promise.all([fond(centre[0], centre[1], Z_MASSE, W, H, ['ortho'], kz), voisines(centre[0], centre[1], larg * 0.8)]).then(function (r) {
-      var F = r[0], vois = r[1], m = F.m, pr = projet(), d = pr.d, toPx = F.toPx;
-      var anneaux = pa ? pa.anneaux.map(function (a) { return a.map(function (q) { return toPx(q[0], q[1]); }); }) : [];
-      var autres = vois.filter(function (v) { return !pa || v.idu !== pa.idu; }).map(function (v) { return { n: v.numero.replace(/^0+/, ''), a: v.anneaux.map(function (a) { return a.map(function (q) { return toPx(q[0], q[1]); }); }) }; });
-      var adr = toPx(c.lon, c.lat);
-      var pl = D.place || { x: anneaux.length ? (function () { var cc = centroidePx(anneaux[0]); return cc; })()[0] : adr[0], y: anneaux.length ? centroidePx(anneaux[0])[1] : adr[1], rot: 0 };
-      D.place = pl;
-      var rotInp = b.querySelector('.rot input'), deg = b.querySelector('.deg');
-      function rect(L, P, dx, dz) { // coins (repère abri : x vers la droite, z vers l'avant) → pixels de la carte
-        var a = pl.rot * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
-        return [[-L / 2 + dx, -P / 2 + dz], [L / 2 + dx, -P / 2 + dz], [L / 2 + dx, P / 2 + dz], [-L / 2 + dx, P / 2 + dz]].map(function (q) {
-          var x = q[0] / m, y = q[1] / m; return [pl.x + x * cs - y * sn, pl.y + x * sn + y * cs]; });
+    var lat0 = pa ? centroide(pa.anneaux[0])[1] : c.lat, m19 = mpp(lat0, Z_MASSE), w19 = function (lon, lat) { return px(lon, lat, Z_MASSE); };
+    var anneaux = pa ? pa.anneaux.map(function (a) { return a.map(function (q) { return w19(q[0], q[1]); }); }) : [];
+    var autres = {}, cherche = [];
+    var adr = w19(c.lon, c.lat);
+    // vue initiale : toute la parcelle avec une marge (au moins 22 m de large)
+    var V = { cx: adr[0], cy: adr[1], k: 1 };
+    var cadrer = function () {
+      var xs = [], ys = []; anneaux.forEach(function (a) { a.forEach(function (q) { xs.push(q[0]); ys.push(q[1]); }); });
+      if (!xs.length) { xs = [adr[0] - 15 / m19, adr[0] + 15 / m19]; ys = [adr[1] - 11 / m19, adr[1] + 11 / m19]; }
+      var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+      V.cx = (x0 + x1) / 2; V.cy = (y0 + y1) / 2;
+      V.k = Math.min(W * 0.82 / Math.max(x1 - x0, 22 / m19), H * 0.82 / Math.max(y1 - y0, 16 / m19));
+      V.k = Math.max(0.02, Math.min(8, V.k));
+    };
+    cadrer();
+    var pl = D.place && D.place.wx ? D.place : { wx: anneaux.length ? centroide(anneaux[0])[0] : adr[0], wy: anneaux.length ? centroide(anneaux[0])[1] : adr[1], rot: (D.place && D.place.rot) || 0 };
+    D.place = pl;
+    var S = function (q) { return [(q[0] - V.cx) * V.k + W / 2, (q[1] - V.cy) * V.k + H / 2]; };            // monde → écran
+    var Wd = function (sx, sy) { return [(sx - W / 2) / V.k + V.cx, (sy - H / 2) / V.k + V.cy]; };          // écran → monde
+    var pr = projet(), d = pr.d, rotInp = b.querySelector('.rot input'), deg = b.querySelector('.deg'), info = b.querySelector('.info');
+    function rect(L, P, dx, dz) { // coins de l'abri (x vers la droite, z vers l'avant) en coordonnées monde
+      var a = pl.rot * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
+      return [[-L / 2 + dx, -P / 2 + dz], [L / 2 + dx, -P / 2 + dz], [L / 2 + dx, P / 2 + dz], [-L / 2 + dx, P / 2 + dz]].map(function (q) {
+        var x = q[0] / m19, y = q[1] / m19; return [pl.wx + x * cs - y * sn, pl.wy + x * sn + y * cs]; });
+    }
+    var toitW = function () { return rect(d.L + d.ovL + d.ovR, d.P + d.ovF + d.ovB, (d.ovR - d.ovL) / 2, (d.ovF - d.ovB) / 2); };
+    var trace = function (pts, fill, stroke, dash, lw) { poly(g, pts.map(S), fill, stroke, dash, lw); };
+    var prevu = 0, attente = 0;
+    var redessiner = function () { if (!prevu) prevu = requestAnimationFrame(function () { prevu = 0; dessiner(); }); };
+    function fondCarte() {
+      g.fillStyle = '#d9d6cc'; g.fillRect(0, 0, W, H);
+      var zt = Math.max(14, Math.min(Z_MASSE, Z_MASSE + Math.round(Math.log2(V.k)))), f = Math.pow(2, Z_MASSE - zt), ts = 256 * f; // taille d'une tuile en pixels monde
+      var a = Wd(0, 0), z = Wd(W, H); attente = 0;
+      for (var x = Math.floor(a[0] / ts); x <= Math.floor(z[0] / ts); x++) for (var y = Math.floor(a[1] / ts); y <= Math.floor(z[1] / ts); y++) {
+        var t = tuileCache(COUCHES.ortho, x, y, zt, redessiner); if (!t.ok) { attente++; continue; } if (!t.im) continue;
+        var p0 = S([x * ts, y * ts]), p1 = S([(x + 1) * ts, (y + 1) * ts]);
+        g.drawImage(t.im, Math.floor(p0[0]), Math.floor(p0[1]), Math.ceil(p1[0]) - Math.floor(p0[0]), Math.ceil(p1[1]) - Math.floor(p0[1]));
       }
-      function dessiner() {
-        g.drawImage(F.cv, 0, 0);
-        autres.forEach(function (v) { v.a.forEach(function (an) { g.save(); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 1.6; g.beginPath(); an.forEach(function (q, i) { if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.closePath(); g.stroke(); g.restore(); }); });
-        anneaux.forEach(function (an) { g.save(); g.strokeStyle = '#ffd400'; g.lineWidth = 4; g.setLineDash([]); g.beginPath(); an.forEach(function (q, i) { if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.closePath(); g.stroke(); g.restore(); });
-        var murs = rect(d.L, d.P, 0, 0), toit = rect(d.L + d.ovL + d.ovR, d.P + d.ovF + d.ovB, (d.ovR - d.ovL) / 2, (d.ovF - d.ovB) / 2);
-        poly(g, toit, 'rgba(255,255,255,.25)', '#ffffff', [10, 6], 2.5); poly(g, murs, 'rgba(196,184,134,.92)', '#3d3a2e', [], 3);
-        var av = murs[2], av2 = murs[3]; g.save(); g.fillStyle = '#c2410c'; g.beginPath(); g.arc((av[0] + av2[0]) / 2, (av[1] + av2[1]) / 2, 7, 0, 7); g.fill(); g.restore(); // porte : devant
-        var dist = distances(murs, anneaux);
-        dist.forEach(function (dd) { if (!dd) return; g.save(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.setLineDash([6, 4]); g.beginPath(); g.moveTo(dd.a[0], dd.a[1]); g.lineTo(dd.b[0], dd.b[1]); g.stroke();
-          g.setLineDash([]); g.font = 'bold 22px Arial'; g.textAlign = 'center'; var tx = (dd.a[0] + dd.b[0]) / 2, ty = (dd.a[1] + dd.b[1]) / 2, s = fr(dd.d * m, 2) + ' m';
-          g.fillStyle = 'rgba(0,0,0,.65)'; var w = g.measureText(s).width + 12; g.fillRect(tx - w / 2, ty - 15, w, 26); g.fillStyle = '#fff'; g.fillText(s, tx, ty + 6); g.restore(); });
-        nord(g, W - 50, 60); echelle(g, 30, H - 30, m);
-        var mins = dist.filter(Boolean).map(function (x) { return x.d * m; }), mn = mins.length ? Math.min.apply(null, mins) : null;
-        deg.textContent = pl.rot + '°';
-        var info = b.querySelector('.info');
-        info.innerHTML = mn == null ? 'Placez l\'abri sur votre terrain.' : 'Distance la plus courte à une limite : <b>' + fr(mn) + ' m</b>.' +
-          (mn > 0.15 && mn < 3 ? ' <span class="alerte">Si le PLU de votre commune ne dit rien, l\'abri doit être en limite de propriété ou à 3 m au moins.</span>' : '');
-        pl.dist = dist.map(function (x) { return x ? x.d * m : null; });
-      }
-      var drag = null;
-      var pos = function (e) { var r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; };
-      cv.addEventListener('pointerdown', function (e) { var p = pos(e); drag = [p[0] - pl.x, p[1] - pl.y]; cv.setPointerCapture(e.pointerId); });
-      cv.addEventListener('pointermove', function (e) { if (!drag) return; var p = pos(e); pl.x = p[0] - drag[0]; pl.y = p[1] - drag[1]; dessiner(); });
-      cv.addEventListener('pointerup', function () { drag = null; });
-      rotInp.addEventListener('input', function () { pl.rot = +rotInp.value; dessiner(); });
-      dessiner();
-      D.masse = { F: F, dessiner: dessiner, cv: cv, m: m };
+    }
+    function dessiner() {
+      g.imageSmoothingQuality = 'high'; fondCarte();
+      Object.keys(autres).forEach(function (k) { autres[k].forEach(function (an) { trace(an, null, 'rgba(255,255,255,.8)', [], 1.6); }); });
+      anneaux.forEach(function (an) { trace(an, null, '#ffd400', [], 4); });
+      var murs = rect(d.L, d.P, 0, 0);
+      trace(toitW(), 'rgba(255,255,255,.25)', '#ffffff', [10, 6], 2.5); trace(murs, 'rgba(196,184,134,.92)', '#3d3a2e', [], 3);
+      var av = S(murs[2]), av2 = S(murs[3]); g.save(); g.fillStyle = '#c2410c'; g.beginPath(); g.arc((av[0] + av2[0]) / 2, (av[1] + av2[1]) / 2, 7, 0, 7); g.fill(); g.restore(); // porte : devant
+      var dist = distances(murs, anneaux);
+      dist.forEach(function (dd) { if (!dd) return; var A = S(dd.a), B = S(dd.b); g.save(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.setLineDash([6, 4]); g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke();
+        g.setLineDash([]); g.font = 'bold 22px Arial'; g.textAlign = 'center'; var tx = (A[0] + B[0]) / 2, ty = (A[1] + B[1]) / 2, s = fr(dd.d * m19, 2) + ' m';
+        g.fillStyle = 'rgba(0,0,0,.65)'; var w = g.measureText(s).width + 12; g.fillRect(tx - w / 2, ty - 15, w, 26); g.fillStyle = '#fff'; g.fillText(s, tx, ty + 6); g.restore(); });
+      nord(g, W - 50, 60); echelle(g, 30, H - 30, m19 / V.k);
+      var mins = dist.filter(Boolean).map(function (x) { return x.d * m19; }), mn = mins.length ? Math.min.apply(null, mins) : null;
+      deg.textContent = pl.rot + '°'; rotInp.value = pl.rot;
+      info.innerHTML = mn == null ? 'Placez l\'' + nomA + ' sur votre terrain.' : 'Distance la plus courte à une limite : <b>' + fr(mn) + ' m</b>.' +
+        (mn > 0.15 && mn < 3 ? ' <span class="alerte">Si le PLU de votre commune ne dit rien, l\'' + nomA + ' doit être en limite de propriété ou à 3 m au moins.</span>' : '');
+      pl.dist = dist.map(function (x) { return x ? x.d * m19 : null; });
+    }
+    // parcelles voisines autour de la vue (rechargées quand on s'éloigne)
+    var voisinage = function () {
+      var ctr = Wd(W / 2, H / 2), r = Math.max(W, H) / V.k * m19 * 0.75;
+      if (r > 400 || cherche.some(function (q) { return Math.hypot(q[0] - ctr[0], q[1] - ctr[1]) * m19 < q[2] * 0.5 && r <= q[2]; })) return;
+      cherche.push([ctr[0], ctr[1], r]);
+      var lon = ctr[0] / (256 * Math.pow(2, Z_MASSE)) * 360 - 180, n = Math.PI - 2 * Math.PI * ctr[1] / (256 * Math.pow(2, Z_MASSE)), lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+      voisines(lon, lat, r).then(function (vs) { vs.forEach(function (v) { if ((!pa || v.idu !== pa.idu) && !autres[v.idu]) autres[v.idu] = v.anneaux.map(function (a) { return a.map(function (q) { return w19(q[0], q[1]); }); }); }); redessiner(); });
+    };
+    var zoom = function (f, sx, sy) { var a = Wd(sx, sy); V.k = Math.max(0.02, Math.min(8, V.k * f)); var b2 = Wd(sx, sy); V.cx += a[0] - b2[0]; V.cy += a[1] - b2[1]; redessiner(); };
+    // gestes
+    var pts = {}, geste = null;
+    var ecran = function (e) { var r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; };
+    var dedans = function (p, poly2) { var x = p[0], y = p[1], ok = false; for (var i = 0, j = poly2.length - 1; i < poly2.length; j = i++) { var a = poly2[i], c2 = poly2[j];
+      if (((a[1] > y) !== (c2[1] > y)) && (x < (c2[0] - a[0]) * (y - a[1]) / (c2[1] - a[1]) + a[0])) ok = !ok; } return ok; };
+    cv.style.touchAction = 'none';
+    cv.addEventListener('pointerdown', function (e) {
+      var p = ecran(e); pts[e.pointerId] = p; cv.setPointerCapture(e.pointerId);
+      var ids = Object.keys(pts);
+      if (ids.length === 2) { var A = pts[ids[0]], B = pts[ids[1]]; geste = { t: 'pince', d: Math.hypot(A[0] - B[0], A[1] - B[1]), k: V.k, m: [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], c: [V.cx, V.cy] }; return; }
+      var w = Wd(p[0], p[1]), centreA = S([pl.wx, pl.wy]);
+      var surAbri = dedans(p, toitW().map(S)) || Math.hypot(p[0] - centreA[0], p[1] - centreA[1]) < 28;
+      geste = surAbri ? { t: 'abri', o: [w[0] - pl.wx, w[1] - pl.wy] } : { t: 'carte', p: p, c: [V.cx, V.cy] };
+      cv.style.cursor = surAbri ? 'move' : 'grabbing';
     });
+    cv.addEventListener('pointermove', function (e) {
+      if (!pts[e.pointerId] || !geste) return; var p = ecran(e); pts[e.pointerId] = p;
+      if (geste.t === 'abri') { var w = Wd(p[0], p[1]); pl.wx = w[0] - geste.o[0]; pl.wy = w[1] - geste.o[1]; redessiner(); }
+      else if (geste.t === 'carte') { V.cx = geste.c[0] - (p[0] - geste.p[0]) / V.k; V.cy = geste.c[1] - (p[1] - geste.p[1]) / V.k; redessiner(); }
+      else if (geste.t === 'pince') { var ids = Object.keys(pts), A = pts[ids[0]], B = pts[ids[1]]; if (!B) return;
+        var dd = Math.hypot(A[0] - B[0], A[1] - B[1]), m0 = geste.m, mid = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+        V.k = Math.max(0.02, Math.min(8, geste.k * dd / Math.max(10, geste.d)));
+        var a = [(m0[0] - W / 2) / geste.k + geste.c[0], (m0[1] - H / 2) / geste.k + geste.c[1]]; // point du monde sous les doigts au départ
+        V.cx = a[0] - (mid[0] - W / 2) / V.k; V.cy = a[1] - (mid[1] - H / 2) / V.k; redessiner(); }
+    });
+    var lacher = function (e) { delete pts[e.pointerId]; if (!Object.keys(pts).length) { if (geste && geste.t !== 'abri') voisinage(); geste = null; cv.style.cursor = ''; } else if (geste && geste.t === 'pince') geste = null; };
+    cv.addEventListener('pointerup', lacher); cv.addEventListener('pointercancel', lacher);
+    cv.addEventListener('wheel', function (e) { e.preventDefault(); var p = ecran(e); zoom(e.deltaY > 0 ? 1 / 1.2 : 1.2, p[0], p[1]); clearTimeout(cv._vt); cv._vt = setTimeout(voisinage, 400); }, { passive: false });
+    b.querySelectorAll('.zm button').forEach(function (bt) { bt.onclick = function () { var z = +bt.dataset.z; if (z) zoom(z > 0 ? 1.5 : 1 / 1.5, W / 2, H / 2); else { cadrer(); redessiner(); } setTimeout(voisinage, 300); }; });
+    b.querySelector('.ici').onclick = function () { var w = Wd(W / 2, H / 2); pl.wx = w[0]; pl.wy = w[1]; redessiner(); };
+    rotInp.addEventListener('input', function () { pl.rot = +rotInp.value; redessiner(); });
+    b.querySelectorAll('.rot .pas').forEach(function (bt) { bt.onclick = function () { pl.rot = ((pl.rot + +bt.dataset.r + 540) % 360) - 180; redessiner(); }; });
+    info.textContent = 'Chargement de la photo aérienne…';
+    dessiner(); voisinage();
+    D.masse = { cv: cv, dessiner: dessiner, enAttente: function () { return attente; } };
     b.querySelector('[data-a=retour]').onclick = etape1;
-    b.querySelector('[data-a=suite]').onclick = function () { if (D.masse) D.images.masse = D.masse.cv.toDataURL('image/jpeg', 0.9); etape3(); };
+    b.querySelector('[data-a=suite]').onclick = function () {
+      var n = 0, go = function () { dessiner(); if (attente && n++ < 30) return setTimeout(go, 150); D.images.masse = cv.toDataURL('image/jpeg', 0.9); etape3(); };
+      go();
+    };
   }
   function poly(g, pts, fill, stroke, dash, lw) { g.save(); g.beginPath(); pts.forEach(function (q, i) { if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.closePath();
     if (fill) { g.fillStyle = fill; g.fill(); } g.setLineDash(dash || []); g.strokeStyle = stroke; g.lineWidth = lw || 2; g.stroke(); g.restore(); }

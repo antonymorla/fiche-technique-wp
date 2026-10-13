@@ -17,6 +17,7 @@
       toit: ['ab05175'], orient: ['65ad968', 'e14f4f0'], pente: ['d345f3d', '316d1b5'], sys: ['3ec5448'], ep: ['5b29cdd'],
       bard: ['cfad244', '6c48ecc', '1e0e5a2', 'fa4ccc4'], couv: ['feabbf9', '3fa0fbb', '42f2a4f'], gout: ['ee8bcb3'],
       reh: { q: '4cfda5e', n: 'af57fcc' }, plan: ['d85fc32'], pign: ['5ed03dc'], profu: ['3869f3f'], soub: ['fd182b9'],
+      pp: ['a0a0a85'], isom: ['c55fac3'], isot: ['67eccc2'],
       ext: { q: '2a21884', m: { fond: '332ab45', gauche: 'fb3dce9', droite: '4dbeea3', face: '417e37c' },
         rq: { face: '8e6cf2b', fond: 'f0ec21a', gauche: 'fadfe0f', droite: '8aa219a' },
         rs: { face: '50e0fac', fond: '0a1e6b8', gauche: '3ffcfa1', droite: '95db202' }, type: ['2fdae02', 'fb4fb2c'] },
@@ -29,6 +30,7 @@
       toit: ['e0656df'], orient: ['0813bd0', '8eca213'], pente: ['deffd3c', 'ebef2f6'], sys: ['eceeadb'], ep: ['dbbbb52'],
       bard: ['4a06bf9', '2a3b113', '5bfec13', '5a0e9f2'], couv: ['d1ac115', 'a72f0f0', '32350ae'], gout: ['fa9b171'],
       reh: { q: '1d54ffa', n: '02eefe8' }, plan: ['629bcda'], pign: ['f1d4e6f'], profu: ['d71daf3'], soub: ['478fa40'],
+      pp: ['b5e1b38'], isom: ['cd454cc'], isot: ['d4230fa'],
       ext: { q: 'c13ccea', m: { fond: 'fd1f800', gauche: 'dac3caf', droite: '74ec3e5', face: 'ae31213' },
         rq: { face: 'f40cca6', fond: '7c29fac', gauche: '1e23fe8', droite: '5cee052' },
         rs: { face: 'c4b422c', fond: '51bea7d', gauche: 'a7403ef', droite: 'eace337' }, type: ['a326aeb', 'acfbece'] },
@@ -305,6 +307,11 @@
       var pg = first(M.pign); cfg['f-pignon'] = pg && /biseau/i.test(pg.label) ? 'biseaute' : 'classique';
       cfg['f-profu'] = yes(M.profu[0]) ? 'oui' : 'non';
       cfg['f-soub'] = yes(M.soub[0]) ? 'oui' : 'non';
+      // Intérieur de l'ossature (vue 3D) : pare-pluie, isolation entre montants et finition intérieure, isolation de toiture
+      var ppc = M.pp && first(M.pp); cfg['f-pp'] = ppc && /^oui/i.test(ppc.label) ? 'oui' : 'non';
+      var isc = M.isom && first(M.isom), isl = isc ? isc.label : '';
+      cfg['f-isom'] = !isc || /^non/i.test(isl) ? 'non' : /OSB/i.test(isl) ? 'osb' : /contreplaqu|peupl/i.test(isl) ? 'cp' : /sapin/i.test(isl) ? 'sapin' : 'laine';
+      var itc = M.isot && first(M.isot); cfg['f-isot'] = itc && !/^non/i.test(itc.label) ? 'oui' : 'non';
       s.ext = { face: 0, fond: 0, gauche: 0, droite: 0 };
       if (yes(M.ext.q)) {
         ['face', 'fond', 'gauche', 'droite'].forEach(function (k) { s.ext[k] = num(M.ext.m[k]) || 0; });
@@ -699,12 +706,12 @@
     [/implantation/i, 'Implantation', 'Structure'], [/type de toiture/i, 'Toiture', 'Toiture'], [/orientation/i, 'Sens de la pente', 'Toiture'],
     [/degr[ée] de pente/i, 'Pente', 'Toiture'], [/Bandeau/i, 'Bandeau', 'Toiture'], [/couverture/i, 'Couverture', 'Toiture'], [/isolation de toiture/i, 'Isolation de toiture', 'Toiture'],
     [/goutti[èe]re/i, 'Gouttière', 'Toiture'], [/syst[èe]me constructif/i, 'Construction', 'Structure'], [/[ée]paisseur des madriers/i, 'Madriers', 'Structure'],
-    [/profile? "U"/i, 'Profil « U » de finition', 'Structure'], [/type de pignon/i, 'Pignon', 'Structure'], [/bardage souhaitez/i, 'Bardage', 'Structure'],
+    [/profil[eé]? "U"/i, 'Profil « U » de finition', 'Structure'], [/type de pignon/i, 'Pignon', 'Structure'], [/bardage souhaitez/i, 'Bardage', 'Structure'],
     [/pare-pluie/i, 'Pare-pluie', 'Structure'], [/poteaux souhaitez/i, 'Poteaux', 'Structure'], [/Espacement.*largeur/i, 'Espacement des poteaux (largeur)', 'Structure'],
     [/Espacement.*profondeur/i, 'Espacement des poteaux (profondeur)', 'Structure'], [/support de poteaux/i, 'Supports de poteaux', 'Structure'],
     [/^Rehausse/i, 'Rehausses', 'Structure'], [/plancher sur/i, 'Plancher', 'Options'], [/isolation entre les montants/i, 'Isolation des murs', 'Options'],
     [/^(Fond|Gauche|Droite|Face) \(/i, null, 'Extension'], [/^Remplissage$/i, 'Côtés fermés', 'Extension'], [/Type de remplissage|type de remplissage souhaitez/i, 'Fermeture', 'Extension'],
-    [/quel c[ôo]t[ée].*fermeture/i, 'Côtés fermés', 'Fermetures'], [/plancher ext[ée]rieur \?/i, 'Plancher extérieur', 'Options'], [/^Largeur en m/i, 'Plancher extérieur, largeur', 'Options'],
+    [/quels? c[ôo]t[ée]s?.*fermeture/i, 'Côtés fermés', 'Fermetures'], [/plancher ext[ée]rieur \?/i, 'Plancher extérieur', 'Options'], [/^Largeur en m/i, 'Plancher extérieur, largeur', 'Options'],
     [/^Profondeur en m/i, 'Plancher extérieur, profondeur', 'Options'], [/soubassement/i, 'Soubassement', 'Options'], [/livraison/i, 'Livraison', 'Livraison et pose'],
     [/pose en R[ée]gion/i, 'Pose', 'Livraison et pose'], [/Porte de garage/i, 'Porte de garage', 'Menuiseries'],
     [/^(Fen[êe]tre|Porte|Coulissant|Baie)/i, 'Menuiserie', 'Menuiseries'], [/^Option (fen[êe]tre|porte)/i, 'Option', 'Menuiseries']
@@ -879,9 +886,218 @@
       try { read(); } catch (e) { LAST = null; if (window.console) console.warn('[Cerisier plan]', e); }
       draw();
       try { habiller(); } catch (e) { if (window.console) console.warn('[Cerisier habillage]', e); }
+      try { vignettes(); } catch (e) { if (window.console) console.warn('[Cerisier vignettes]', e); }
       clearTimeout(imgTmr);
       imgTmr = setTimeout(function () { attach(); }, 1500);
     }, ms == null ? 120 : ms);
+  }
+
+  // ── Vignettes (validées par Antony le 13/10/2026, mail à Bérénice du même jour) : extension de toiture, hauteur des murs,
+  //    barre de progression, message du toit plat au bon moment. Les champs du site restent la seule source des prix :
+  //    les vignettes ne font que les remplir ; ils sont cachés (classe cer-vg-cache), jamais retirés ni effacés. ──
+  var cont = function (fid) { return fid ? form.querySelector('.wapf-field-container[for="' + fid + '"]') : null; };
+  var masqueWapf = function (c) { return !c || c.classList.contains('wapf-hide') || !!c.closest('.wapf-hide'); };
+  var radioLab = function (fid, re, type) { var c = cont(fid); return c ? Array.prototype.filter.call(c.querySelectorAll('input[type=' + (type || 'radio') + ']'), function (i) { return re.test(i.getAttribute('data-wapf-label') || ''); })[0] : null; };
+  var cocher = function (i) { if (!i || i.checked) return; (i.closest('label') || i).click(); if (!i.checked) i.click(); };
+  var saisir = function (i, v) { if (!i) return; i.value = String(v); i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); };
+  var cacher = function (el, on) { if (el) el.classList.toggle('cer-vg-cache', on !== false); };
+  var nombre = function (c) { return c ? c.querySelector('input[type=number]') : null; };
+  var valeur = function (i) { var v = i ? parseFloat(String(i.value).replace(',', '.')) : 0; return isNaN(v) ? 0 : v; };
+  var pastilleDe = function (c, i) { var h = i ? (i.closest('label') || i.parentElement).querySelector('.wapf-pricing-hint') : c && c.querySelector('.wapf-pricing-hint'); return h ? h.textContent.trim() : ''; };
+  var titreQ = function (c, txt) { var l = c && c.querySelector('.wapf-field-label'); if (!l) return; var w = document.createTreeWalker(l, NodeFilter.SHOW_TEXT), t;
+    while ((t = w.nextNode())) { if (t.nodeValue.trim() && !(t.parentElement && t.parentElement.closest('.wapf-pricing-hint'))) { if (t.nodeValue !== txt) t.nodeValue = txt; return; } } };
+  var mt = function (v) { return v.toFixed(2).replace('.', ',') + ' m'; };
+  // prix d'un champ « formule » pour une valeur donnée, calculé par WAPF lui-même (même calcul que le prix affiché)
+  function prixFx(inp, n) {
+    try {
+      var $ = window.jQuery, U = window.WAPF && WAPF.Util, Pr = window.WAPF && WAPF.Pricing; if (!$ || !U || !Pr || !inp) return null;
+      var $a = $(inp); if ($a.data('wapfPricetype') !== 'fx') return null;
+      var $r = $a.parents().filter(function () { return !!$(this).data('$totals'); }).first(); if (!$r.length) return null;
+      var fx = String($a.data('wapfPrice') || '0'), h = U.getQty($r), pb = U.currentProductPrice($r), f = ($r.data('optionsTotal') || 0) / h;
+      var e = U.replaceFx(fx, h, pb, n, $r, f); e = U.evalVars(Pr.variables, e, n, h, pb, $a, $r, f);
+      return Pr.addTax(U.parseFx(e, $r, true, $a), $r.data('tax') || 1);
+    } catch (er) { return null; }
+  }
+  // dessin du moteur pour une variante de la configuration en cours (débords, fermetures, rehausses), sans cotes ni textes
+  var CUR = { ext: { face: 0, fond: 0, gauche: 0, droite: 0 }, reh: 0 };
+  function picto(o) {
+    var sv = { cfg: ST.cfg, ext: ST.ext, scale: ST.scale, planScale: ST.planScale, scaleBar: ST.scaleBar, site: ST.site, picto: ST.picto, pr: ST.pictoReh, pp: ST.pictoPerson };
+    try {
+      ST.cfg = Object.assign({}, sv.cfg, o.cfg || {}); ST.ext = o.ext || {}; if (o.nreh != null) ST.cfg['f-reh'] = String(o.nreh);
+      if (sv.site) {
+        var s0 = sv.site, s1 = Object.assign({}, s0), c = CUR.ext;
+        if (s0.ov && o.ov) { var e = Object.assign({ face: 0, fond: 0, gauche: 0, droite: 0 }, o.ov);
+          s1.ov = { L: s0.ov.L - c.gauche + e.gauche, R: s0.ov.R - c.droite + e.droite, F: s0.ov.F - c.face + e.face, B: s0.ov.B - c.fond + e.fond };
+          if (s0.htL != null) s1.htL = r2(s0.htL - c.gauche - c.droite + e.gauche + e.droite);
+          if (s0.htP != null) s1.htP = r2(s0.htP - c.face - c.fond + e.face + e.fond); }
+        if (o.nreh != null && s0.hInt != null) s1.hInt = r2(s0.hInt + (o.nreh - CUR.reh) * 0.13);
+        ST.site = s1;
+      }
+      ST.picto = true; ST.pictoReh = o.reh || 0; ST.pictoPerson = o.person || false; ST.scale = o.scale || null; ST.planScale = null; ST.scaleBar = false;
+      var d = E.calcDims();
+      if (o.fit) return E.elevFit(d, o.view, o.w, o.h);
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 ' + o.w + ' ' + o.h); svg.setAttribute('width', '100%'); svg.setAttribute('aria-hidden', 'true');
+      if (o.view === 'plan') E.drawPlan(svg, d, o.w, o.h); else E.drawElev(svg, d, o.view, o.w, o.h);
+      return o.hInt ? d.hInt : svg.outerHTML;
+    } catch (er) { return ''; } finally {
+      ST.cfg = sv.cfg; ST.ext = sv.ext; ST.scale = sv.scale; ST.planScale = sv.planScale; ST.scaleBar = sv.scaleBar; ST.site = sv.site; ST.picto = sv.picto; ST.pictoReh = sv.pr; ST.pictoPerson = sv.pp;
+    }
+  }
+  var bloc = function (q, cle) { // conteneur des vignettes, juste sous le titre de la question
+    var b = q.querySelector('.cer-vg[data-vg="' + cle + '"]');
+    if (!b) { b = document.createElement('div'); b.className = 'cer-vg'; b.setAttribute('data-vg', cle); var l = q.querySelector('.wapf-field-label'); l.parentNode.insertBefore(b, l.nextSibling); }
+    return b;
+  };
+  var carte = function (attrs, on, pic, titre, sous, pill) {
+    return '<button type="button" class="cer-vg__c' + (on ? ' on' : '') + '" ' + attrs + '><span class="cer-vg__pic">' + pic + '</span><b>' + titre + '</b>' + (sous ? '<small>' + sous + '</small>' : '') + (pill ? '<span class="cer-pill' + (/^Inclus/.test(pill) ? ' cer-pill--0' : '') + '">' + pill + '</span>' : '') + '</button>';
+  };
+  var NOM = { abri: 'L’abri', garage: 'Le garage' };
+  // 1. Extension de toiture : oui / non, profondeur de chaque côté, côtés fermés vus de dessus
+  function vgExtension() {
+    var X = M.ext, q = X && cont(X.q); if (!q) return;
+    var b = q.querySelector('.cer-vg[data-vg="ext"]');
+    if (masqueWapf(q) || !LAST) { if (b) b.remove(); return; }
+    var non = radioLab(X.q, /^non/i), oui = radioLab(X.q, /^oui/i); if (!non || !oui) return;
+    var K = ['face', 'gauche', 'droite', 'fond'], NOMS = { face: 'Devant', gauche: 'À gauche', droite: 'À droite', fond: 'Derrière' };
+    var inp = {}; K.forEach(function (k) { inp[k] = nombre(cont(X.m[k])); });
+    K.forEach(function (k) { CUR.ext[k] = oui.checked ? valeur(inp[k]) : 0; });
+    // champs d'origine cachés : boutons oui/non, quatre cases, image, questions de remplissage
+    cacher(q.querySelector('.wapf-field-input')); cacher(q.querySelector('.wapf-field-description'));
+    K.forEach(function (k) { cacher(cont(X.m[k])); cacher(cont(X.rq[k])); cacher(cont(X.rs[k])); });
+    var all = Array.prototype.slice.call(form.querySelectorAll('.wapf-field-container')), i0 = all.indexOf(q), iMax = Math.max.apply(null, K.map(function (k) { return all.indexOf(cont(X.m[k])); }));
+    all.slice(i0 + 1, iMax).forEach(function (c) { if (c.classList.contains('wapf-field-img') || c.querySelector('img') && !c.querySelector('input')) cacher(c); });
+    titreQ(q, 'Voulez-vous prolonger le toit ?');
+    // côtés fermés : cases du site (noms absolus Gauche / Face / Droite / Fond) dans l'ordre flanc, bout, flanc
+    var COTES = { gauche: [['Face', 'Avant'], ['Gauche', 'Côté'], ['Fond', 'Arrière']], droite: [['Face', 'Avant'], ['Droite', 'Côté'], ['Fond', 'Arrière']],
+      face: [['Gauche', 'Gauche'], ['Face', 'Devant'], ['Droite', 'Droite']], fond: [['Gauche', 'Gauche'], ['Fond', 'Derrière'], ['Droite', 'Droite']] };
+    var CLE = { gauche: { Face: 'a', Gauche: 'c', Fond: 'b' }, droite: { Face: 'a', Droite: 'c', Fond: 'b' }, face: { Gauche: 'a', Face: 'c', Droite: 'b' }, fond: { Gauche: 'a', Fond: 'c', Droite: 'b' } };
+    var cases = {}; K.forEach(function (k) { cases[k] = {}; COTES[k].forEach(function (c) { cases[k][c[0]] = radioLab(X.rs[k], new RegExp('^' + c[0] + '$', 'i'), 'checkbox'); }); });
+    // question « fermer cette extension ? » (obligatoire pour le site, cachée ici) : « Non » tant que le client ne ferme aucun côté
+    K.forEach(function (k) { var rq = cont(X.rq[k]); if (!rq || masqueWapf(rq) || !(CUR.ext[k] > 0)) return;
+      var o2 = radioLab(X.rq[k], /^oui/i), n2 = radioLab(X.rq[k], /^non/i); if (n2 && o2 && !o2.checked && !n2.checked) cocher(n2); });
+    var sig = JSON.stringify([oui.checked, non.checked, CUR.ext, K.map(function (k) { return [pastilleDe(cont(X.m[k])), COTES[k].map(function (c) { var x = cases[k][c[0]]; return x ? [x.checked, pastilleDe(null, x)] : 0; })]; }),
+      ST.cfg && [ST.cfg['f-toit'], ST.cfg['f-orient'], ST.cfg['f-sys'], ST.cfg['f-bard'], ST.cfg['f-couv'], ST.cfg['f-lar'], ST.cfg['f-pro'], ST.cfg['f-reh'], ST.cfg['f-pente']], (ST.menus || []).length]);
+    if (b && b._sig === sig) return;
+    b = bloc(q, 'ext'); b._sig = sig;
+    var sans = { 'f-ext-ferm': 'non' }, Z = { face: 0, fond: 0, gauche: 0, droite: 0 }, ex = K.some(function (k) { return CUR.ext[k] > 0; }) ? Object.assign({}, CUR.ext) : { gauche: 1.5 }; // « Oui » : l'extension déjà choisie, sinon une à gauche
+    var sc0 = picto({ cfg: sans, ov: ex, view: 'face', w: 360, h: 230, fit: true });
+    var html = '<div class="cer-vg__g2">' + carte('data-vg-ext="non"', non.checked, picto({ cfg: sans, ov: Z, view: 'face', w: 360, h: 230, scale: sc0 }), 'Non', NOM[CFG.kind] + ' seul', '') +
+      carte('data-vg-ext="oui"', oui.checked, picto({ cfg: sans, ov: ex, view: 'face', w: 360, h: 230, scale: sc0 }), 'Oui', 'terrasse couverte, bûcher, vélos…', '') + '</div>';
+    if (oui.checked) {
+      var vue = { face: 'gauche', fond: 'gauche', gauche: 'face', droite: 'face' };
+      html += '<p class="cer-vg__h">De quel côté, et sur quelle profondeur ?</p><div class="cer-vg__g4">' + K.map(function (k) {
+        var m = CUR.ext[k], pill = m ? pastilleDe(cont(X.m[k])) : '', o = {}; o[k] = m || 1.5;
+        return '<div class="cer-vg__c' + (m ? ' on' : '') + '" data-vg-cote="' + k + '"><span class="cer-vg__pic">' + picto({ cfg: sans, ov: o, view: vue[k], w: 260, h: 190 }) + '</span><b>' + NOMS[k] + '</b>' +
+          '<span class="cer-vg__st"><button type="button" data-vg-pas="-1" aria-label="Moins profond">−</button><span class="' + (m ? '' : 'z') + '">' + (m ? mt(m) : '0 m') + '</span><button type="button" data-vg-pas="1" aria-label="Plus profond">+</button></span>' +
+          (pill ? '<span class="cer-pill' + (/^Inclus/.test(pill) ? ' cer-pill--0' : '') + '">' + pill + '</span>' : '') + '</div>';
+      }).join('') + '</div>';
+      var ferm = K.filter(function (k) { return CUR.ext[k] > 0 && cont(X.rq[k]); });
+      if (ferm.length) {
+        html += '<p class="cer-vg__h">Fermer des côtés ? <span>(touchez pour fermer, vu de dessus)</span></p>';
+        ferm.forEach(function (k) {
+          html += '<p class="cer-vg__s">Extension ' + NOMS[k].toLowerCase() + ' · ' + mt(CUR.ext[k]) + '</p><div class="cer-vg__g3" data-ferm>' + COTES[k].map(function (c) {
+            var x = cases[k][c[0]], on = !!(x && x.checked), e2 = {}, o2 = {}; e2[k] = {}; e2[k][CLE[k][c[0]]] = 1; o2[k] = CUR.ext[k];
+            var pill = x ? pastilleDe(null, x) : '';
+            return carte('data-vg-ferm="' + k + '" data-vg-case="' + c[0] + '"', on, picto({ cfg: { 'f-ext-ferm': 'pleine' }, ov: o2, ext: e2, view: 'plan', w: 300, h: 220 }), c[1], '', pill);
+          }).join('') + '</div>';
+        });
+      }
+    }
+    b.innerHTML = html;
+    if (!b._ev) { b._ev = true; b.addEventListener('click', function (e) {
+      var t = e.target.closest('button');
+      if (!t) { // clic sur un côté encore à 0 : 1 m d'office, puis − / + pour régler
+        var cc = e.target.closest('[data-vg-cote]'); if (!cc) return; var kc = cc.getAttribute('data-vg-cote');
+        if (!(CUR.ext[kc] > 0)) saisir(nombre(cont(X.m[kc])), 1); return; }
+      e.preventDefault();
+      if (t.getAttribute('data-vg-ext')) { cocher(t.getAttribute('data-vg-ext') === 'oui' ? oui : non); return; }
+      var pas = t.getAttribute('data-vg-pas');
+      if (pas) { var k = t.closest('[data-vg-cote]').getAttribute('data-vg-cote'), v = CUR.ext[k], d = +pas, i = nombre(cont(X.m[k])), mx = i && parseFloat(i.max) || 5;
+        var nv = d > 0 ? (v < 1 ? 1 : Math.min(mx, Math.floor(v * 2 + 1e-9) / 2 + 0.5)) : (v <= 1 ? 0 : Math.ceil(v * 2 - 1e-9) / 2 - 0.5);
+        saisir(i, nv ? nv : ''); return; }
+      var fk = t.getAttribute('data-vg-ferm');
+      if (fk) { var cb = radioLab(X.rs[fk], new RegExp('^' + t.getAttribute('data-vg-case') + '$', 'i'), 'checkbox'), rqO = radioLab(X.rq[fk], /^oui/i), rqN = radioLab(X.rq[fk], /^non/i);
+        if (!cb) return; if (!cb.checked) { cocher(rqO); cb.click(); }
+        else { cb.click(); var reste = Array.prototype.some.call(cont(X.rs[fk]).querySelectorAll('input[type=checkbox]'), function (x) { return x.checked; }); if (!reste) cocher(rqN); } }
+    }); }
+  }
+  // 2. Hauteur des murs : chaque hauteur dessinée (rehausses en orange, silhouette de 1,75 m), avec son prix
+  function vgHauteur() {
+    var R = M.reh, q = R && typeof R.n === 'string' && cont(R.q); if (!q) return;
+    var b = q.querySelector('.cer-vg[data-vg="reh"]');
+    if (masqueWapf(q) || !LAST) { if (b) b.remove(); return; }
+    var non = radioLab(R.q, /^non/i), oui = radioLab(R.q, /^oui/i), nc = cont(R.n), n = nombre(nc); if (!non || !oui || !n) return;
+    var k0 = oui.checked ? Math.round(valeur(n)) : 0, mx = parseInt(n.max, 10) || 8; CUR.reh = k0;
+    cacher(q.querySelector('.wapf-field-input')); cacher(q.querySelector('.wapf-field-description')); cacher(nc);
+    titreQ(q, 'Quelle hauteur de murs souhaitez-vous ?');
+    var prix = []; for (var k = 0; k <= mx; k++) prix.push(k ? prixFx(n, k) : 0);
+    var sig = JSON.stringify([k0, prix, ST.cfg && [ST.cfg['f-toit'], ST.cfg['f-orient'], ST.cfg['f-sys'], ST.cfg['f-bard'], ST.cfg['f-lar'], ST.cfg['f-pro'], ST.cfg['f-pente'], ST.cfg['f-couv']], CUR.ext, (ST.menus || []).length]);
+    if (b && b._sig === sig) return;
+    b = bloc(q, 'reh'); b._sig = sig;
+    var sans = { 'f-ext-ferm': 'non' }, Z = { face: 0, fond: 0, gauche: 0, droite: 0 }, W = 260, H = 230;
+    var sc = picto({ cfg: sans, ov: Z, nreh: mx, view: 'face', w: W, h: H, fit: true }), h0 = picto({ cfg: sans, ov: Z, nreh: 0, view: 'face', w: W, h: H, hInt: true });
+    var plus = k0 >= 5 ? k0 : 5, choix = [[0, 'standard'], [1, '1 rehausse'], [2, '2 rehausses'], [3, '3 rehausses'], [4, '4 rehausses'], [plus, plus + ' rehausses']];
+    b.innerHTML = '<div class="cer-vg__g3">' + choix.map(function (c, i) {
+      var kk = c[0], dernier = i === 5, on = dernier ? k0 >= 5 : k0 === kk;
+      var pill = kk ? (prix[kk] != null ? '+' + money0(prix[kk]) : '') : 'Inclus';
+      return '<div class="cer-vg__c' + (on ? ' on' : '') + '" data-vg-k="' + kk + '"><span class="cer-vg__pic">' + picto({ cfg: sans, ov: Z, nreh: kk, view: 'face', w: W, h: H, scale: sc, reh: kk, person: 0.82 }) + '</span>' +
+        '<b>' + (typeof h0 === 'number' ? mt(h0 + 0.13 * kk) : c[1]) + '</b><small>' + c[1] + '</small>' +
+        (dernier ? '<span class="cer-vg__st"><button type="button" data-vg-plus="-1" aria-label="Une rehausse de moins">−</button><span>' + plus + '</span><button type="button" data-vg-plus="1" aria-label="Une rehausse de plus">+</button></span>' : '') +
+        (pill ? '<span class="cer-pill' + (kk ? '' : ' cer-pill--0') + '">' + pill + '</span>' : '') + '</div>';
+    }).join('') + '</div><p class="cer-vg__leg"><u class="r"></u>rehausses ajoutées (13 cm chacune)<u class="p"></u>personne de 1,75 m · hauteur intérieure sous les murs</p>';
+    if (!b._ev) { b._ev = true; b.addEventListener('click', function (e) {
+      var pl = e.target.closest('[data-vg-plus]'), c = e.target.closest('[data-vg-k]'); if (!c) return; e.preventDefault();
+      var kk = +c.getAttribute('data-vg-k'); if (pl) kk = Math.max(5, Math.min(mx, kk + +pl.getAttribute('data-vg-plus')));
+      if (!kk) { cocher(non); return; }
+      cocher(oui); saisir(nombre(cont(R.n)), kk);
+    }); }
+  }
+  // 4. Toit plat en madriers : le message des 20 cm seulement pour ces clients, avec leurs dimensions hors tout
+  function vgToitPlat() {
+    Array.prototype.forEach.call(form.querySelectorAll('.wapf-field-p'), function (c) { if (/toit plat/i.test(c.textContent) && /majorer/i.test(c.textContent)) cacher(c); });
+    var ref = cont(M.sys && M.sys[0]) || cont(M.toit && M.toit[0]); if (!ref) return;
+    var el = form.querySelector('.cer-vg-tp');
+    var montrer = ST.cfg && ST.cfg['f-toit'] === 'TOIT_PLAT' && /^madrier/.test(ST.cfg['f-sys'] || '') && !masqueWapf(ref);
+    if (!montrer) { if (el) el.remove(); return; }
+    var L0 = (parseFloat(ST.cfg['f-lar']) || 0) / 100, P0 = (parseFloat(ST.cfg['f-pro']) || 0) / 100;
+    var txt = 'Toit plat en madriers : les madriers dépassent de 10 cm à chaque angle. Votre ' + (CFG.kind === 'garage' ? 'garage' : 'abri') + ' mesurera <b>' + fr(L0 + 0.2) + ' × ' + fr(P0 + 0.2) + ' m</b> hors tout (+20 cm en façade et en profondeur).';
+    if (!el) { el = document.createElement('p'); el.className = 'cer-vg-tp'; ref.parentNode.insertBefore(el, ref.nextSibling); }
+    if (el.innerHTML !== txt) el.innerHTML = txt;
+  }
+  // 3. Barre de progression : étapes du formulaire, faites cochées, reste visible en haut
+  var COURT = [[/dimension/i, 'Dimensions'], [/type de toiture/i, 'Toit'], [/syst.me constructif/i, 'Murs'], [/bardage/i, 'Murs'], [/menuiserie|porte|fen.tre/i, 'Ouvertures'],
+    [/hauteur de murs|rehausser|hauteur/i, 'Hauteur'], [/plancher ext/i, 'Terrasse'], [/plancher/i, 'Plancher'], [/prolonger le toit|extension/i, 'Extension'], [/couverture/i, 'Couverture'],
+    [/poteau/i, 'Poteaux'], [/fermeture/i, 'Fermetures'], [/isolation/i, 'Isolation'], [/gouttière|goutti/i, 'Gouttière'], [/livraison/i, 'Livraison'], [/pose|montage/i, 'Pose']];
+  function vgProgression() {
+    var etapes = [];
+    Array.prototype.forEach.call(form.querySelectorAll('.cer-step-h'), function (h) {
+      var sec = h.closest('.wapf-section'); if (!sec || sec.closest('.wapf-hide') || !h.offsetParent) return;
+      var t = h.textContent.replace(/\s+/g, ' ').trim(), n = (COURT.filter(function (r) { return r[0].test(t); })[0] || [0, t.split(/[?:]/)[0].slice(0, 14)])[1];
+      var fait = Array.prototype.every.call(sec.querySelectorAll('.wapf-field-container.wapf-required'), function (c) {
+        if (masqueWapf(c)) return true; var ins = c.querySelectorAll('input[type=radio],input[type=checkbox]'), sl = c.querySelector('select');
+        if (ins.length) return Array.prototype.some.call(ins, function (i) { return i.checked; });
+        if (sl) return !!sl.value; var nb = c.querySelector('input[type=number],input[type=text]'); return !nb || nb.value !== ''; });
+      var last = etapes[etapes.length - 1];
+      if (last && last.n === n) { last.fait = last.fait && fait; last.secs.push(sec); } else etapes.push({ n: n, fait: fait, secs: [sec] });
+    });
+    var bar = form.querySelector('.cer-prog');
+    if (etapes.length < 3) { if (bar) bar.remove(); return; }
+    var cur = 0; while (cur < etapes.length - 1 && etapes[cur].fait) cur++;
+    var faites = etapes.filter(function (e) { return e.fait; }).length, N = etapes.length;
+    var sig = JSON.stringify([cur, etapes.map(function (e) { return e.n + (e.fait ? 1 : 0); })]);
+    if (!bar) { bar = document.createElement('div'); bar.className = 'cer-prog'; form.insertBefore(bar, form.firstChild);
+      var hd = Array.prototype.filter.call(document.querySelectorAll('header, .site-header, #masthead'), function (h) { var p2 = getComputedStyle(h).position; return (p2 === 'fixed' || p2 === 'sticky') && h.offsetHeight < 200; })[0];
+      if (hd) document.documentElement.style.setProperty('--cer-prog-top', hd.offsetHeight + 'px'); // sous l'en-tête fixe du thème
+      bar.addEventListener('click', function (e) { var s2 = e.target.closest('[data-i]'); if (!s2 || !bar._et) return; var sec = bar._et[+s2.getAttribute('data-i')].secs[0];
+        window.scrollTo({ top: sec.getBoundingClientRect().top + window.scrollY - bar.offsetHeight - 24, behavior: 'smooth' }); }); }
+    bar._et = etapes; if (bar._sig === sig) return; bar._sig = sig;
+    bar.innerHTML = '<div class="t"><b>Étape ' + (cur + 1) + ' sur ' + N + ' · ' + etapes[cur].n + '</b><span>' + Math.round(faites / N * 100) + ' % fait</span></div>' +
+      '<div class="bar">' + etapes.map(function (e, i) { return '<i class="' + (e.fait ? 'd' : i === cur ? 'c' : '') + '"></i>'; }).join('') + '</div>' +
+      '<div class="n">' + etapes.map(function (e, i) { return '<span data-i="' + i + '" class="' + (e.fait ? 'd' : i === cur ? 'c' : '') + '">' + (e.fait ? '✓ ' : '') + e.n + '</span>'; }).join('') + '</div>';
+  }
+  function vignettes() {
+    if (CFG.kind !== 'carport') { vgExtension(); vgHauteur(); vgToitPlat(); }
+    vgProgression();
   }
 
   function init() {
