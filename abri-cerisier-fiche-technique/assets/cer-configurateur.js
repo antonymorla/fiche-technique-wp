@@ -311,7 +311,9 @@
       var bd = first(M.bandeau); if (bd) cfg['f-bandeau'] = T.bandeau(bd.label);
       // Pieds de poteaux : plots béton, pieds galva à visser (réglables ou non), à sceller ; sinon platine
       var sp = first(M.supp);
-      cfg['f-supp'] = !sp || /^non/i.test(sp.label) ? 'non' : /b[ée]ton/i.test(sp.label) ? 'plot' : /r[ée]glable/i.test(sp.label) ? 'reglable' : /scell/i.test(sp.label) ? 'scelle' : 'visser';
+      // plots béton seuls, pieds galva seuls, ou les deux (« Plots béton + pieds galva à sceller »… choix d'Antony du 13/10/2026)
+      cfg['f-supp'] = !sp || /^non/i.test(sp.label) ? 'non' : /r[ée]glable/i.test(sp.label) ? 'reglable' : /scell/i.test(sp.label) ? 'scelle' : /visser/i.test(sp.label) ? 'visser' : /b[ée]ton/i.test(sp.label) ? 'plot' : 'visser';
+      cfg['f-plot'] = sp && /b[ée]ton/i.test(sp.label) ? 'oui' : 'non';
       s.ext = { face: 0, fond: 0, gauche: 0, droite: 0 };
     } else {
       var sy = first(M.sys), ep = first(M.ep);

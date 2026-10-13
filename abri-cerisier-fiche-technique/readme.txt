@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.2.14
+Stable tag: 3.2.15
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,10 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.2.15 =
+* DONNÉES DES CONFIGURATEURS (décisions d'Antony du 13/10/2026, appliquées par un module à usage unique, sauvegarde cer_fix_lot2_sauvegarde) : pente 14° gratuite et cochée d'office (18° gratuite, 25° et 35° payantes comme avant) ; bac acier sur les 1 et 2 pans (abri et garage : seul, sous-toiture, panneaux isolés 40/60/80 ; carport : seul, sous-toiture, feutre anti-condensation), au m² de toiture réelle (pente comprise) ; carport : plots béton + pieds galva cumulables ; images des fenêtres fixes sur ossature remises à l'endroit.
+* PLAN : plot béton dessiné sous le pied galva quand les deux sont choisis.
 
 = 3.2.14 =
 * PANIER BLOQUÉ (depuis la 3.2.1) : les questions « hauteur des murs » et « extension de toiture », obligatoires et remplacées par des dessins, n'étaient pas vraiment cochées ; le navigateur refusait l'ajout au panier sans rien montrer. « Standard » et « Non » sont désormais cochés d'office, et une question obligatoire oubliée est amenée à l'écran avec un message.

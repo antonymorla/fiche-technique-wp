@@ -1673,11 +1673,11 @@ function drawCarportElev(svg,d,side,vw,vh){
     const fl=(supp==='visser'||supp==='reglable')?lift+pl:(supp==='scelle'?pl:0); // le poteau repose dans l'étrier
     const foot=px=>{
       const cx=px+ps/2;
-      if(supp==='plot'){
+      if(supp==='plot'||fv('f-plot')==='oui'){ // plot béton, seul ou sous un pied galva
         const w=0.40*sc, hv=Math.max(2,0.05*sc);
         sRect(svg,cx-w/2,gndY,w,0.40*sc,'none','#9c9b95',.6,'3 2'); // partie enterrée
         sRect(svg,cx-w/2,gndY-hv,w,hv,real?'#c9c8c2':'#e6e6e3','#8a8984',.7);
-        return;
+        if(supp==='plot') return;
       }
       if(supp==='visser'||supp==='reglable'||supp==='scelle'){
         const yb=gndY-lift;
