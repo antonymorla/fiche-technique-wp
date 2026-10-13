@@ -17,6 +17,12 @@ function cer3d_mode() {
 	return get_option( 'cer_3d_mode', 'test' );
 }
 
+/** Dossier mairie : réservé à l'équipe connectée au back-office (choix d'Antony, 13/10/2026), réglable dans l'admin. */
+function cer3d_mairie_ok() {
+	$a = get_option( 'cer_mairie_acces', 'equipe' );
+	return 'tous' === $a || ( 'equipe' === $a && is_user_logged_in() && current_user_can( 'edit_posts' ) );
+}
+
 function cer3d_lien_test() {
 	return isset( $_GET['apercu'] ) && '3d' === $_GET['apercu']; // phpcs:ignore WordPress.Security.NonceVerification
 }
@@ -113,6 +119,8 @@ add_action( 'wp_enqueue_scripts', function () {
 		'nom'    => 'Abri Cerisier',
 		'confid' => get_privacy_policy_url(),
 		'tex'    => $url . 'tex/', // photos du bois et couvertures (dossier « 4• Textures » des modèles SketchUp)
+		'mairie' => cer3d_mairie_ok(),
+		'nonce'  => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '', // l'équipe connectée est reconnue par l'API (en-tête X-WP-Nonce)
 	] ) . ';', 'before' );
 }, 31 );
 
@@ -297,6 +305,9 @@ function cer3d_champs() {
 }
 
 function cer3d_rest_dossier( WP_REST_Request $r ) {
+	if ( ! cer3d_mairie_ok() ) {
+		return new WP_Error( 'cer3d_reserve', 'Le dossier mairie est réservé à l\'équipe Abri Cerisier.', [ 'status' => 403 ] );
+	}
 	if ( strlen( (string) $r->get_body() ) > 16 * KB_IN_BYTES ) {
 		return new WP_Error( 'cer3d_taille', 'Demande trop longue.', [ 'status' => 413 ] );
 	}

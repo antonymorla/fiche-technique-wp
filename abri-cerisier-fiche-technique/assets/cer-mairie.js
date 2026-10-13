@@ -124,7 +124,8 @@
         var corpsReq = Object.assign({}, v, { jeton: C().jeton, adresse: p.name, cp: p.postcode, ville: p.city, consentement: true, page: location.href.split('#')[0],
           parcelle: pa ? (pa.commune + ' ' + pa.section + ' ' + pa.numero + ' (' + fr(pa.contenance, 0) + ' m²)') : 'non trouvée',
           modele: pr.titre, surface: 'emprise ' + fr(pr.emprise, 1) + ' m², plancher ' + fr(pr.sdp, 1) + ' m², hauteur ' + fr(pr.hmax) + ' m', formalite: LIB_FORM[pr.formalite] });
-        return fetch(C().rest + 'dossier', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpsReq), credentials: 'same-origin' })
+        var hd = { 'Content-Type': 'application/json' }; if (C().nonce) hd['X-WP-Nonce'] = C().nonce;
+        return fetch(C().rest + 'dossier', { method: 'POST', headers: hd, body: JSON.stringify(corpsReq), credentials: 'same-origin' })
           .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || 'Enregistrement impossible'); return j; }); });
       }).then(function () { etape2(); }).catch(function (e) { err.textContent = e.message || 'Une erreur est survenue, réessayez.'; });
     };
@@ -560,10 +561,11 @@
   function sans3d() { return ((window.CER_CFG || {}).kind || E.ST.type) === 'carport'; } // type déclaré par la page : connu avant que le moteur ne lise le formulaire
   function boutons() {
     var vis = document.querySelector('.cer-plan__vis'); if (!vis || vis.querySelector('.cer-plan__3d')) return !!vis;
+    if (sans3d() && !C().mairie) return true; // carport vu par un visiteur : aucun bouton
     var d = document.createElement('div'); d.className = 'cer-plan__3d';
     d.innerHTML = '<style>.cer-plan__3d{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}.cer-plan__3d button{flex:1 1 140px;border:0;border-radius:22px;padding:10px 14px;font:600 14px Jost,Futura,Arial,sans-serif;cursor:pointer;background:#515136;color:#fff}.cer-plan__3d button.sec{background:#f1efe7;color:#2b2b22}</style>' +
       // carport : pas encore de modèle 3D (poteaux, bandeaux, charpente) : seul le dossier mairie est proposé
-      (sans3d() ? '' : '<button type="button" data-a="3d">Voir en 3D</button>') + '<button type="button" class="sec" data-a="mairie">Mon dossier mairie (PDF)</button>';
+      (sans3d() ? '' : '<button type="button" data-a="3d">Voir en 3D</button>') + (C().mairie ? '<button type="button" class="sec" data-a="mairie">Mon dossier mairie (PDF)</button>' : ''); // dossier : l'équipe connectée (réglage)
     vis.appendChild(d);
     d.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; if (b.dataset.a === '3d') voir3D(); else ouvrir(); });
     return true;

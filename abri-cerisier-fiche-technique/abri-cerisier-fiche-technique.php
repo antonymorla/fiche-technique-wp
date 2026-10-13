@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
- * Version:           3.2.5
+ * Version:           3.2.6
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '3.2.5' );
+define( 'ACFT_VERSION',  '3.2.6' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -34,7 +34,7 @@ if ( ! function_exists( 'cer_devis_pdf' ) ) {
     require_once ACFT_DIR . 'includes/devis-cerisier.php';
 }
 // Vue 3D, réalité augmentée et dossier mairie (Réglages → Fiche Technique → « Vue 3D et dossier mairie »).
-// Réglé sur « Désactivé », le module n'est pas chargé du tout (le 13/10/2026, deux pannes 500 du site ont cessé dès qu'il ne l'était plus ; cause non établie).
+// Réglé sur « Désactivé », le module n'est pas chargé du tout. Les pannes 500 du 13/10/2026 n'en venaient pas : PHP indisponible chez IONOS 99 fois en 2 mois avant le module (journaux d'accès).
 if ( ! function_exists( 'cer3d_mode' ) && 'off' !== get_option( 'cer_3d_mode', 'test' ) ) {
     require_once ACFT_DIR . 'includes/vue3d.php';
 }
@@ -538,6 +538,9 @@ add_action( 'admin_init', function() {
     register_setting( 'acft_group', 'cer_3d_mode', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
     ] );
+    register_setting( 'acft_group', 'cer_mairie_acces', [
+        'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'equipe', 'tous' ], true ) ? $v : 'equipe'; },
+    ] );
     register_setting( 'acft_group', 'acft_slug', [
         'sanitize_callback' => function( $v ) {
             $v = sanitize_title( $v );
@@ -614,11 +617,18 @@ function acft_settings_page() {
                 <h2 style="margin-top:0">Vue 3D et dossier mairie</h2>
                 <p>Bouton « Voir en 3D » sur les configurateurs (rotation, réalité augmentée, insertion sur une photo du jardin) et dossier mairie en PDF, après saisie obligatoire des coordonnées (liste : menu <a href="<?php echo esc_url( admin_url( 'edit.php?post_type=cer_dossier' ) ); ?>">Dossiers mairie</a>, aucun mail automatique).</p>
                 <?php $m3 = get_option( 'cer_3d_mode', 'test' ); ?>
-                <?php if ( 'off' === $m3 ) : ?><p style="color:#9a3412">Désactivé : le module n'est pas chargé (13/10/2026, pannes du site en cours d'analyse).</p><?php endif; ?>
+                <?php if ( 'off' === $m3 ) : ?><p style="color:#9a3412">Désactivé : le module n'est pas chargé du tout.</p><?php endif; ?>
                 <fieldset>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="tous" <?php checked( $m3, 'tous' ); ?> /> Tous les visiteurs</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="test" <?php checked( $m3, 'test' ); ?> /> Test : seulement après un passage par <code>?apercu=3d</code> (cookie de 30 jours)</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_3d_mode" value="off" <?php checked( $m3, 'off' ); ?> /> Désactivé</label>
+                </fieldset>
+                <?php $ma = get_option( 'cer_mairie_acces', 'equipe' ); ?>
+                <p style="margin:14px 0 4px"><strong>Dossier mairie (PDF)</strong> — qui voit le bouton « Mon dossier mairie » :</p>
+                <fieldset>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="equipe" <?php checked( $ma, 'equipe' ); ?> /> L'équipe seulement : connectée au back-office WordPress (administrateurs, gestionnaires, éditeurs ; pas les comptes clients)</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="tous" <?php checked( $ma, 'tous' ); ?> /> Tous les visiteurs</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="off" <?php checked( $ma, 'off' ); ?> /> Personne</label>
                 </fieldset>
                 <?php submit_button( 'Enregistrer' ); ?>
             </div>
