@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.3.4
+Stable tag: 3.3.5
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,9 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.5 =
+* CARPORT 1 PAN ADOSSÉ : la contre-fiche de la ferme (du bas du côté haut au milieu de la pente) avait disparu quand le côté haut est le mur de la maison ; elle part maintenant du mur, au bout de l'entrait, en 2D (face et fond, devis, dossier mairie) comme en 3D.
 
 = 3.3.4 =
 * AUDIT DU 14/10, DESSIN 2D : carport adossé vu de l'arrière (débords et mur du bon côté) ; jambes de force aussi côté mur sur un carport adossé, et retirées seulement dans le sens des poutres lamellé-collé de 6 m ; descente de gouttière le long du poteau d'extension (plus de tuyau en biais de 2 m) ; poteaux d'extension à leurs vraies places sur toutes les toitures, devant les fermetures ; porte de garage dessinée sur le plan ; porte-fenêtre double vitrage à un vantail reconnue comme simple ; fermeture d'extension en madrier clin dessinée en madrier, même sur un abri en ossature ; bouts de madriers réguliers aux quatre angles du plan ; pignon qui recouvre le haut du mur (plus de liseré).

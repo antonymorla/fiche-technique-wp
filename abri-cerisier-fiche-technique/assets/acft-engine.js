@@ -1924,9 +1924,11 @@ function drawCarportElev(svg,d,side,vw,vh){
       postsUp=()=>{ if(hasHigh) postTop(xp,yAt(xc)+rv*.9); };
       postsUp();
       ts.forEach(t=>{ if(t<=0.001||t>=0.999) return; const x=baseX+(dW-ps)*t+ps/2; vert(x,yAt(x)+rv*.9,topY-bh,Math.max(1.6,0.09*sc)); }); // montants
-      if(!wallSide&&hasHigh){ // contre-fiche centrale : du pied du poteau haut (sur l'entrait) au milieu de la pente, jusqu'au poteau suivant
-        const xs2=ts.map(t=>baseX+(dW-ps)*t+ps/2).filter(x=>Math.abs(x-xc)>1).sort((p,q)=>Math.abs(p-xc)-Math.abs(q-xc)), xn=xs2.length?xs2[0]:(highL?rx+rw:rx), xm=(xc+xn)/2;
-        member(xc+sg*ps/2,topY-bh,xm,yAt(xm)+rv*.95,Math.max(1.6,0.09*sc)); }
+      // carport adossé, mur du côté haut : la contre-fiche part du mur, au bout de l'entrait (question d'Antony du 14/10 : elle avait disparu)
+      const murHaut=!hasHigh&&isFace&&d.ados!=='non'&&(((d.ados==='gauche')!==(side==='fond'))===highL);
+      if(!wallSide&&(hasHigh||murHaut)){ // contre-fiche centrale : du pied du poteau haut (sur l'entrait) au milieu de la pente, jusqu'au poteau suivant
+        const xr=hasHigh?xc:(highL?baseX:baseX+dW), xs2=ts.map(t=>baseX+(dW-ps)*t+ps/2).filter(x=>Math.abs(x-xr)>ps).sort((p,q)=>Math.abs(p-xr)-Math.abs(q-xr)), xn=xs2.length?xs2[0]:(highL?rx+rw:rx), xm=(xr+xn)/2;
+        member(hasHigh?xc+sg*ps/2:xr,topY-bh,xm,yAt(xm)+rv*.95,Math.max(1.6,0.09*sc)); }
       rive([[xs,lyL],[xe,lyR]]);
       if(gout){ const g=gutterSec(svg,highL?xe:xs,(highL?lyR:lyL)+ed,sc,highL?1:-1); cpEnd[highL?'R':'L']={x:g.x,y:g.y}; }
       else cpEnd[highL?'R':'L']={x:(highL?xe:xs)+(highL?-1:1)*inset,y:(highL?lyR:lyL)+rv};

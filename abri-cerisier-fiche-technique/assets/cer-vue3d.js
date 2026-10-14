@@ -634,12 +634,14 @@ window.CerVue3D = (function () {
         var uE0 = (lgX ? (sP > 0 ? X1 : X0) : (sP > 0 ? ZF : ZB)) - sP * 0.03, uE1 = (lgX ? (sP > 0 ? X0 : X1) : (sP > 0 ? ZB : ZF)) + sP * 0.03; // égout, faîte
         var pt = function (u, y, w) { return lgX ? [u, y, w] : [w, y, u]; }, sec = function (a2, b2) { return lgX ? [a2, b2] : [b2, a2]; };
         // contre-fiche centrale (remarque d'Antony) : du pied du poteau haut, sur l'entrait, au milieu de la pente jusqu'au poteau suivant
-        var uSuiv = uHaut == null ? null : uPot.filter(function (u) { return Math.abs(u - uHaut) > 1e-6; }).sort(function (p, q) { return Math.abs(p - uHaut) - Math.abs(q - uHaut); })[0];
-        var uMil = uHaut == null ? null : (uHaut + (uSuiv != null ? uSuiv : sP * demi)) / 2, y0j = hE + EN;
+        // carport adossé, mur du côté haut : pas de poteau haut, la contre-fiche part du mur au bout de l'entrait (question d'Antony du 14/10)
+        var uRef = uHaut != null ? uHaut : (ados && ados === hautNom ? -sP * demi : null);
+        var uSuiv = uRef == null ? null : uPot.filter(function (u) { return Math.abs(u - uRef) > 1e-6; }).sort(function (p, q) { return Math.abs(p - uRef) - Math.abs(q - uRef); })[0];
+        var uMil = uRef == null ? null : (uRef + (uSuiv != null ? uSuiv : sP * demi)) / 2, y0j = hE + EN;
         (lgX ? czs : cxs).forEach(function (w) {
           var A = pt(uE0, su(uE0) - dPan - hA / 2 / ca, w), B = pt(uE1, su(uE1) - dPan - hA / 2 / ca, w), s1 = sec(hA, 0.07);
           poutre(A[0], A[1], A[2], B[0], B[1], B[2], s1[0], s1[1]); // arbalétrier
-          if (uHaut != null) { var u0j = uHaut + sP * ps / 2, C = pt(u0j, y0j, w), D = pt(uMil, ua(uMil), w), s2 = sec(0.09, 0.07);
+          if (uRef != null) { var u0j = uHaut != null ? uHaut + sP * ps / 2 : uRef + sP * 0.02, C = pt(u0j, y0j, w), D = pt(uMil, ua(uMil), w), s2 = sec(0.09, 0.07);
             poutre(C[0], C[1], C[2], D[0], D[1], D[2], s2[0], s2[1]); } // contre-fiche centrale : pièce de la ferme, gardée même avec des poteaux alu
           uPot.forEach(function (u) { if ((uHaut != null && Math.abs(u - uHaut) < 1e-6) || (uBas != null && Math.abs(u - uBas) < 1e-6)) return; var h3 = ua(u) - (hE + EN); if (h3 < 0.1) return;
             var m3 = massif(lgX ? 0.09 : 0.07, h3, lgX ? 0.07 : 0.09), q = pt(u, hE + EN + h3 / 2, w); m3.position.set(q[0], q[1], q[2]); G.add(m3); }); // montant
