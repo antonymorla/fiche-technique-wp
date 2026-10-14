@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.3.5
+Stable tag: 3.3.6
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,11 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.6 =
+* DEVIS CERISIER : un abri ou un garage avec plancher extérieur (terrasse) sortait sur l'ancien devis. Le générateur de devis commun écarte les libellés en double sans tenir compte des majuscules : le « Prix » de la terrasse disparaissait derrière le « PRIX » de l'abri, le total recomposé ne tombait plus juste et le devis Cerisier se retirait. Les prix sont désormais lus directement dans les calculs WAPF de l'article (154 configurations de devis réels recomposées au centime, contre 145 avant) ; deux extensions fermées ne posent plus le même problème.
+* DEVIS CERISIER : virgules décimales gardées dans les libellés (« 53,5 x 93 », « 2,15 m x 0,80 m » au lieu de « 53, 5 »), profondeurs d'extension et de terrasse écrites « 1,50 m ».
+* DEVIS CERISIER : chaque devis laisse une ligne dans wp-content/cer-journal/devis-AAAA-MM.log (nouveau devis, ou raison du repli sur l'ancien ; aucune donnée client).
 
 = 3.3.5 =
 * CARPORT 1 PAN ADOSSÉ : la contre-fiche de la ferme (du bas du côté haut au milieu de la pente) avait disparu quand le côté haut est le mur de la maison ; elle part maintenant du mur, au bout de l'entrait, en 2D (face et fond, devis, dossier mairie) comme en 3D.

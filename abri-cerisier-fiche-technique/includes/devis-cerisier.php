@@ -39,6 +39,7 @@ function cer_devis_pdf( $pdf, $client ) {
 		}
 		$d = cer_devis_donnees( WC()->cart, (array) $client );
 		if ( ! $d ) {
+			cer_devis_trace( 'ancien devis : aucun configurateur dans le panier' );
 			return null; // pas de configurateur avec plans dans ce panier : ancien devis
 		}
 		// lien de commande créé seulement une fois les contrôles passés
@@ -46,11 +47,26 @@ function cer_devis_pdf( $pdf, $client ) {
 			$d['lien'] = wqg_get_shared_cart_url( wqg_create_shared_cart( [] ) );
 		}
 		$vendor = WP_PLUGIN_DIR . '/woocommerce-quote-generator/vendor';
-		return cer_devis_rendre( $d, $vendor );
+		$out    = cer_devis_rendre( $d, $vendor );
+		cer_devis_trace( 'nouveau devis ' . ( $d['numero'] ?: '(sans numéro)' ) . ' | ' . count( $d['lignes'] ) . ' ligne(s) | ' . $d['total_ttc'] . ' € TTC' );
+		return $out;
 	} catch ( Throwable $e ) {
 		error_log( '[devis Cerisier] ancien devis utilisé : ' . $e->getMessage() );
+		cer_devis_trace( 'ANCIEN DEVIS : ' . $e->getMessage() );
 		return null;
 	}
+}
+
+/**
+ * Trace des devis dans wp-content/cer-journal/ (dossier fermé au public) : le journal PHP d'IONOS n'est pas lisible,
+ * et un repli sur l'ancien devis doit pouvoir s'expliquer (14/10/2026). Aucune donnée client : raison et composition du prix seulement.
+ */
+function cer_devis_trace( $msg ) {
+	$dir = WP_CONTENT_DIR . '/cer-journal';
+	if ( ! is_dir( $dir ) ) {
+		return;
+	}
+	@file_put_contents( $dir . '/devis-' . gmdate( 'Y-m' ) . '.log', gmdate( 'Y-m-d H:i:s' ) . ' UTC | ' . str_replace( [ "\r", "\n" ], ' ', (string) $msg ) . "\n", FILE_APPEND | LOCK_EX ); // phpcs:ignore
 }
 
 /**
@@ -125,37 +141,76 @@ function cer_devis_valeur( $v ) {
 
 /**
  * Composition d'une ligne configurateur : prix du modèle de base et options retenues, lus dans le panier.
- * Chaque option garde le prix affiché par le configurateur ; un champ inconnu mais payant est repris tel quel.
+ * Les prix sont ceux que WAPF a calculés pour chaque champ (`calc_price`), lus directement dans l'article du panier.
+ * Avant le 14/10/2026, ils venaient de la liste du générateur de devis commun, qui écarte les libellés en double
+ * sans tenir compte des majuscules : le « Prix » de la terrasse disparaissait derrière le « PRIX » de l'abri (comme un
+ * deuxième « Remplissage »), le total ne tombait plus juste et l'ancien devis sortait.
  */
 function cer_devis_composition( array $it ) {
-	$opts = function_exists( 'wqg_get_cart_item_options' ) ? wqg_get_cart_item_options( $it ) : [];
-	$base = null;
-	$rows = [];
-	foreach ( $opts as $o ) {
-		$lab = html_entity_decode( wp_strip_all_tags( (string) $o['label'] ), ENT_QUOTES, 'UTF-8' );
-		$val = html_entity_decode( wp_strip_all_tags( (string) $o['value'] ), ENT_QUOTES, 'UTF-8' );
-		if ( preg_match( '/^PRIX$/i', trim( $lab ) ) ) {
-			$base = cer_devis_num( $val );
+	$base   = null;
+	$rows   = [];
+	$champs = ( ! empty( $it['wapf'] ) && is_array( $it['wapf'] ) ) ? $it['wapf'] : [];
+	$ent    = function ( $t ) { return trim( html_entity_decode( wp_strip_all_tags( (string) $t ), ENT_QUOTES, 'UTF-8' ) ); };
+	foreach ( $champs as $f ) {
+		if ( ! is_array( $f ) || ! empty( $f['hide_cart'] ) ) {
+			continue; // masqué dans le panier : masqué sur le devis
+		}
+		$lab = $ent( $f['label'] ?? '' );
+		if ( '' === $lab ) {
 			continue;
 		}
-		$map  = cer_devis_libelle( $lab );
+		$txt  = [];
 		$prix = 0.0;
-		if ( preg_match_all( '/\(\s*\+\s*([^)]*?€)\s*\)/u', $val, $mm, PREG_SET_ORDER ) ) {
-			foreach ( $mm as $m ) {
-				$prix += (float) cer_devis_num( $m[1] );
-				$val   = str_replace( $m[0], '', $val );
+		foreach ( (array) ( $f['values'] ?? [] ) as $v ) {
+			$t = $ent( ! empty( $v['label'] ) ? $v['label'] : ( $v['value'] ?? '' ) );
+			if ( '' !== $t && 'n/a' !== strtolower( $t ) ) {
+				$txt[] = $t;
 			}
+			$prix += (float) ( $v['calc_price'] ?? 0 );
 		}
-		$val = trim( preg_replace( '/\s*,\s*(,\s*)*/u', ', ', $val ), " ,\t" );
+		if ( ! $txt ) {
+			continue;
+		}
+		$val  = implode( ', ', $txt );
+		$cout = 'calc' === ( $f['type'] ?? '' ) && 'cost' === ( $f['calc_type'] ?? '' );
+		if ( $cout && 'PRIX' === $lab && null === $base ) {
+			$base = $prix ? $prix : cer_devis_num( $val ); // prix du modèle de base (grille)
+			continue;
+		}
+		if ( $cout ) {
+			// autre champ de calcul payant : le « Prix » du plancher extérieur (terrasse, et sa copie pour une 2e terrasse)
+			if ( ! $prix ) {
+				continue;
+			}
+			$k = null;
+			foreach ( $rows as $i => $r ) {
+				if ( 'Plancher extérieur' === $r[1] && ! $r[3] ) {
+					$k = $i;
+				}
+			}
+			if ( null !== $k ) {
+				$rows[ $k ][3] = round( $prix, 2 );
+			} else {
+				$rows[] = [ 'Options', 'Plancher extérieur', 'Pin autoclave vert', round( $prix, 2 ) ];
+			}
+			continue;
+		}
+		$map = cer_devis_libelle( $lab );
 		if ( ! $map || ( '' === $map[0] && ! $prix ) ) {
 			continue;
 		}
+		// séparateurs de liste nettoyés, sans toucher aux virgules décimales (« 2,15 m x 0,80 m »)
+		$val = trim( preg_replace( '/\s*,(?!\d)\s*(?:,(?!\d)\s*)*/u', ', ', $val ), " ,\t" );
 		if ( '' === $val || ( preg_match( '/^non$/i', $val ) && ! $prix ) ) {
 			continue;
 		}
 		$val = implode( ', ', array_map( 'cer_devis_valeur', explode( ', ', $val ) ) );
 		$cle = $map[1];
-		if ( ( in_array( $cle, [ 'Largeur', 'Profondeur' ], true ) || 0 === strpos( $cle, 'Extension ' ) || 0 === strpos( $cle, 'Plancher extérieur, ' ) ) && ! preg_match( '/\bm$/u', $val ) ) {
+		$metre = in_array( $cle, [ 'Largeur', 'Profondeur' ], true ) || 0 === strpos( $cle, 'Extension ' ) || 0 === strpos( $cle, 'Plancher extérieur, ' );
+		if ( $metre && preg_match( '/^\d+(\.\d+)?$/', $val ) ) {
+			$val = number_format( (float) $val, 2, ',', ' ' ); // saisie « 1.5 » → « 1,50 »
+		}
+		if ( $metre && ! preg_match( '/\bm$/u', $val ) ) {
 			$val .= ' m';
 		}
 		if ( 'Rehausses' === $cle ) {
@@ -225,7 +280,8 @@ function cer_devis_donnees( WC_Cart $cart, array $client ) {
 		$somme = round( $base + array_sum( array_column( $rows, 3 ) ), 2 );
 		$unite = round( $ttc / $qte, 2 );
 		if ( abs( $somme - $unite ) > 0.02 ) {
-			throw new RuntimeException( sprintf( 'composition %.2f ≠ ligne du panier %.2f', $somme, $unite ) );
+			$det = implode( ' ; ', array_map( function ( $r ) { return $r[1] . ' = ' . $r[2] . ' (' . ( null === $r[3] ? '—' : $r[3] ) . ')'; }, $rows ) );
+			throw new RuntimeException( sprintf( 'composition %.2f (base %.2f) ≠ ligne du panier %.2f | %s', $somme, $base, $unite, mb_substr( $det, 0, 1500 ) ) );
 		}
 		$lignes[] = [ 'type' => 'config', 'kind' => $kind, 'nom' => $prod ? $prod->get_name() : '', 'qte' => $qte, 'ht' => $l_ht, 'tva' => $l_tx, 'ttc' => $ttc,
 			'base' => $base, 'rows' => $rows, 'vues' => $vues, 'conf' => $conf ];
