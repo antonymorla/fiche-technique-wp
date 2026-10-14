@@ -299,7 +299,7 @@ function wallFin(d){
   return FINITIONS[fv('f-bard')]||FINITIONS.sr_vert;
 }
 function couvFin(d){
-  if(d.isQuadro) return COUVERTURES.epdm;
+  if(d.isQuadro) return (ST.type==='carport'&&COUVERTURES[fv('f-couv-q')])||COUVERTURES.epdm; // carport QUADRO : bac acier si le client l'a choisi
   return COUVERTURES[fv('f-couv')]||COUVERTURES.bac;
 }
 // Teintes des cadres relevées sur les vignettes SketchUp du site
@@ -572,6 +572,7 @@ function slideZonesPx(m,mx,mW){
 function drawSlide(svg,m,mx,my,mW,mH,sc,real){
   const P=presetOf(m), inside=P.dr==='coulO', zs=slideZonesPx(m,mx,mW);
   const x0=Math.min(mx,...zs.map(z=>z[0])), x1=Math.max(mx+mW,...zs.map(z=>z[1]));
+  if(ST.murSeul) return; // mur de la vue 3D : pas de tracé « coulissement » sur la façade (audit du 14/10)
   zs.forEach(([a,b])=>sRect(svg,a,my,b-a,mH,inside?'rgba(52,152,219,.06)':'rgba(230,126,34,.06)',inside?'#3498db':'#e67e22',.8,'4 3'));
   if(inside){
     sLine(svg,x0,my-2,x1,my-2,'#3498db',1,'4 3');
@@ -601,7 +602,7 @@ function drawMenuReal(svg,m,mx,my,mW,mH,sc,d){
   if(/hublot/.test(l)){
     const r=mW/2, cx=mx+r, cy=my+r;
     svg.appendChild(svgEl('circle',{cx,cy,r,fill:b0,stroke:dk,'stroke-width':.8}));
-    svg.appendChild(svgEl('circle',{cx,cy,r:r-fr*1.2,fill:ST.murSeul?VITRE_3D:'#c9dde6',stroke:shade(dk,-.3),'stroke-width':Math.max(.8,0.02*sc),'shape-rendering':ST.murSeul?'crispEdges':'auto'}));
+    svg.appendChild(svgEl('circle',{cx,cy,r:Math.max(.5,r-fr*1.2),fill:ST.murSeul?VITRE_3D:'#c9dde6',stroke:shade(dk,-.3),'stroke-width':Math.max(.8,0.02*sc),'shape-rendering':ST.murSeul?'crispEdges':'auto'}));
     svg.appendChild(svgEl('line',{x1:cx-r*.35,y1:cy+r*.1,x2:cx+r*.05,y2:cy-r*.3,stroke:'#fff','stroke-width':Math.max(.6,r*.08),opacity:.75}));
     return;
   }
@@ -1774,7 +1775,7 @@ function drawCarportElev(svg,d,side,vw,vh){
   const underside=(x,y,w,h)=>{
     if(h<=1) return;
     const sf=sousFace();
-    if(sf==='planchette'){
+    if(sf==='planchette'||sf==='spots'){
       sRect(svg,x,y,w,h,real?'#dcc79b':'#efe6d2',real?'#8a7a52':'#999',.6);
       const st=Math.max(2.5,0.11*sc);
       for(let xx=x+st;xx<x+w-1;xx+=st) sLine(svg,xx,y,xx,y+h,real?'#b29c6c':'#c9bfa8',.5);

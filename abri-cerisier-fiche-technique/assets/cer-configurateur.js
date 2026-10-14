@@ -109,7 +109,7 @@
       return /EPDM/i.test(l) ? 'epdm' : /Shingle Noir/i.test(l) ? 'shingle_n' : /Shingle brun/i.test(l) ? 'shingle_b' : /Shingle vert/i.test(l) ? 'shingle_v'
         : /tuiles?.*Rou|Prêt pour tuiles/i.test(l) ? 'tuile_r' : /tuiles?/i.test(l) ? 'tuile_g' : 'bac';
     },
-    plan: function (l) { return !l || /^non/i.test(l) ? 'non' : /pin/i.test(l) ? 'pin21' : /21\s*mm/i.test(l) ? 'epicea21iso' : 'epicea15'; },
+    plan: function (l) { return !l || /^non/i.test(l) ? 'non' : /isol/i.test(l) ? 'epicea21iso' : /pin/i.test(l) ? 'pin21' : /21\s*mm/i.test(l) ? 'epicea21iso' : 'epicea15'; },
     pot: function (l) { return /19/.test(l) ? 0.19 : /14/.test(l) ? 0.14 : /aluminium 15/i.test(l) ? 0.15 : 0.12; },
     // bandeaux du carport (options du site) : bac acier, ajouré gris 20×70, ajouré vert 20×60, Ayous aléatoire 21×45 / 21×90
     bandeau: function (l) { return /bac acier|métallique/i.test(l) ? 'bac_bandeau' : /Ayou/i.test(l) ? 'ayous_alea' : /gris/i.test(l) ? 'srn_gris' : /ajour/i.test(l) ? 'ps_vert_ajoure' : /vertical/i.test(l) ? 'sr_vert_v' : 'sr_vert'; },
@@ -169,6 +169,11 @@
       used[pl.wall].push([c - m.lw / 2 - 15 - (dr ? 0 : z), c + m.lw / 2 + 15 + (dr ? z : 0)]);
     });
     var order = list.slice().sort(function (a, b) { return (a.type === 'porte' ? 0 : 1) - (b.type === 'porte' ? 0 : 1); });
+    // rangement côte à côte (audit du 14/10 : porte de 80 + fenêtre de 53,5 sur 2 m « ça passe largement ») : avant d'envoyer une menuiserie
+    // posée d'office sur un autre mur, on regarde si toutes celles posées d'office sur ce mur tiennent rangées ; separer() les range ensuite
+    var largeur = function (m) { return m.lw + 20 + (E.isSliding(m) && !E.isDoubleM(m) ? m.lw : 0); };
+    var dOffice = {}; walls.forEach(function (w) { dOffice[w] = []; });
+    var client = {}; list.forEach(function (m) { var p0 = PLACE[m.key]; if (p0 && !p0.auto) client[p0.wall] = 1; });
     order.forEach(function (m) {
       var pl = PLACE[m.key];
       if (pl && !pl.auto) return;
@@ -181,7 +186,11 @@
         for (var j = 0; j < cands.length && !done; j++) {
           var c = cands[j] * L, a = c - m.lw / 2 - 15, b = c + m.lw / 2 + 15;
           var zone = E.isSliding(m) ? m.lw : 0; // une coulissante a besoin de la place pour s'ouvrir
-          if (fits(w, a - zone, b)) { used[w].push([a - zone, b]); PLACE[m.key] = { wall: w, pos: Math.round(c / L * 100), rail: 'gauche', auto: true }; done = true; }
+          if (fits(w, a - zone, b)) { used[w].push([a - zone, b]); dOffice[w].push(m); PLACE[m.key] = { wall: w, pos: Math.round(c / L * 100), rail: 'gauche', auto: true }; done = true; }
+        }
+        if (!done && !client[w] && !(gW && w === 'face') && dOffice[w].length) {
+          var tot = dOffice[w].concat([m]).reduce(function (s, x) { return s + largeur(x); }, 0);
+          if (tot <= L) { used[w].push([0, L]); dOffice[w].push(m); PLACE[m.key] = { wall: w, pos: 50, rail: 'gauche', auto: true }; done = true; }
         }
       }
       if (!done) PLACE[m.key] = { wall: walls[0] || 'face', pos: 50, rail: 'gauche', auto: true };
@@ -316,10 +325,12 @@
       'f-couv': 'bac', 'f-bard': 'sr_vert', 'f-ext-ferm': 'non', 'f-ext-plan': 'non', 'f-clos': 'aucune', 'f-ados': 'non', 'f-pot': '0.12', 'f-esp': '4',
       'f-pgtype': 'PGM', 'f-pglw': '237', 'f-pglh': '200', 'f-sys': 'madrier28', 'f-clos-type': '', 'f-bandeau': '', 'f-espL': '' };
     var cv = first(M.couv); if (cv) cfg['f-couv'] = T.couv(cv.label);
+    // carport QUADRO : la couverture choisie par le client (bac acier…) remplace la membrane EPDM du dessin
+    cfg['f-couv-q'] = CFG.kind === 'carport' && cv && T.couv(cv.label) !== 'epdm' ? T.couv(cv.label) : '';
     var CHOIX = { couv: !!cv }; // options réellement choisies : les autres gardent la valeur par défaut du dessin
     // Sous-face vue d'en dessous (carport) : planchettes, OSB (EPDM), feutre anti-condensation ou bac acier nu
     // (règle d'Antony, 13/10/2026 : le shingle a toujours sa sous-face en planchettes de pin autoclave ; le bac acier seul montre la charpente et les tôles)
-    cfg['f-sousface'] = cv ? (/planchette|shingle/i.test(cv.label) ? 'planchette' : /OSB/i.test(cv.label) ? 'osb' : /feutre/i.test(cv.label) ? 'feutre' : 'non') : '';
+    cfg['f-sousface'] = cv ? (/spots/i.test(cv.label) ? 'spots' : /planchette|shingle/i.test(cv.label) ? 'planchette' : /OSB/i.test(cv.label) ? 'osb' : /feutre/i.test(cv.label) ? 'feutre' : 'non') : '';
     var gt = first(M.gout); if (gt && /^oui/i.test(gt.label)) cfg['f-gout'] = 'oui';
     ST.ext = {};
     if (CFG.kind === 'carport') {
@@ -442,7 +453,7 @@
       '<div class="cer-plan__stage"><svg id="cer-sv-main" xmlns="http://www.w3.org/2000/svg"></svg><div class="cer-plan__empty"><svg viewBox="0 0 200 120" aria-hidden="true"><path d="M30 104V54L100 18l70 36v50" fill="none" stroke="#b8b59c" stroke-width="2" stroke-dasharray="5 4"/><path d="M20 58 100 16l80 42" fill="none" stroke="#b8b59c" stroke-width="2.5"/><rect x="86" y="66" width="28" height="38" fill="none" stroke="#b8b59c" stroke-width="2" stroke-dasharray="5 4"/><path d="M10 104h180" stroke="#b8b59c" stroke-width="2"/></svg>Choisissez la largeur et la profondeur : votre ' + NOUN + ' se dessine ici, à l\u2019échelle, puis à chaque choix.</div></div>' +
       '</div>' +
       '<div class="cer-plan__warn"></div>' +
-      '<details class="cer-plan__place"><summary>Placer mes portes et fenêtres</summary><div class="cer-plan__places"></div></details>' +
+      (CFG.kind === 'carport' ? '' : '<details class="cer-plan__place"><summary>Placer mes portes et fenêtres</summary><div class="cer-plan__places"></div></details>') + // le carport n'a pas de menuiseries
       '<dl class="cer-plan__dims"></dl>' +
       '<div class="cer-plan__real"></div>' +
       '<details class="cer-plan__detail"><summary>Détail de votre configuration</summary><div class="cer-plan__lignes"></div></details>' +
@@ -455,7 +466,7 @@
     // Tablette / téléphone : ancré en bas ; × replie en bouton (ou quitte le plein écran) ; « Agrandir » ouvre le plein écran
     var B = document.body;
     fab.addEventListener('click', function () { B.classList.remove('cer-plan-min'); memo(''); draw(); });
-    var openPlace = function () { if (ST.menus.length) P.querySelector('.cer-plan__place').open = true; };
+    var openPlace = function () { var pl = P.querySelector('.cer-plan__place'); if (pl && ST.menus.length) pl.open = true; };
     P.querySelector('.cer-plan__expand').addEventListener('click', function () { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = true; openPlace(); draw(); });
     P.querySelector('.cer-plan__close').addEventListener('click', function () {
       if (B.classList.contains('cer-plan-open')) { B.classList.remove('cer-plan-open'); }
@@ -466,6 +477,8 @@
     var openFull = function () { if (DOCK.matches && !B.classList.contains('cer-plan-open')) { B.classList.add('cer-plan-open'); P.querySelector('.cer-plan__detail').open = true; openPlace(); draw(); } };
     P.querySelector('.cer-plan__stage').addEventListener('click', openFull);
     P.querySelector('.cer-plan__prix').addEventListener('click', openFull);
+    P.querySelector('.cer-plan__prix').addEventListener('click', function () { // ordinateur : le détail s'ouvre et vient à l'écran (audit du 14/10)
+      if (DOCK.matches) return; var det = P.querySelector('.cer-plan__detail'); det.open = true; det.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
     P.querySelector('.cer-plan__eco').addEventListener('click', function (e) { var b = e.target.closest('[data-eco]'); if (b) { e.stopPropagation(); essaiEco(b.getAttribute('data-eco')); } });
     // place réservée en bas de page = hauteur réelle du visuel ancré (le bouton « Ajouter au panier » reste accessible)
     var pad = function () { B.style.paddingBottom = (DOCK.matches && !B.classList.contains('cer-plan-min') && !B.classList.contains('cer-plan-open')) ? (P.querySelector('.cer-plan__in').offsetHeight + 16) + 'px' : ''; };
@@ -476,9 +489,10 @@
       var b = e.target.closest('button[data-v]'); if (!b) return; VIEW = b.getAttribute('data-v'); draw();
     });
     glisser(P.querySelector('#cer-sv-main'));
-    P.querySelector('.cer-plan__places').addEventListener('change', onPlace);
+    var plc = P.querySelector('.cer-plan__places'); // absent sur le carport
+    if (plc) plc.addEventListener('change', onPlace);
     P.querySelector('.cer-plan__real').addEventListener('click', onReal);
-    P.querySelector('.cer-plan__places').addEventListener('input', onPlace);
+    if (plc) plc.addEventListener('input', onPlace);
   }
   function memo(v) { try { sessionStorage.setItem('cerPlanDock', v); } catch (e) { } }
   function memoGet() { try { return sessionStorage.getItem('cerPlanDock') || ''; } catch (e) { return ''; } }
@@ -500,7 +514,7 @@
   }
   function hauteurTxt(seuil, lh) { return 'allège ' + seuil + ' cm · haut à ' + fr((seuil + lh) / 100) + ' m'; }
   function renderPlaces() {
-    var box = P.querySelector('.cer-plan__places');
+    var box = P.querySelector('.cer-plan__places'); if (!box) return;
     if (!ST.menus.length) { box.innerHTML = '<p class="cer-plan__hint">Ajoutez des menuiseries dans le configurateur : elles se placent ici automatiquement, vous pourrez les déplacer.</p>'; return; }
     var walls = ST.type === 'carport' ? E.closList() : ['face', 'gauche', 'droite', 'fond'];
     var WL = { face: 'Façade', gauche: 'Côté gauche', droite: 'Côté droit', fond: 'Fond' };
@@ -1020,6 +1034,7 @@
       }
       var key = m[1] || ('Extension ' + lab.replace(/\s*\(.*$/, '').toLowerCase());
       var v = vals.map(nice).join(', ');
+      if (/^\d+(\.\d+)?$/.test(v)) v = fr(parseFloat(v)); // « 2.5 » → « 2,50 » (audit du 14/10)
       if (/^(Largeur|Profondeur)$/.test(key) || /^Extension /.test(key) || /^Plancher extérieur, /.test(key)) v += ' m';
       if (key === 'Rehausses') v += ' × 13 cm';
       rows.push({ g: m[2], k: key, v: v, p: price });
@@ -1051,6 +1066,14 @@
       s.classList.toggle('cer-vide', !vis);
     });
   }
+  // Total rappelé juste au-dessus du bouton « Ajouter au panier » (audit du 14/10 : sur ordinateur, le prix du panneau n'est plus à l'écran à ce moment-là)
+  function totalPanier(tot) {
+    var bt = form.querySelector('.single_add_to_cart_button'); if (!bt) return;
+    var el = form.querySelector('.cer-total-panier');
+    if (tot == null) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.className = 'cer-total-panier'; var hote = bt.closest('.quantity, .woocommerce-variation-add-to-cart') || bt; hote.parentNode.insertBefore(el, hote); }
+    var h = '<span>Prix de votre ' + NOUN + '</span><strong>' + money(tot) + ' TTC</strong>'; if (el.innerHTML !== h) el.innerHTML = h;
+  }
   function polish() {
     try { depart(); vides(); } catch (e) { if (window.console) console.warn('[Cerisier haut de page]', e); }
     var tot = numTxt((form.querySelector('.blocdimpr1 .wapf-calc-text, .field-453ead0 .wapf-calc-text, .field-d0abad4 .wapf-calc-text') || {}).textContent);
@@ -1074,6 +1097,7 @@
     box.querySelector('strong').className = '';
     if (tot > 200000) { if (window.console) console.warn('[Cerisier] total improbable, non affiché :', tot); tot = NaN; } // garde-fou : au-delà de toute grille du site
     if (!isNaN(tot) && tot > 0) { box.hidden = false; box.querySelector('strong').innerHTML = money(tot) + '<small>TTC</small>'; } else box.hidden = true;
+    totalPanier(!isNaN(tot) && tot > 0 ? tot : null);
     deltaPrix(tot);
     var rows = detailRows(), html = '', g = '';
     if (!isNaN(base) && base > 0 && LAST) html += '<div class="g">Votre ' + NOUN + '</div><div class="l"><span class="k">Modèle de base</span><span class="v">' + fr(LAST.s.Lr) + ' × ' + fr(LAST.s.Pr) + ' m</span><span class="p">' + money(base) + '</span></div>';
@@ -1591,7 +1615,7 @@
   // 3. Barre de progression : étapes du formulaire, faites cochées, reste visible en haut
   var COURT = [[/dimension/i, 'Dimensions'], [/type de toiture/i, 'Toit'], [/syst.me constructif/i, 'Murs'], [/bardage/i, 'Murs'], [/menuiserie|porte|fen.tre/i, 'Ouvertures'],
     [/hauteur de murs|rehausser|hauteur/i, 'Hauteur'], [/plancher ext/i, 'Terrasse'], [/plancher/i, 'Plancher'], [/prolonger le toit|extension/i, 'Extension'], [/couverture/i, 'Couverture'],
-    [/poteau/i, 'Poteaux'], [/fermeture/i, 'Fermetures'], [/isolation/i, 'Isolation'], [/gouttière|goutti/i, 'Gouttière'], [/livraison/i, 'Livraison'], [/pose|montage/i, 'Pose']];
+    [/implantation/i, 'Implantation'], [/poteau/i, 'Poteaux'], [/fermeture|fermer/i, 'Fermetures'], [/isolation/i, 'Isolation'], [/gouttière|goutti/i, 'Gouttière'], [/livraison/i, 'Livraison'], [/pose|montage/i, 'Pose']];
   function vgProgression() {
     var etapes = [];
     Array.prototype.forEach.call(form.querySelectorAll('.cer-step-h'), function (h) {

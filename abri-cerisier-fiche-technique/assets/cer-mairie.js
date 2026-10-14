@@ -354,7 +354,7 @@
       '<p class="info" style="margin-top:12px">' + ('Pour le document d\'insertion, nous utilisons ' + (window.CerVue3D && window.CerVue3D.montage ? 'votre montage photo réalisé dans la vue 3D.' : 'une vue 3D de votre projet. Pour un montage sur une photo de votre jardin : « Voir en 3D » puis « Sur une photo de mon jardin ».')) + '</p>' +
       '<div class="act"><button type="button" class="sec" data-a="retour">Retour</button><button type="button" data-a="suite">Créer mon dossier PDF</button></div>');
     b.querySelectorAll('input[type=file]').forEach(function (inp) {
-      inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; if (!f) return; reduire(f, 1800).then(function (url) { D.photos[inp.dataset.k] = url; etape3(); }); });
+      inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; if (!f) return; reduire(f, 1800).then(function (url) { D.photos[inp.dataset.k] = url; etape3(); }, function () { var l = inp.closest('label'); if (l && !l.querySelector('.err')) l.insertAdjacentHTML('beforeend', '<span class="err" style="display:block;color:#a33;font-size:13px;margin-top:4px">Cette photo n’a pas pu être lue : essayez en JPEG.</span>'); }); });
     });
     b.querySelector('[data-a=retour]').onclick = etape2;
     b.querySelector('[data-a=suite]').onclick = etape4;
@@ -365,12 +365,14 @@
     if (!f || !(/\.hei[cf]$/i.test(f.name || '') || /hei[cf]/i.test(f.type || ''))) return Promise.resolve(f);
     var lisible = new Promise(function (res) { var im = new Image(), u = URL.createObjectURL(f); im.onload = function () { URL.revokeObjectURL(u); res(true); }; im.onerror = function () { URL.revokeObjectURL(u); res(false); }; im.src = u; });
     var go = function () { return window.heic2any({ blob: f, toType: 'image/jpeg', quality: 0.9 }).then(function (b) { return Array.isArray(b) ? b[0] : b; }); };
-    return lisible.then(function (ok) {
+    // délai : sur certains navigateurs la conversion ne répond jamais (ni succès ni échec), le client doit pouvoir passer au JPEG (audit du 14/10)
+    var delai = new Promise(function (res, rej) { setTimeout(function () { rej(new Error('HEIC : délai dépassé')); }, 30000); });
+    return Promise.race([delai, lisible.then(function (ok) {
       if (ok) return f;
       if (window.heic2any) return go();
       return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
         s.integrity = 'sha512-VjmsArkf8Vv2yyvbXCyVxp+R3n4N2WyS1GEQ+YQxa7Hu0tx836WpY4nW9/T1W5JBmvuIsxkVH/DlHgp7NEMjDw=='; s.crossOrigin = 'anonymous'; s.onload = res; s.onerror = rej; document.head.appendChild(s); }).then(go);
-    });
+    })]);
   };
   function reduire(f, max) { return window.CerHeic(f).then(function (f2) { return reduire0(f2, max); }); }
   function reduire0(f, max) { return new Promise(function (res) { var im = new Image(); im.onload = function () { var k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas');

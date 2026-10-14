@@ -399,7 +399,7 @@ window.CerVue3D = (function () {
         var o = trous.filter(function (t) { return uc > t.a - S / 2 + 0.001 && uc < t.b + S / 2 - 0.001; })[0];
         var seg = function (va, vb) { bois(uc - S / 2, va, uc + S / 2, vb); };
         if (!o) seg(S, hE0 - S); else { if (!o.porte && o.v0 > 3 * S) seg(S, o.v0 - S); if (o.v1 + 2 * S < hE0 - S - 0.02) seg(o.v1 + 2 * S, hE0 - S); }
-        var tp = top(uc); if (tp - S > hE0 + 0.05) seg(hE0, tp - S); // montant de pignon
+        var tp = top(uc); if (tp - S > hE0 + 0.05 && !quadro) seg(hE0, tp - S); // montant de pignon (pas sur le QUADRO : ses têtes dépassaient au-dessus de l'EPDM, audit du 14/10)
       });
     };
     // ── murs : dessin du moteur, percé à chaque menuiserie, menuiserie posée en retrait ──
@@ -476,7 +476,8 @@ window.CerVue3D = (function () {
     };
     var platH = null;
     var X0 = -L / 2 - d.ovL, X1 = L / 2 + d.ovR, ZF = P / 2 + d.ovF, ZB = -P / 2 - d.ovB, ep = 0.07, a = Math.atan(tan);
-    var cv = E.couvFin(d), matCouv = new THREE.MeshStandardMaterial({ roughness: cv.kind === 'bac' || cv.kind === 'tuile' ? 0.45 : 0.92, metalness: cv.kind === 'bac' || cv.kind === 'tuile' ? 0.35 : 0 });
+    // bac et tuiles acier : moins métalliques et moins de reflet du ciel, pour garder le gris 7016 et le rouge tuile (ils sortaient bleutés ou roses, audit du 14/10)
+    var cv = E.couvFin(d), metal = cv.kind === 'bac' || cv.kind === 'tuile', matCouv = new THREE.MeshStandardMaterial({ roughness: metal ? 0.55 : 0.92, metalness: metal ? 0.2 : 0, envMapIntensity: metal ? 0.45 : 1 });
     var matSous = new THREE.MeshStandardMaterial({ roughness: 0.9 }); matCouv.cerReflet = true;
     var rotCouv = (d.toit === '2PANS' || (d.toit === '1PAN' && (orient === 'droite' || orient === 'gauche')));
     // couverture : texture des modèles SketchUp (dossier « 4• Textures » : shingles, tuiles, bac acier), sinon motif du moteur
@@ -500,7 +501,7 @@ window.CerVue3D = (function () {
     else if (sfC === 'osb') { attente.push(new Promise(function (res) { new THREE.TextureLoader().load((CFG().photos && CFG().photos.osb) || texUrl('int-osb.jpg'), function (t) { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.8, 0.8); matSous.map = t; matSous.needsUpdate = true; res(); }, undefined, function () { res(); }); })); osbVivant(matSous); }
     else attente.push(motif(E, function (svg) { return E.patBoards(svg, E.FINITIONS.sr_vert, 256, 0, 512); }, 256).then(function (c) {
       if (!c) return; var t = canvasTex(THREE, c, true); t.repeat.set(0.5, 0.5); matSous.map = t; matSous.needsUpdate = true; }));
-    var mats = function () { return [M.massif, M.massif, matCouv, matSous, M.massif, M.massif]; };
+    var mats = function () { return [M.bard, M.bard, matCouv, matSous, M.bard, M.bard]; }; // tranches de la teinte du bardage (vertes sur un abri brun, audit du 14/10)
     var pan = function (xa, xb, za, zb, ang) { var w = (xb - xa) / Math.cos(ang), xc = (xa + xb) / 2, mm = boite(w, ep, zb - za, mats());
       mm.rotation.z = ang; mm.position.set(xc, sous(xc, (za + zb) / 2) + ep / 2 / Math.cos(ang), (za + zb) / 2); G.add(mm); };
     var panZ = function (za, zb, ang) { var w = (zb - za) / Math.cos(ang), zc = (za + zb) / 2, mm = boite(X1 - X0, ep, w, mats());
@@ -524,16 +525,19 @@ window.CerVue3D = (function () {
       // avec une extension : une seule toiture plate au niveau de la couvertine (bandeau prolongé jusqu'aux poteaux), la couvertine ne fait que le tour extérieur
       var exF = ZF > P / 2 + 0.01, exB = ZB < -P / 2 - 0.01, exG = X0 < -L / 2 - 0.01, exD = X1 > L / 2 + 0.01, avecExt = exF || exB || exG || exD;
       var top = base + hE + rH, haut = avecExt ? top - 0.008 : top - 0.05, bas = avecExt ? haut : haut - Math.min(0.05, P * 0.015);
-      var mbr = avecExt ? boite(L, 0.02, P, M.epdm) : boite(L - 0.06, 0.02, P - 0.06, [M.epdm, M.epdm, M.epdm, M.epdm, M.epdm, M.epdm]);
+      // carport QUADRO couvert en bac acier (choix du client) : la tôle remplace la membrane (audit du 14/10)
+      var MQ = carport && fv('f-couv-q') ? matCouv : M.epdm;
+      var mbr = avecExt ? boite(L, 0.02, P, MQ) : boite(L - 0.06, 0.02, P - 0.06, [MQ, MQ, MQ, MQ, MQ, MQ]);
       mbr.rotation.x = -Math.atan((haut - bas) / P); mbr.position.set(0, (haut + bas) / 2, 0); G.add(mbr);
       if (!avecExt) [[0, P / 2 - 0.035, L - 0.06, 0.01, 0], [0, -P / 2 + 0.035, L - 0.06, 0.01, 0], [-L / 2 + 0.035, 0, 0.01, P - 0.06, 1], [L / 2 - 0.035, 0, 0.01, P - 0.06, 1]].forEach(function (r) {
-        var hh = top + 0.004 - bas, rv = boite(r[2], hh, r[4] ? r[3] : 0.01, M.epdm); if (r[4]) rv = boite(0.01, hh, r[3], M.epdm);
+        var hh = top + 0.004 - bas, rv = boite(r[2], hh, r[4] ? r[3] : 0.01, MQ); if (r[4]) rv = boite(0.01, hh, r[3], MQ);
         rv.position.set(r[0], bas + hh / 2, r[1]); G.add(rv); });
       var cvt = function (w, dd, x, z) { var c = boite(w, 0.045, dd, M.noir); c.position.set(x, top + 0.022, z); G.add(c); };
       cvt(X1 - X0 + 0.04, 0.09, (X0 + X1) / 2, ZF); cvt(X1 - X0 + 0.04, 0.09, (X0 + X1) / 2, ZB); cvt(0.09, ZF - ZB, X0, (ZF + ZB) / 2); cvt(0.09, ZF - ZB, X1, (ZF + ZB) / 2);
       if (!exF) cvt(L + 0.04, 0.09, 0, P / 2); if (!exB) cvt(L + 0.04, 0.09, 0, -P / 2); if (!exG) cvt(0.09, P, -L / 2, 0); if (!exD) cvt(0.09, P, L / 2, 0);
       // extensions du QUADRO : bandeau bardé jusqu'à la couvertine
-      var hb2 = top - y0t, bd = function (xa, xb, za, zb) { if (xb - xa < 0.02 || zb - za < 0.02) return; var MB = matMotif(E.wallFin(d)), mm = boite(xb - xa, hb2, zb - za, [MB, MB, M.epdm, matSous, MB, MB]); mm.position.set((xa + xb) / 2, y0t + hb2 / 2, (za + zb) / 2); G.add(mm); };
+      // carport QUADRO : le bandeau choisi (Ayous vertical, bac acier…), pas le bardage par défaut (audit du 14/10)
+      var hb2 = top - y0t, bd = function (xa, xb, za, zb) { if (xb - xa < 0.02 || zb - za < 0.02) return; var MB = matMotif((carport && E.FINITIONS[fv('f-bandeau')]) || E.wallFin(d)), mm = boite(xb - xa, hb2, zb - za, [MB, MB, MQ, matSous, MB, MB]); mm.position.set((xa + xb) / 2, y0t + hb2 / 2, (za + zb) / 2); G.add(mm); };
       bd(X0, X1, P / 2, ZF); bd(X0, X1, ZB, -P / 2); bd(X0, -L / 2, -P / 2, P / 2); bd(L / 2, X1, -P / 2, P / 2);
       // évacuation : un tuyau traverse l'acrotère au fond, au ras de la membrane, puis un coude et la descente le long du mur
       gout.push({ t: 'quadro', y: avecExt ? top - 0.03 : bas + 0.03 });
@@ -545,7 +549,7 @@ window.CerVue3D = (function () {
       // carport : le bandeau choisi dans le configurateur (ayous vertical, bac acier…), sinon le bardage
       var eb = 0.027, MB2 = matMotif((carport && E.FINITIONS[fv('f-bandeau')]) || E.wallFin(d)), dirZ = orient === 'face' || orient === 'fond', sgn = orient === 'face' || orient === 'droite' ? 1 : -1;
       var u0 = dirZ ? ZB : X0, u1 = dirZ ? ZF : X1, span = u1 - u0, hb = carport ? 0.36 : (E.flatTopH ? E.flatTopH(d) : 0.26);
-      var hHaut = y0t + hb - 0.02, hBasC = Math.max(y0t + (carport && sfC !== 'planchette' ? 0.24 : 0.03), hHaut - 0.05 * span), chute = hHaut - hBasC; // carport sans sous-face : la tôle passe au-dessus des poutres
+      var hHaut = y0t + hb - 0.02, hBasC = Math.max(y0t + (carport && sfC !== 'spots' ? 0.24 : 0.03), hHaut - 0.05 * span), chute = hHaut - hBasC; // carport sans sous-face : la tôle passe au-dessus des poutres
       platH = function (x, z) { var u = dirZ ? z : x, t = sgn > 0 ? (u - u0) / span : (u1 - u) / span; return hHaut - chute * Math.max(0, Math.min(1, t)); };
       var uHaut = sgn > 0 ? u0 : u1, uBas = sgn > 0 ? u1 : u0, v0 = dirZ ? X0 : ZB, v1 = dirZ ? X1 : ZF, ang = Math.atan(chute / span);
       // couverture : du bandeau haut jusqu'à 12 cm du bandeau bas (la gouttière cachée est là), entre les bandeaux de côté
@@ -555,7 +559,7 @@ window.CerVue3D = (function () {
       var ym = platH(dirZ ? 0 : cm, dirZ ? cm : 0) - ec / 2; cvr.position.set(dirZ ? (v0 + v1) / 2 : cm, ym, dirZ ? cm : (v0 + v1) / 2); G.add(cvr);
       // plafond au niveau du bandeau seulement sur le carport avec l'option « sous-toiture planchette pour intégration spots » ;
       // partout ailleurs (abri compris), pannes tous les mètres sous la couverture, dont on voit le dessous (bac blanc, OSB, planchettes selon l'option)
-      if (!(carport && sfC === 'planchette')) { // pannes perpendiculaires à la pente (elles portent la tôle qui coule vers le côté bas)
+      if (!(carport && sfC === 'spots')) { // (« spots » seulement, audit du 14/10 ; bac + sous-toiture planchette : charpente et planchettes au-dessus) pannes perpendiculaires à la pente (elles portent la tôle qui coule vers le côté bas)
         var npn = Math.max(1, Math.ceil(span / 1.0));
         for (var kp = 1; kp < npn; kp++) { var up = u0 + span * kp / npn, ytp = platH(dirZ ? 0 : up, dirZ ? up : 0) - 0.035, lp = v1 - v0 - 2 * eb;
           var pn = dirZ ? massif(lp, 0.12, 0.07, 'x') : massif(0.07, 0.12, lp, 'z'); pn.position.set(dirZ ? (v0 + v1) / 2 : up, ytp - 0.06, dirZ ? up : (v0 + v1) / 2); G.add(pn); }
@@ -685,7 +689,8 @@ window.CerVue3D = (function () {
       var portee0 = long1 ? X0 : ZB, portee1 = long1 ? X1 : ZF; // les pannes traversent les pignons jusqu'aux débords
       var hautPanne = function (t) { return long1 ? sous(0, t) : sous(t, 0); };
       var panne = function (t, h) { var c3 = hautPanne(t) - h / 2 / Math.cos(a);
-        if (long1) piece(portee1 - portee0, h, PW, (portee0 + portee1) / 2, c3, t, 'x'); else piece(PW, h, portee1 - portee0, t, c3, (portee0 + portee1) / 2, 'z'); };
+        var pm = long1 ? piece(portee1 - portee0, h, PW, (portee0 + portee1) / 2, c3, t, 'x') : piece(PW, h, portee1 - portee0, t, c3, (portee0 + portee1) / 2, 'z');
+        if (M.bard !== M.massif) { var mts = [M.massif, M.massif, M.massif, M.massif, M.massif, M.massif]; if (long1) mts[0] = mts[1] = M.bard; else mts[4] = mts[5] = M.bard; pm.material = mts; } }; // bouts visibles sous les rives : teinte du bardage
       var rangs = function (ta, tb) { var n = Math.max(1, Math.ceil(Math.abs(tb - ta) / 1.0)); for (var k = 1; k < n; k++) panne(ta + (tb - ta) * k / n, PH); };
       if (d.toit === '2PANS') { panne(0, 0.2); rangs(pente0, 0); rangs(0, pente1); if (carport) { panne(-L / 2 + wt / 2, PH); panne(L / 2 - wt / 2, PH); } } // faîtière, pannes de chaque pan, pannes sablières (carport)
       else { rangs(pente0, pente1); if (carport) { panne(pente0 - wt / 2, PH); panne(pente1 + wt / 2, PH); } } // carport 1 pan : pannes aussi au droit des poteaux
@@ -865,9 +870,9 @@ window.CerVue3D = (function () {
     if (ouvert) fermer();
     var nom = E.ST.type === 'garage' ? 'garage' : E.ST.type === 'carport' ? 'carport' : 'abri';
     var ov = document.createElement('div'); ov.className = 'cer3d' + (mode === 'cache' ? ' cache' : '');
-    ov.innerHTML = '<style>' + CSS + '</style><div class="b"><div class="zone"><div class="ch">' + CHARGE_HTML + '</div></div>' +
+    ov.innerHTML = '<style>' + CSS + '</style><div class="b"><div class="zone"><div class="ch">' + CHARGE_HTML.replace('votre abri', 'votre ' + nom) + '</div></div>' +
       '<span class="t">Votre ' + nom + ' en 3D · glissez pour tourner</span><button class="x" type="button" aria-label="Fermer">×</button>' +
-      '<div class="v"><span class="vv"><button data-v="trois" class="on">3/4</button><button data-v="face">Devant</button><button data-v="gauche">Gauche</button><button data-v="droite">Droite</button><button data-v="fond">Derrière</button><button data-v="dessus">Dessus</button><button data-v="int">Intérieur</button><button data-v="tour">Tourner</button></span>' +
+      '<div class="v"><span class="vv"><button data-v="trois" class="on">3/4</button><button data-v="face">Devant</button><button data-v="gauche">Gauche</button><button data-v="droite">Droite</button><button data-v="fond">Derrière</button><button data-v="dessus">Dessus</button>' + (nom === 'carport' ? '' : '<button data-v="int">Intérieur</button>') + '<button data-v="tour">Tourner</button></span>' +
       '<span class="va"><button data-a="ar" class="fort">Voir chez moi (réalité augmentée)</button><button data-a="photo">Sur une photo de mon jardin</button></span></div></div>';
     document.body.appendChild(ov);
     ov.querySelector('.x').onclick = fermer; ov.addEventListener('click', function (e) { if (e.target === ov) fermer(); });
@@ -978,7 +983,8 @@ window.CerVue3D = (function () {
       ov.querySelectorAll('.p input[data-k]').forEach(function (r) { r.value = P[r.dataset.k]; });
     };
     piv.position.set(0, 0, 0); appliquer();
-    ov.querySelector('.t').textContent = 'Glissez l’abri du doigt pour le placer · pincez pour la taille';
+    var doigt = window.matchMedia && matchMedia('(pointer:coarse)').matches, leNom = E.ST.type === 'garage' ? 'le garage' : E.ST.type === 'carport' ? 'le carport' : 'l’abri';
+    ov.querySelector('.t').textContent = doigt ? 'Glissez ' + leNom + ' du doigt pour le placer · pincez pour la taille' : 'Glissez ' + leNom + ' à la souris pour le placer · molette pour la taille';
     var pnl = ov.querySelector('.p'); if (!pnl) { pnl = document.createElement('div'); pnl.className = 'p'; ov.querySelector('.b').appendChild(pnl); }
     pnl.innerHTML = '<h3>Placer l’abri <button type="button" class="rep" aria-label="Replier">–</button></h3><div class="cps">' +
       '<div class="sl"><span>Taille</span><input type="range" data-k="dist" min="' + (taille0 * 0.8).toFixed(1) + '" max="' + (taille0 * 8).toFixed(1) + '" step="0.05" style="direction:rtl"></div>' +

@@ -333,8 +333,7 @@
 @media (max-width: 767.98px) {
   .cer-plan-on .cer-stepper__b { width: 36px !important; flex: 0 0 36px !important; }
   .cer-plan-on .cer-stepper select.wapf-input { padding: 0 2px !important; }
-  .cer-plan-on .wapf-section > .cerisier-toggle { top: 19px; right: 14px; padding: 0; background: transparent; }
-  .cer-plan-on .wapf-section:has(> .cerisier-toggle) .cer-step-h { padding-right: 104px; }
+  .cer-plan-on .wapf-section > .cerisier-toggle { padding: 0; background: transparent; } /* « Comparer » est dans le flux depuis la 3.2.14 : plus de marge réservée à droite des titres (audit du 14/10) */
   .cer-plan-on .cerisier-toggle .wapf-swatch--text { font-size: 12px !important; }
 }
 @media (max-width: 767.98px) {
@@ -351,7 +350,7 @@
    les grilles déjà larges de WAPF (2 ou 3 colonnes) sont conservées */
 .cer-plan-on .wapf-swatch--image .wapf-swatch-label { hyphens: manual; -webkit-hyphens: manual; }
 @media (min-width: 768px) {
-  .cer-plan-on .wapf-image-swatch-wrapper { grid-template-columns: repeat(auto-fill, minmax(max(var(--cer-vmin, 120px), calc((100% - 10px * (var(--wapf-cols, 4) - 1)) / var(--wapf-cols, 4))), 1fr)) !important; }
+  .cer-plan-on .wapf-image-swatch-wrapper { grid-template-columns: repeat(auto-fill, minmax(max(var(--cer-vmin, 150px), calc((100% - 10px * (var(--wapf-cols, 4) - 1)) / var(--wapf-cols, 4))), 1fr)) !important; } /* images plus grandes (Antony, 09/10 ; audit du 14/10 : 150 px au moins) */
   /* Type / Matière / Style : une question par ligne, mêmes vignettes que les autres */
   .cer-plan-on .wapf-field-container[style*="width:33"]:has(.wapf-image-swatch-wrapper),
   .cer-plan-on .wapf-field-container[style*="width: 33"]:has(.wapf-image-swatch-wrapper) { width: 100% !important; }
@@ -487,3 +486,15 @@
 .cer-plan__eco button { margin-left: 4px; padding: 3px 12px; border: 1.5px solid #515136; border-radius: 999px; background: #fff; color: #3c3d2a; font: 600 12.5px/1.4 Jost, Futura, Arial, sans-serif; cursor: pointer; white-space: nowrap; }
 .cer-plan__eco button:hover { background: #fff8e8; }
 @media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) { body:not(.cer-plan-open) .cer-plan__eco { display: none !important; } }
+
+/* Audit du 14/10 : quand le thème ouvre son menu ou son panier latéral, le panneau du configurateur s'efface (il passait devant) */
+body.offcanvas-opened .cer-plan, body.offcanvas-opened .cer-plan-fab { visibility: hidden !important; }
+/* Téléphone, panneau ancré : bouton 3D plus compact (le panneau prenait 40 % de l'écran) */
+@media (max-width: 899.98px), (max-width: 1099.98px) and (orientation: portrait) {
+  body:not(.cer-plan-open) .cer-plan__3d { margin: 6px 0 0 !important; }
+  body:not(.cer-plan-open) .cer-plan__3d button { padding: 7px 12px !important; font-size: 13.5px !important; }
+}
+/* Total rappelé à côté du bouton « Ajouter au panier » (sur ordinateur, le prix du panneau sort de l'écran en bas de page) */
+.cer-total-panier { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 14px 0 10px; padding: 10px 14px; border: 1px solid var(--cer-ligne, #e5e1d6); border-radius: 12px; background: #fff; font-size: 14px; color: #3c3d2a; }
+.cer-total-panier strong { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cer-sans-dims .cer-total-panier { display: none; }

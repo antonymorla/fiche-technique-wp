@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.3.3
+Stable tag: 3.3.4
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,13 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.4 =
+* AUDIT DU 14/10, DESSIN 2D : carport adossé vu de l'arrière (débords et mur du bon côté) ; jambes de force aussi côté mur sur un carport adossé, et retirées seulement dans le sens des poutres lamellé-collé de 6 m ; descente de gouttière le long du poteau d'extension (plus de tuyau en biais de 2 m) ; poteaux d'extension à leurs vraies places sur toutes les toitures, devant les fermetures ; porte de garage dessinée sur le plan ; porte-fenêtre double vitrage à un vantail reconnue comme simple ; fermeture d'extension en madrier clin dessinée en madrier, même sur un abri en ossature ; bouts de madriers réguliers aux quatre angles du plan ; pignon qui recouvre le haut du mur (plus de liseré).
+* CARPORT : passage libre réel entre deux poteaux voisins dans les cotes ; QUADRO couvert en bac acier dessiné en bac (plan et 3D) ; bandeau QUADRO dans la finition choisie en 3D (Ayous vertical, bac) ; plafond plat seulement avec l'option spots ; pas de bouton « Intérieur » en 3D ; plus de bloc « Placer mes portes et fenêtres » vide.
+* GÉNÉRATEUR : avertissement quand une menuiserie recouvre la porte de garage ou un poteau de carport.
+* VUE 3D : têtes de montants qui dépassaient au-dessus de l'EPDM du QUADRO retirées ; tranches des pans et bouts de pannes de la teinte du bardage (plus de vert sur un abri brun) ; bac acier et tuiles moins brillants (gris 7016 et rouge gardés) ; jambes de force par sens ; textes « votre garage / votre carport » et souris ou doigt pour le montage photo ; photo HEIC : abandon au bout de 30 s avec « essayez en JPEG » au lieu d'une attente sans fin.
+* CONFIGURATEUR : prix rappelé à côté du bouton « Ajouter au panier » ; clic sur le prix (ordinateur) = détail ouvert ; dimensions du détail avec virgule ; porte de 80 + fenêtre de 53,5 rangées côte à côte sur 2 m au lieu d'être envoyées sur un autre mur ; panneau caché quand le menu ou le panier du site s'ouvre ; vignettes de 150 px au moins ; titres d'étape sur une ligne au téléphone ; bouton 3D compact au téléphone ; barre de progression : Implantation et Fermetures ; profondeur d'extension ramenée dans les bornes affichée telle quelle ; plancher isolé reconnu.
 
 = 3.3.3 =
 * CORRECTIF PRIX (audit de nuit du 14/10) : changer la toiture d'un abri ou d'un garage en madriers le faisait repasser en ossature (de 900 à 2 300 € de plus). La reprise des choix ne confond plus « Madrier » et « Ossature Bois » (libellé exact d'abord, un seul choix par question). Elle garde aussi le choix le plus récent du client (pente 25° gardée en passant de 2 pans à 1 pan) et fait passer un choix du client avant un remplacement fait d'office (shingle retrouvé après un passage par le toit plat).
