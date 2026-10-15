@@ -1002,13 +1002,17 @@ window.CerVue3D = (function () {
     var ray = new THREE.Raycaster(), plan = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pts = {}, prise = null, deux = null;
     var auSol = function (e) { var r = el.getBoundingClientRect(), v = new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
       ray.setFromCamera(v, cam); var q = new THREE.Vector3(); return ray.ray.intersectPlane(plan, q) ? q : null; };
+    // glisser : le pied de l'abri suit le geste à l'écran, où qu'on l'attrape (avant le 15/10, on visait le sol sous le doigt :
+    // pris par le mur, près de l'horizon, l'abri bondissait de plusieurs mètres au moindre mouvement)
+    var aEcran = function (v3) { var q = v3.clone().project(cam), r = el.getBoundingClientRect(); return { x: r.left + (q.x + 1) / 2 * r.width, y: r.top + (1 - q.y) / 2 * r.height }; };
     var mesure = function () { var a = Object.values(pts); if (a.length < 2) return null; return { d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), a: Math.atan2(a[1].y - a[0].y, a[1].x - a[0].x) }; };
     el.style.touchAction = 'none';
     el.addEventListener('pointerdown', function (e) { pts[e.pointerId] = { x: e.clientX, y: e.clientY }; try { el.setPointerCapture(e.pointerId); } catch (x) {}
-      if (Object.keys(pts).length === 1) { var q = auSol(e); prise = q ? q.sub(piv.position) : null; } else { prise = null; deux = { m: mesure(), dist: P.dist, rot: P.rot }; } });
+      if (Object.keys(pts).length === 1) prise = { x0: e.clientX, y0: e.clientY, base: aEcran(piv.position) }; else { prise = null; deux = { m: mesure(), dist: P.dist, rot: P.rot }; } });
     el.addEventListener('pointermove', function (e) { if (!pts[e.pointerId]) return; pts[e.pointerId] = { x: e.clientX, y: e.clientY };
       if (deux && deux.m) { var m = mesure(); if (m) { P.dist = Math.max(taille0 * 0.8, Math.min(taille0 * 8, deux.dist * deux.m.d / Math.max(10, m.d))); P.rot = deux.rot - THREE.MathUtils.radToDeg(m.a - deux.m.a); appliquer(); } return; }
-      if (prise) { var q = auSol(e); if (q) { piv.position.set(q.x - prise.x, 0, q.z - prise.z); appliquer(); } } });
+      if (prise) { var q = auSol({ clientX: prise.base.x + e.clientX - prise.x0, clientY: prise.base.y + e.clientY - prise.y0 });
+        if (q && Math.hypot(q.x, q.z - P.dist) < 60) { piv.position.set(q.x, 0, q.z); appliquer(); } } });
     var fin = function (e) { delete pts[e.pointerId]; if (Object.keys(pts).length < 2) deux = null; if (!Object.keys(pts).length) prise = null; };
     el.addEventListener('pointerup', fin); el.addEventListener('pointercancel', fin);
     el.addEventListener('wheel', function (e) { e.preventDefault(); P.dist = Math.max(taille0 * 0.8, Math.min(taille0 * 8, P.dist * (e.deltaY > 0 ? 1.08 : 0.93))); appliquer(); }, { passive: false });
