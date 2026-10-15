@@ -7,7 +7,7 @@ Tags: fiche-technique, abri, plan, svg, pdf
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.3.6
+Stable tag: 3.3.7
 License: Proprietary
 
 Outil interne de génération de fiches techniques avec plans SVG et export PDF pour Abri Cerisier.
@@ -34,6 +34,10 @@ Accessible sur une URL cachée configurable dans Réglages → Fiche Technique.
 4. Allez dans Réglages → Fiche Technique pour configurer le slug
 
 == Changelog ==
+
+= 3.3.7 =
+* MONTAGE SUR PHOTO : depuis la 3.3.4, la photo s'affichait mais le panneau « Placer l'abri » (taille, hauteur de vue, orientation, soleil) et le déplacement à la souris ou au doigt ne venaient plus, le titre restait sur « Chargement de la photo… ». Une variable manquante dans le nouveau texte d'aide arrêtait la fonction ; corrigé. Le banc de test définissait cette variable lui-même et masquait l'erreur : il ne le fait plus, et un contrôle des variables non déclarées passe sur tous les fichiers.
+* MONTAGE SUR PHOTO : après « Valider le montage », les réglages restent affichés (avec la confirmation), pour ajuster puis valider à nouveau ; le titre du panneau dit « Placer le garage / le carport ».
 
 = 3.3.6 =
 * DEVIS CERISIER : un abri ou un garage avec plancher extérieur (terrasse) sortait sur l'ancien devis. Le générateur de devis commun écarte les libellés en double sans tenir compte des majuscules : le « Prix » de la terrasse disparaissait derrière le « PRIX » de l'abri, le total recomposé ne tombait plus juste et le devis Cerisier se retirait. Les prix sont désormais lus directement dans les calculs WAPF de l'article (154 configurations de devis réels recomposées au centime, contre 145 avant) ; deux extensions fermées ne posent plus le même problème.

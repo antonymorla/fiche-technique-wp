@@ -985,10 +985,11 @@ window.CerVue3D = (function () {
       ov.querySelectorAll('.p input[data-k]').forEach(function (r) { r.value = P[r.dataset.k]; });
     };
     piv.position.set(0, 0, 0); appliquer();
-    var doigt = window.matchMedia && matchMedia('(pointer:coarse)').matches, leNom = E.ST.type === 'garage' ? 'le garage' : E.ST.type === 'carport' ? 'le carport' : 'l’abri';
+    var typ = (window.CerPlan && window.CerPlan.ST && window.CerPlan.ST.type) || '', doigt = window.matchMedia && matchMedia('(pointer:coarse)').matches; // CerPlan lu ici : pas de variable E dans cette fonction (3.3.4 plantait, plus de réglages)
+    var leNom = typ === 'garage' ? 'le garage' : typ === 'carport' ? 'le carport' : 'l’abri';
     ov.querySelector('.t').textContent = doigt ? 'Glissez ' + leNom + ' du doigt pour le placer · pincez pour la taille' : 'Glissez ' + leNom + ' à la souris pour le placer · molette pour la taille';
     var pnl = ov.querySelector('.p'); if (!pnl) { pnl = document.createElement('div'); pnl.className = 'p'; ov.querySelector('.b').appendChild(pnl); }
-    pnl.innerHTML = '<h3>Placer l’abri <button type="button" class="rep" aria-label="Replier">–</button></h3><div class="cps">' +
+    pnl.innerHTML = '<h3>Placer ' + leNom + ' <button type="button" class="rep" aria-label="Replier">–</button></h3><div class="cps">' +
       '<div class="sl"><span>Taille</span><input type="range" data-k="dist" min="' + (taille0 * 0.8).toFixed(1) + '" max="' + (taille0 * 8).toFixed(1) + '" step="0.05" style="direction:rtl"></div>' +
       '<div class="sl"><span>Hauteur de vue</span><input type="range" data-k="oeil" min="0.3" max="8" step="0.05"></div>' +
       '<div class="sl"><span>Orientation</span><input type="range" data-k="rot" min="-180" max="180" step="1"></div>' +
@@ -1021,7 +1022,9 @@ window.CerVue3D = (function () {
     if (!ouvert) return; var c = composite(), url = c.toDataURL('image/jpeg', 0.9);
     window.CerVue3D.montage = url;
     var a = document.createElement('a'); a.href = url; a.download = 'mon-abri-dans-mon-jardin.jpg'; document.body.appendChild(a); a.click(); a.remove();
-    var p = ouvert.ov.querySelector('.p'); if (p) p.innerHTML = '<h3>Montage enregistré</h3><small>L’image est téléchargée. Elle sera reprise dans votre dossier mairie (document d’insertion).</small>';
+    // les réglages restent : on peut encore ajuster puis valider à nouveau (avant le 15/10, ils disparaissaient)
+    var p = ouvert.ov.querySelector('.p'); if (p) { var ok = p.querySelector('.ok'); if (!ok) { ok = document.createElement('p'); ok.className = 'ok'; ok.style.cssText = 'margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#eef6e8;color:#2f5a1f;font-size:13px;line-height:1.4'; p.insertBefore(ok, p.querySelector('.cps')); }
+      ok.textContent = 'Montage enregistré : l’image est téléchargée et sera reprise dans le dossier mairie. Vous pouvez encore ajuster puis valider à nouveau.'; }
   }
   // image du projet pour le dossier mairie : vue 3/4 (ou le montage photo s'il existe)
   function capture(vue) {
