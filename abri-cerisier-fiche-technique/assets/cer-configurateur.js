@@ -870,7 +870,8 @@
     });
     var fin = function (e) {
       if (!GLIS || e.pointerId !== GLIS.id) return;
-      var b = GLIS.bouge, tz = GLIS.terr === 'taille'; GLIS = null;
+      var b = GLIS.bouge, tz = GLIS.terr === 'taille', quoi = GLIS.terr ? 'terrasse' : 'menuiserie'; GLIS = null;
+      if (b && window.cerStat) window.cerStat('glisser', { t: tz ? 'terrasse_taille' : quoi }); // mesure (cer-stats.js)
       if (b && tz && TSIZE) { var S2 = TSIZE; TSIZE = null; saisir(nombre(cont(M.pext.l)), S2.L); saisir(nombre(cont(M.pext.p)), S2.P); } // le prix suit
       try { svg.releasePointerCapture(e.pointerId); } catch (x) { }
       document.body.classList.remove('cer-glisse');
@@ -1151,9 +1152,10 @@
     var charge = window.CerVue3D ? Promise.resolve(window.CerVue3D) : new Promise(function (res, rej) { var s = document.createElement('script'); s.src = window.CER_3D.vue3d; s.onload = function () { window.CerVue3D ? res(window.CerVue3D) : rej(); }; s.onerror = rej; document.head.appendChild(s); });
     var fait = charge.then(function (V) { return V.vuesDevis ? V.vuesDevis() : null; });
     return Promise.race([fait, new Promise(function (res) { setTimeout(function () { res('delai'); }, 12000); })]).then(function (r) {
+      if (window.cerStat) window.cerStat('vues3d_devis', { ok: Array.isArray(r) && r.length ? 1 : 0, delai: r === 'delai' ? 1 : 0 });
       if (Array.isArray(r) && r.length) { V3.sig = sig; V3.urls = r; Array.prototype.forEach.call(form.querySelectorAll('input[name^="cer_plan[vues][3d"]'), function (e) { e.remove(); }); ajout3d(); }
       else V3.refus = sig;
-    }, function () { V3.refus = sig; }).then(function () { if (bouton) bouton.textContent = lib; });
+    }, function () { V3.refus = sig; if (window.cerStat) window.cerStat('vues3d_devis', { ok: 0, echec: 1 }); }).then(function () { if (bouton) bouton.textContent = lib; });
   }
   function signature() { return JSON.stringify([ST.cfg, ST.menus.map(function (m) { return [m.preset, m.wall, m.pos, m.rail, m.opt, m.seuil]; }), ST.ext, ST.site]); }
   function attach() {

@@ -596,6 +596,7 @@
     '<polygon class="l" points="36,61 130,12 224,61 210,61 130,26 50,61" fill="#43474b" style="animation-delay:1.2s"/></svg><span>Construction de votre abri en 3D…</span>';
   function voir3D() {
     if (!E.ST.cfg) { // rien à montrer tant que les dimensions ne sont pas choisies : on le dit sous le bouton au lieu de ne rien faire
+      if (window.cerStat) window.cerStat('3d_sans_dims');
       var bar = document.querySelector('.cer-plan__3d'), msg = bar && (bar.querySelector('.cer3d-msg') || bar.appendChild(document.createElement('p')));
       if (msg) { msg.className = 'cer3d-msg'; msg.style.cssText = 'flex-basis:100%;margin:2px 4px 0;font-size:13px;color:#6b5a2e'; msg.textContent = 'Choisissez d\u2019abord les dimensions : la vue 3D montrera alors votre projet.'; clearTimeout(msg.t); msg.t = setTimeout(function () { msg.remove(); }, 6000); }
       return;
@@ -605,7 +606,7 @@
       '@keyframes cer3dA{0%,8%{opacity:0;transform:translateY(-14px)}18%,86%{opacity:1;transform:none}100%{opacity:0}}.cer3d-attente .l{opacity:0;animation:cer3dA 3.2s ease-out infinite;transform-box:fill-box}</style>' + ATTENTE;
     document.body.appendChild(w);
     charger3D().then(function (V) { var p = V.ouvrir(); w.remove(); return p; })
-      .catch(function () { w.querySelector('span').textContent = 'La vue 3D n\u2019a pas pu se charger. Réessayez dans un instant.'; setTimeout(function () { w.remove(); }, 2500); });
+      .catch(function (er) { if (window.cerStat) window.cerStat('3d_echec', { m: 'script : ' + String((er && er.message) || er).slice(0, 60) }); w.querySelector('span').textContent = 'La vue 3D n\u2019a pas pu se charger. Réessayez dans un instant.'; setTimeout(function () { w.remove(); }, 2500); });
   }
   var n = 0, t = setInterval(function () { if (boutons() || ++n > 60) clearInterval(t); }, 500);
   window.CerMairie = { ouvrir: ouvrir, projet: projet };

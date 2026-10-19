@@ -49,10 +49,16 @@ function cer_devis_pdf( $pdf, $client ) {
 		$vendor = WP_PLUGIN_DIR . '/woocommerce-quote-generator/vendor';
 		$out    = cer_devis_rendre( $d, $vendor );
 		cer_devis_trace( 'nouveau devis ' . ( $d['numero'] ?: '(sans numéro)' ) . ' | ' . count( $d['lignes'] ) . ' ligne(s) | ' . $d['total_ttc'] . ' € TTC' );
+		if ( function_exists( 'cer_stats_serveur' ) ) {
+			cer_stats_serveur( 'devis_pdf', [ 'ttc' => round( (float) $d['total_ttc'] ), 'lignes' => count( $d['lignes'] ) ], 'devis' );
+		}
 		return $out;
 	} catch ( Throwable $e ) {
 		error_log( '[devis Cerisier] ancien devis utilisé : ' . $e->getMessage() );
 		cer_devis_trace( 'ANCIEN DEVIS : ' . $e->getMessage() );
+		if ( function_exists( 'cer_stats_serveur' ) ) {
+			cer_stats_serveur( 'devis_ancien', [ 'm' => mb_substr( $e->getMessage(), 0, 80 ) ], 'devis' );
+		}
 		return null;
 	}
 }

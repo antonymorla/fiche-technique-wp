@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
- * Version:           3.3.8
+ * Version:           3.4.0
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '3.3.8' );
+define( 'ACFT_VERSION',  '3.4.0' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -37,6 +37,10 @@ if ( ! function_exists( 'cer_devis_pdf' ) ) {
 // Réglé sur « Désactivé », le module n'est pas chargé du tout. Les pannes 500 du 13/10/2026 n'en venaient pas : PHP indisponible chez IONOS 99 fois en 2 mois avant le module (journaux d'accès).
 if ( ! function_exists( 'cer3d_mode' ) && 'off' !== get_option( 'cer_3d_mode', 'test' ) ) {
     require_once ACFT_DIR . 'includes/vue3d.php';
+}
+// Mesure des configurateurs (Réglages → Fiche Technique → « Mesure des configurateurs ») : réglée sur « Désactivé », rien n'est chargé.
+if ( ! function_exists( 'cer_stats_mode' ) && 'off' !== get_option( 'cer_stats_mode', 'test' ) ) {
+    require_once ACFT_DIR . 'includes/stats.php';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -541,6 +545,9 @@ add_action( 'admin_init', function() {
     foreach ( [ 'cer_alerte_faitage' => 3.8, 'cer_alerte_faitage_carport' => 4.2 ] as $opt => $def ) { // 0 = pas de message
         register_setting( 'acft_group', $opt, [ 'sanitize_callback' => function( $v ) use ( $def ) { $v = (float) str_replace( ',', '.', (string) $v ); return ( $v >= 0 && $v <= 20 ) ? round( $v, 2 ) : $def; } ] );
     }
+    register_setting( 'acft_group', 'cer_stats_mode', [
+        'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
+    ] );
     register_setting( 'acft_group', 'cer_mairie_acces', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'equipe', 'tous' ], true ) ? $v : 'equipe'; },
     ] );
@@ -635,6 +642,19 @@ function acft_settings_page() {
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="equipe" <?php checked( $ma, 'equipe' ); ?> /> L'équipe seulement : connectée au back-office WordPress (administrateurs, gestionnaires, éditeurs ; pas les comptes clients)</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="tous" <?php checked( $ma, 'tous' ); ?> /> Tous les visiteurs</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="off" <?php checked( $ma, 'off' ); ?> /> Personne</label>
+                </fieldset>
+                <?php submit_button( 'Enregistrer' ); ?>
+            </div>
+            <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
+                <h2 style="margin-top:0">Mesure des configurateurs</h2>
+                <p>Note ce que font les visiteurs sur les configurateurs, le panier, la page devis et la commande (options, étapes, 3D, clics, refus du panier, erreurs), sans IP ni cookie et jamais ce qu'ils tapent dans un formulaire. Un envoi par page vue. L'équipe connectée et les essais de devis sont notés à part.
+                <?php if ( function_exists( 'cer_stats_mode' ) ) : ?> Résultats : <a href="<?php echo esc_url( admin_url( 'options-general.php?page=cer-stats' ) ); ?>">Réglages → Statistiques configurateurs</a> et dashboard, onglet Cerisier.<?php endif; ?></p>
+                <?php $ms = get_option( 'cer_stats_mode', 'test' ); ?>
+                <?php if ( 'off' === $ms ) : ?><p style="color:#9a3412">Désactivé : le module n'est pas chargé du tout.</p><?php endif; ?>
+                <fieldset>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_stats_mode" value="tous" <?php checked( $ms, 'tous' ); ?> /> Tous les visiteurs</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_stats_mode" value="test" <?php checked( $ms, 'test' ); ?> /> Essai : seulement après un passage par <code>?apercu=stats</code> (cookie de 30 jours), visites notées « essai »</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_stats_mode" value="off" <?php checked( $ms, 'off' ); ?> /> Désactivé</label>
                 </fieldset>
                 <?php submit_button( 'Enregistrer' ); ?>
             </div>

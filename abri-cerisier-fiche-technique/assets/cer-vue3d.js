@@ -878,8 +878,9 @@ window.CerVue3D = (function () {
       '<span class="va"><button data-a="ar" class="fort">Voir chez moi (réalité augmentée)</button><button data-a="photo">Sur une photo de mon jardin</button></span></div></div>';
     document.body.appendChild(ov);
     ov.querySelector('.x').onclick = fermer; ov.addEventListener('click', function (e) { if (e.target === ov) fermer(); });
-    return charger().then(function () { return monter(ov, null); }).then(function () { if (mode === 'photo') choisirPhoto(); return ov; })
-      .catch(function (err) { var ch = ov.querySelector('.ch'); if (ch) ch.textContent = 'La vue 3D n’a pas pu se charger sur cet appareil.'; if (window.console) console.warn('[Cerisier 3D]', err); });
+    var t0 = Date.now(), st = function (n, d) { if (window.cerStat && mode !== 'cache') window.cerStat(n, d); }; // mesure (cer-stats.js)
+    return charger().then(function () { return monter(ov, null); }).then(function () { st('3d_pret', { ms: Date.now() - t0 }); if (mode === 'photo') choisirPhoto(); return ov; })
+      .catch(function (err) { st('3d_echec', { m: String((err && err.message) || err).slice(0, 80), ms: Date.now() - t0 }); var ch = ov.querySelector('.ch'); if (ch) ch.textContent = 'La vue 3D n’a pas pu se charger sur cet appareil.'; if (window.console) console.warn('[Cerisier 3D]', err); });
   }
   function fermer() { if (!ouvert) return; cancelAnimationFrame(ouvert.raf); try { ouvert.R.dispose(); } catch (e) {} ouvert.ov.remove(); ouvert = null; }
   function monter(ov, photo) {
@@ -1106,21 +1107,23 @@ window.CerVue3D = (function () {
         // plus d'image, de lien ni de clic, le bouton ne faisait rien sur iPhone depuis la 3.1.1 — audit du 14/10)
         a.rel = 'ar'; a.href = url;
         a.appendChild(document.createElement('img')); document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
-        bt.textContent = old;
+        bt.textContent = old; if (window.cerStat) window.cerStat('ar_ok', { os: 'ios' });
       });
       return Promise.all([glbP, usdzP]).then(function (r) { return deposer(r[0], r[1]); }).then(function (rep) {
         bt.textContent = old;
         if (ANDROID) {
           var intent = 'intent://arvr.google.com/scene-viewer/1.0?file=' + encodeURIComponent(rep.glb) + '&mode=ar_preferred&title=' + encodeURIComponent('Mon abri Cerisier') +
             '#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(rep.page) + ';end;';
+          if (window.cerStat) window.cerStat('ar_ok', { os: 'android' });
           location.href = intent; return;
         }
+        if (window.cerStat) window.cerStat('ar_ok', { os: 'qr' });
         return qr(rep.page).then(function (img) {
           panneau('<h3>Voir l’abri dans votre jardin</h3>Scannez ce code avec votre téléphone, puis touchez « Voir dans mon jardin » et visez le sol.' +
             (img ? '<img class="qr" alt="QR code" src="' + img + '">' : '') + '<small>Lien valable 30 jours : ' + rep.page.replace(/^https?:\/\//, '') + '</small>');
         });
       });
-    }).catch(function (e) { bt.textContent = old; panneau('<h3>Réalité augmentée indisponible</h3><small>' + (e && e.message ? e.message : 'Réessayez plus tard.') + '</small>'); });
+    }).catch(function (e) { bt.textContent = old; if (window.cerStat) window.cerStat('ar_echec', { m: String((e && e.message) || e).slice(0, 80) }); panneau('<h3>Réalité augmentée indisponible</h3><small>' + (e && e.message ? e.message : 'Réessayez plus tard.') + '</small>'); });
   }
 
   function fichiersAR() { // GLB et USDZ du modèle affiché (contrôles)
