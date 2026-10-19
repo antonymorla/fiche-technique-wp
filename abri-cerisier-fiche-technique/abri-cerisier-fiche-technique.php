@@ -3,7 +3,7 @@
  * Plugin Name:       Fiche Technique – Abri Cerisier
  * Plugin URI:        https://github.com/antonymorla/fiche-technique-wp
  * Description:       Outil interne de génération de fiches techniques (plan de masse + élévations SVG, export PDF), visuel en direct des configurateurs de vente (abri, garage, carport) et devis Cerisier avec plans à l'échelle.
- * Version:           3.4.3
+ * Version:           3.5.0
  * Author:            Abri Français
  * Author URI:        https://abri-cerisier.fr
  * License:           Proprietary
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    CONSTANTES
 ═══════════════════════════════════════════════════════════════ */
 
-define( 'ACFT_VERSION',  '3.4.3' );
+define( 'ACFT_VERSION',  '3.5.0' );
 define( 'ACFT_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'ACFT_URL',      plugin_dir_url( __FILE__ ) );
 define( 'ACFT_SLUG',     'abri-cerisier-fiche-technique' );
@@ -41,6 +41,10 @@ if ( ! function_exists( 'cer3d_mode' ) && 'off' !== get_option( 'cer_3d_mode', '
 // Mesure des configurateurs (Réglages → Fiche Technique → « Mesure des configurateurs ») : réglée sur « Désactivé », rien n'est chargé.
 if ( ! function_exists( 'cer_stats_mode' ) && 'off' !== get_option( 'cer_stats_mode', 'test' ) ) {
     require_once ACFT_DIR . 'includes/stats.php';
+}
+// Bouton « Recevoir mon devis » du panier sur téléphone (Réglages → Fiche Technique) : réglé sur « Désactivé », rien n'est chargé.
+if ( ! function_exists( 'cer_pdv_mode' ) && 'off' !== get_option( 'cer_devis_mobile', 'test' ) ) {
+    require_once ACFT_DIR . 'includes/panier-devis.php';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -545,6 +549,9 @@ add_action( 'admin_init', function() {
     foreach ( [ 'cer_alerte_faitage' => 3.8, 'cer_alerte_faitage_carport' => 4.2 ] as $opt => $def ) { // 0 = pas de message
         register_setting( 'acft_group', $opt, [ 'sanitize_callback' => function( $v ) use ( $def ) { $v = (float) str_replace( ',', '.', (string) $v ); return ( $v >= 0 && $v <= 20 ) ? round( $v, 2 ) : $def; } ] );
     }
+    register_setting( 'acft_group', 'cer_devis_mobile', [
+        'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
+    ] );
     register_setting( 'acft_group', 'cer_stats_mode', [
         'sanitize_callback' => function( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
     ] );
@@ -642,6 +649,17 @@ function acft_settings_page() {
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="equipe" <?php checked( $ma, 'equipe' ); ?> /> L'équipe seulement : connectée au back-office WordPress (administrateurs, gestionnaires, éditeurs ; pas les comptes clients)</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="tous" <?php checked( $ma, 'tous' ); ?> /> Tous les visiteurs</label>
                     <label style="display:block;margin:6px 0"><input type="radio" name="cer_mairie_acces" value="off" <?php checked( $ma, 'off' ); ?> /> Personne</label>
+                </fieldset>
+                <?php submit_button( 'Enregistrer' ); ?>
+            </div>
+            <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px 24px;margin:16px 0;max-width:700px">
+                <h2 style="margin-top:0">Bouton devis du panier (téléphone)</h2>
+                <p>Sur téléphone seulement, un vrai bouton « Recevoir mon devis » sous les articles du panier, et une barre fixe en bas de l'écran avec le total et le bouton. Les deux mènent à la page « Générer un devis ». L'ordinateur ne change pas.</p>
+                <?php $md = get_option( 'cer_devis_mobile', 'test' ); ?>
+                <fieldset>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_devis_mobile" value="tous" <?php checked( $md, 'tous' ); ?> /> Tous les visiteurs</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_devis_mobile" value="test" <?php checked( $md, 'test' ); ?> /> Essai : seulement après un passage par <code>?apercu=devis</code> (cookie de 30 jours), les clients ne voient rien</label>
+                    <label style="display:block;margin:6px 0"><input type="radio" name="cer_devis_mobile" value="off" <?php checked( $md, 'off' ); ?> /> Désactivé</label>
                 </fieldset>
                 <?php submit_button( 'Enregistrer' ); ?>
             </div>

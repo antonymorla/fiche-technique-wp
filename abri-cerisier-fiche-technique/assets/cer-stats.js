@@ -41,8 +41,10 @@
 
   // ───────── essais et équipe : notés à part ─────────
   if (/[?&]apercu=stats\b/.test(location.search)) document.cookie = 'cer_apercu_stats=1; max-age=2592000; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+  // essai du bouton devis du panier (includes/panier-devis.php) : le lien peut arriver sur une page en cache, le cookie est posé ici aussi
+  if (/[?&]apercu=devis\b/.test(location.search)) document.cookie = 'cer_apercu_devis=1; max-age=2592000; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
   if (C.mode === 'test' && !aCookie('cer_apercu_stats')) return;
-  var X = C.equipe || aCookie('cer_essai_devis') ? 2 : aCookie('cer_apercu_stats') ? 1 : 0;
+  var X = C.equipe || aCookie('cer_essai_devis') ? 2 : aCookie('cer_apercu_stats') || aCookie('cer_apercu_devis') ? 1 : 0;
 
   var ua = navigator.userAgent, tactile = navigator.maxTouchPoints > 0;
   var A = /iPad|Tablet/i.test(ua) || (tactile && /Macintosh/.test(ua)) || (/Android/.test(ua) && !/Mobile/.test(ua)) ? 'tablette' : /Mobi|Android|iPhone/i.test(ua) ? 'mobile' : 'ordinateur';
@@ -127,7 +129,7 @@
     if (el.closest('.cer-prog')) return stat('barre_etape', { e: lib });
     if (el.closest('.wapf-field-container, .wapf-wrapper')) return; // choix d'options : notés par « option »
     // panier, devis, commande
-    if (/generer-un-devis/.test(href)) return stat('clic_devis', { z: C.page });
+    if (/generer-un-devis/.test(href)) return stat('clic_devis', { z: el.getAttribute('data-cer-devis') || C.page });
     if (el.matches('.checkout-button, #place_order') || (C.page === 'panier' && /\/commande\/?$|\/checkout\/?$/.test(href))) return stat(el.id === 'place_order' ? 'clic_payer' : 'clic_commande');
     if (el.matches('[name=apply_coupon]')) return stat('code_promo');
     if (el.matches('[name=update_cart]')) return stat('maj_panier');
