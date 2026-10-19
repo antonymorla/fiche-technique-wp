@@ -241,6 +241,8 @@
       if (f.matches('[action*="admin-post"]')) {
         f.addEventListener('focusin', function () { if (!f._cerDebut) { f._cerDebut = true; stat('devis_debut'); } });
         f.addEventListener('submit', function () { stat('devis_envoi'); envoyer(); });
+        // champ refusé par le formulaire (nom du champ et message, jamais la saisie)
+        var tV = 0; f.addEventListener('invalid', function (e) { if (Date.now() - tV < 800) return; tV = Date.now(); stat('devis_invalide', { f: court(e.target.name, 30), m: court(e.target.validationMessage, 80) }); }, true);
       }
     });
     if (!brancherAjax()) window.addEventListener('load', brancherAjax);

@@ -276,6 +276,7 @@ function cer_stats_entonnoir() {
 		'panier_ok'      => 'Ont ajouté au panier',
 		'page_panier'    => 'Ont vu le panier',
 		'clic_devis'     => 'Ont cliqué sur « Générer un devis »',
+		'devis_invalide' => 'Ont eu un champ refusé dans le formulaire de devis',
 		'devis_envoi'    => 'Ont envoyé la demande de devis',
 		'clic_commande'  => 'Ont cliqué sur « Valider la commande »',
 		'commande_ok'    => 'Ont validé une commande',
@@ -329,7 +330,7 @@ function cer_stats_ecran() {
 		<table class="widefat striped" style="max-width:760px"><thead><tr><th>Configurateur</th><th>Appareil</th><th style="text-align:right">Visites</th></tr></thead><tbody>
 		<?php foreach ( $vis as $v ) : ?><tr><td><?php echo esc_html( $v['page'] ); ?></td><td><?php echo esc_html( $v['appareil'] ); ?></td><td style="text-align:right"><?php echo (int) $v['n']; ?></td></tr><?php endforeach; ?>
 		</tbody></table>
-		<?php foreach ( [ [ 'champ_manquant', 'f', 'Questions qui bloquent l\'ajout au panier' ], [ 'panier_refus', 'm', 'Messages de refus du panier' ], [ 'erreur_js', 'm', 'Erreurs de page' ], [ 'option', 'f', 'Questions les plus modifiées' ], [ 'abandon', 'e', 'Dernière étape avant de partir sans panier' ] ] as $b ) :
+		<?php foreach ( [ [ 'champ_manquant', 'f', 'Questions qui bloquent l\'ajout au panier' ], [ 'panier_refus', 'm', 'Messages de refus du panier' ], [ 'devis_invalide', 'f', 'Champs refusés dans le formulaire de devis' ], [ 'erreur_js', 'm', 'Erreurs de page' ], [ 'option', 'f', 'Questions les plus modifiées' ], [ 'abandon', 'e', 'Dernière étape avant de partir sans panier' ] ] as $b ) :
 			$rows = $det( $b[0], $b[1] ); ?>
 			<details style="max-width:760px;margin-top:14px"><summary style="cursor:pointer;font-weight:600"><?php echo esc_html( $b[2] ); ?> (<?php echo (int) array_sum( array_column( $rows, 'n' ) ); ?>)</summary>
 				<table class="widefat striped"><tbody>
