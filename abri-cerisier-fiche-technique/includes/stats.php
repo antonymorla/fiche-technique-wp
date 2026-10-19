@@ -68,6 +68,10 @@ function cer_stats_page() {
 		$k = cer_cfg_produits()[ get_queried_object_id() ] ?? null;
 		return $k ? $k : false;
 	}
+	// la page devis contient le panier (is_cart() y est vrai) : elle passe avant
+	if ( is_page( apply_filters( 'cer_stats_page_devis', 'generer-un-devis' ) ) ) {
+		return 'devis';
+	}
 	if ( function_exists( 'is_cart' ) && is_cart() ) {
 		return 'panier';
 	}
@@ -76,9 +80,6 @@ function cer_stats_page() {
 	}
 	if ( function_exists( 'is_checkout' ) && is_checkout() ) {
 		return 'commande';
-	}
-	if ( is_page( apply_filters( 'cer_stats_page_devis', 'generer-un-devis' ) ) ) {
-		return 'devis';
 	}
 	return false;
 }

@@ -91,11 +91,13 @@
   // ───────── temps passé, état à la sortie ─────────
   var CFG = /^(abri|garage|carport)$/.test(C.page), actif = 0, depuis = document.visibilityState === 'hidden' ? 0 : Date.now();
   var OPTIONS = 0, PRIX = 0, ETAPES = { faites: 0, N: 0, cur: '' }, AJOUTE = false, FINI = false;
+  var DERNIER = '';
   function etat(fin) {
     if (depuis) { actif += Date.now() - depuis; depuis = fin ? 0 : Date.now(); }
+    if (CFG) lireEtapes();
     var d = { s: Math.round(actif / 1000) };
     if (CFG) { d.o = OPTIONS; d.ef = ETAPES.faites; d.n = ETAPES.N; d.e = ETAPES.cur; if (PRIX) d.prix = PRIX; }
-    stat('etat', d);
+    var sig = JSON.stringify(d); if (sig !== DERNIER) { DERNIER = sig; stat('etat', d); }
     if (fin && CFG && !AJOUTE && !FINI) { FINI = true; stat('abandon', { e: ETAPES.cur || '(début)', ef: ETAPES.faites, s: d.s, prix: PRIX || 0 }); }
   }
   document.addEventListener('visibilitychange', function () {
@@ -159,26 +161,29 @@
     if (t.type === 'number') return court(t.value, 12);
     return ''; // champ texte : jamais lu
   }
-  var faites = null;
-  function lireEtapes(silence) {
-    var bar = document.querySelector('.cer-prog'), et = bar && bar._et; if (!et || !et.length) return;
+  var NOTEES = {}, TOUCHE = [];
+  function lireEtapes() {
+    var bar = document.querySelector('.cer-prog'), et = bar && bar._et; if (!et || !et.length) { TOUCHE = []; return; }
     var cur = 0; while (cur < et.length - 1 && et[cur].fait) cur++;
     ETAPES = { faites: et.filter(function (x) { return x.fait; }).length, N: et.length, cur: court(et[cur].n, 30) };
-    var now = {}; et.forEach(function (x) { if (x.fait) now[x.n] = 1; });
-    if (faites && !silence) et.forEach(function (x, i) { if (x.fait && !faites[x.n]) stat('etape_finie', { e: court(x.n, 30), i: i + 1, n: et.length }); });
-    faites = faites ? (function () { for (var k in now) faites[k] = 1; return faites; })() : now;
+    et.forEach(function (x, i) {
+      if (x.fait && !NOTEES[x.n] && TOUCHE.some(function (s) { return x.secs.indexOf(s) >= 0; })) { NOTEES[x.n] = 1; stat('etape_finie', { e: court(x.n, 30), i: i + 1, n: et.length }); }
+    });
+    TOUCHE = [];
   }
   function brancherConfigurateur() {
     var form = document.querySelector('form.cart'); if (!form) return;
     var tE = 0;
     form.addEventListener('change', function (e) {
       var t = e.target; if (!e.isTrusted || !t || !t.name || /^cer_plan/.test(t.name)) return;
-      OPTIONS++; stat('option', { f: question(t.closest('.wapf-field-container')) || court(t.name, 40), v: valeur(t) });
-      clearTimeout(tE); tE = setTimeout(function () { lireEtapes(false); }, 900);
+      var c = t.closest('.wapf-field-container'), q = question(c) || court(t.name, 40);
+      if (/^aide au choix/i.test(q)) return stat('aide', { f: q.replace(/^aide au choix\s*[—–-]?\s*/i, '') });
+      OPTIONS++; stat('option', { f: q, v: valeur(t) });
+      var sec = c && c.closest('.wapf-section'); if (sec) TOUCHE.push(sec);
+      clearTimeout(tE); tE = setTimeout(function () { lireEtapes(); }, 900);
     }, true);
     var tI = 0;
     form.addEventListener('invalid', function (e) { if (Date.now() - tI < 800) return; tI = Date.now(); stat('champ_manquant', { f: question(e.target.closest && e.target.closest('.wapf-field-container')) || court(e.target.name, 40) }); }, true);
-    setTimeout(function () { lireEtapes(true); }, 2500); // étapes déjà faites par les choix par défaut : point de départ, sans événement
     // panneau « Votre abri en direct » : construit après le chargement
     var essais = 0, t = setInterval(function () {
       var prix = document.querySelector('.cer-plan__prix strong'), warn = document.querySelector('.cer-plan__warn');
@@ -220,7 +225,7 @@
     var P = window.performance, nav = P && P.getEntriesByType ? P.getEntriesByType('navigation')[0] : null, r = document.referrer;
     var d = { e: ss('cer_e') || '', w: window.innerWidth || 0 };
     if (r && r.split('/')[2] && r.split('/')[2].replace(/^www\./, '') === ici) d.r = chemin(r);
-    if (nav) d.ttfb = Math.round(nav.responseStart);
+    if (nav && nav.responseStart > 0) d.ttfb = Math.round(nav.responseStart);
     if (C.page === 'panier') {
       var lignes = document.querySelectorAll('.cart_item, .woocommerce-cart-form__cart-item'), types = {};
       Array.prototype.forEach.call(lignes, function (l) { var a = l.querySelector('a[href*="/produit/configurateur"]'); if (a) types[(a.getAttribute('href').match(/configurateur-?([a-z]*)/) || [])[1] || 'abri'] = 1; });
