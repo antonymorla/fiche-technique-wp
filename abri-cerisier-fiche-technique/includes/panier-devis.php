@@ -95,7 +95,9 @@ add_action( 'wp_footer', function () {
 		.cer-pdv-barre .cer-pdv-total { flex: 0 0 auto; display: flex; flex-direction: column; font-size: 12px; line-height: 1.2; color: #555; }
 		.cer-pdv-barre .cer-pdv-total strong { font-size: 17px; color: #161619; white-space: nowrap; }
 		.cer-pdv-barre a.cer-pdv-bouton { flex: 1 1 auto; width: auto; min-height: 48px; padding: 10px 12px; font-size: 14px; }
-		body.cer-pdv-avec-barre { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+		body.cer-pdv-avec-barre { padding-bottom: calc(var(--cer-pdv-h, 70px) + 12px); }
+		/* l'onglet « Gérer le consentement » de Complianz (fixé en bas à droite) couvrait le bouton de la barre : il passe juste au-dessus */
+		body.cer-pdv-avec-barre #cmplz-manage-consent .cmplz-manage-consent { bottom: var(--cer-pdv-h, 70px) !important; }
 	}
 	</style>
 	<div class="cer-pdv-barre" role="region" aria-label="Recevoir mon devis">
@@ -105,6 +107,8 @@ add_action( 'wp_footer', function () {
 	<script id="cer-pdv-js">
 	(function () {
 		document.body.classList.add('cer-pdv-avec-barre');
+		var hauteur = function () { var b = document.querySelector('.cer-pdv-barre'); if (b && b.offsetHeight) document.documentElement.style.setProperty('--cer-pdv-h', b.offsetHeight + 'px'); };
+		hauteur(); window.addEventListener('resize', hauteur);
 		// le panier se recalcule sans recharger la page (quantité, code promo) : le total de la barre suit
 		var maj = function () {
 			var t = document.querySelector('.cart_totals .order-total .amount'), m = document.querySelector('.cer-pdv-barre .cer-pdv-montant');
