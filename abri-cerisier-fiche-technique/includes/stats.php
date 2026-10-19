@@ -251,6 +251,13 @@ function cer_stats_export( WP_REST_Request $r ) {
 }
 
 add_action( 'rest_api_init', function () {
+	// réglage modifiable aussi par /wp-json/wp/v2/settings (administrateur), pour basculer sans passer par l'écran
+	register_setting( 'acft_group', 'cer_stats_mode', [
+		'type'              => 'string',
+		'default'           => 'test',
+		'show_in_rest'      => [ 'schema' => [ 'enum' => [ 'off', 'test', 'tous' ] ] ],
+		'sanitize_callback' => function ( $v ) { return in_array( $v, [ 'off', 'test', 'tous' ], true ) ? $v : 'test'; },
+	] );
 	register_rest_route( 'cer/v1', '/stats', [ 'methods' => 'POST', 'permission_callback' => 'cer_stats_origine', 'callback' => 'cer_stats_recevoir' ] );
 	register_rest_route( 'cer/v1', '/stats/export', [ 'methods' => 'GET', 'permission_callback' => function () { return current_user_can( 'manage_options' ); }, 'callback' => 'cer_stats_export' ] );
 } );
@@ -296,10 +303,10 @@ function cer_stats_ecran() {
 	$depuis = gmdate( 'Y-m-d H:i:s', time() - $jours * DAY_IN_SECONDS );
 	$where  = $essai ? 'essai > 0' : 'essai = 0';
 	// visites passées par un configurateur, par type
-	$vis = $wpdb->get_results( $wpdb->prepare( "SELECT page, appareil, COUNT(DISTINCT visite) n FROM $t WHERE t >= %s AND $where AND ev = 'vue' AND page IN ('abri','garage','carport') GROUP BY page, appareil", $depuis ), ARRAY_A ); // phpcs:ignore
-	$par = $wpdb->get_results( $wpdb->prepare( "SELECT s.ev, COUNT(DISTINCT s.visite) n FROM $t s JOIN (SELECT DISTINCT visite FROM $t WHERE t >= %s AND $where AND ev = 'vue' AND page IN ('abri','garage','carport')) c ON c.visite = s.visite WHERE s.t >= %s GROUP BY s.ev", $depuis, $depuis ), OBJECT_K ); // phpcs:ignore
+	$vis = (array) $wpdb->get_results( $wpdb->prepare( "SELECT page, appareil, COUNT(DISTINCT visite) n FROM $t WHERE t >= %s AND $where AND ev = 'vue' AND page IN ('abri','garage','carport') GROUP BY page, appareil", $depuis ), ARRAY_A ); // phpcs:ignore
+	$par = (array) $wpdb->get_results( $wpdb->prepare( "SELECT s.ev, COUNT(DISTINCT s.visite) n FROM $t s JOIN (SELECT DISTINCT visite FROM $t WHERE t >= %s AND $where AND ev = 'vue' AND page IN ('abri','garage','carport')) c ON c.visite = s.visite WHERE s.t >= %s GROUP BY s.ev", $depuis, $depuis ), OBJECT_K ); // phpcs:ignore
 	$det = function ( $ev, $cle, $lim = 12 ) use ( $wpdb, $t, $depuis, $where ) {
-		return $wpdb->get_results( $wpdb->prepare( "SELECT JSON_UNQUOTE(JSON_EXTRACT(d, %s)) v, COUNT(*) n FROM $t WHERE t >= %s AND $where AND ev = %s AND d <> '' GROUP BY v ORDER BY n DESC LIMIT %d", '$.' . $cle, $depuis, $ev, $lim ), ARRAY_A ); // phpcs:ignore
+		return (array) $wpdb->get_results( $wpdb->prepare( "SELECT JSON_UNQUOTE(JSON_EXTRACT(d, %s)) v, COUNT(*) n FROM $t WHERE t >= %s AND $where AND ev = %s AND d <> '' GROUP BY v ORDER BY n DESC LIMIT %d", '$.' . $cle, $depuis, $ev, $lim ), ARRAY_A ); // phpcs:ignore
 	};
 	$total = 0;
 	foreach ( $vis as $v ) {
