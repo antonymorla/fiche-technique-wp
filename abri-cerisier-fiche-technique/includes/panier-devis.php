@@ -85,9 +85,10 @@ add_action( 'wp_footer', function () {
 	<style id="cer-pdv-css">
 	.cer-pdv-ligne, .cer-pdv-barre { display: none; }
 	@media (max-width: 768px) {
-		.woocommerce table.shop_table_responsive tr.cer-pdv-ligne, .woocommerce-page table.shop_table_responsive tr.cer-pdv-ligne { display: block !important; border: 0 !important; }
-		.woocommerce table.shop_table_responsive tr.cer-pdv-ligne td.cer-pdv-cellule { display: block !important; text-align: left !important; padding: 18px 0 8px !important; border: 0 !important; }
-		.woocommerce table.shop_table_responsive tr.cer-pdv-ligne td.cer-pdv-cellule::before { content: none !important; display: none !important; }
+		/* le thème garde un vrai tableau sur téléphone : la ligne reste une ligne de tableau, sa cellule couvre toutes les colonnes */
+		table tr.cer-pdv-ligne { display: table-row !important; border: 0 !important; }
+		table tr.cer-pdv-ligne td.cer-pdv-cellule { display: table-cell !important; width: 100% !important; text-align: left !important; padding: 18px 0 8px !important; border: 0 !important; }
+		table tr.cer-pdv-ligne td.cer-pdv-cellule::before { content: none !important; display: none !important; }
 		a.cer-pdv-bouton { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 54px; box-sizing: border-box; padding: 14px 18px; background: #515136; color: #fff !important; text-decoration: none !important; text-transform: uppercase; letter-spacing: .06em; font-size: 15px; font-weight: 600; line-height: 1.2; border: 0; border-radius: 0; }
 		a.cer-pdv-bouton:active, a.cer-pdv-bouton:focus-visible { background: #3e3e29; outline: 2px solid #161619; outline-offset: 2px; }
 		.cer-pdv-note { margin: 8px 2px 0; font-size: 13px; line-height: 1.4; color: #555; text-align: center; }
